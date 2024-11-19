@@ -11,7 +11,8 @@ const cmd = new Command()
     // Show help by default
     cmd.showHelp();
   })
-  .command("run", "Run code locally for development") // "dev" instead?
+  .command("dev", "Run a glue locally for development")
+  // .option("-n, --name <name:string>", "Set glue name") // is this needed for dev?
   .arguments("<file:string>")
   .action(async (_options, ..._args) => {
     const command = new Deno.Command(Deno.execPath(), {
@@ -23,7 +24,8 @@ const cmd = new Command()
     const status = await child.status;
     Deno.exit(status.code);
   })
-  .command("deploy", "Deploy code")
+  .command("deploy", "Deploy a glue") // --name flag
+  .option("-n, --name <name:string>", "Glue name") // defaults based on file name
   .arguments("<file:string>")
   .action(async (_options, file) => {
     const code = await Deno.readTextFile(file);
@@ -33,6 +35,21 @@ const cmd = new Command()
       body: JSON.stringify({ code }),
     });
     console.log(await res.text());
+  })
+  .command("init", "Initialize a new glue")
+  .action(() => {
+    // prompt user for name. TODO instead of prompting for name, prompt
+    // "describe what you're building" and use AI to generate the glue script.
+    throw new Error("Not implemented");
+  })
+  .command("list", "List your glues")
+  .action(() => {
+    throw new Error("Not implemented");
+  })
+  .command("delete", "Delete a glue")
+  .arguments("<name:string>")
+  .action(() => {
+    throw new Error("Not implemented");
   })
   .command(
     "versions",
@@ -53,4 +70,5 @@ const cmd = new Command()
   .action(() => {
     throw new Error("Not implemented");
   });
+
 await cmd.parse(Deno.args);
