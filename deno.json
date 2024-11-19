@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "dev": "deno run --watch main.ts",
+    "cli": "deno run --allow-env --allow-read --allow-net --allow-run main.ts",
+    "debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run main.ts",
+    "check": "deno check main.ts",
+    "test": "deno test --permit-no-files"
+  },
+  "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
+    "@std/assert": "jsr:@std/assert@1"
+  }
+}
