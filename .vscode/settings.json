@@ -1,8 +1,12 @@
 {
   "deno.enable": true,
+  "deno.lint": true,
   "editor.defaultFormatter": "denoland.vscode-deno",
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
+  "files.eol": "\n",
   "[json]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
