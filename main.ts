@@ -1,3 +1,5 @@
+import { kv } from "./db.ts";
+import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
 
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
@@ -59,16 +61,25 @@ const cmd = new Command()
     throw new Error("Not implemented");
   })
   .command("login", "Log in to Glue")
-  .action(() => {
-    throw new Error("Not implemented");
+  .action(async () => {
+    // TODO actual auth
+    const email: string = await Input.prompt(`What's your email address?`);
+    await kv.set(["userEmail"], email);
+    console.log(`Logged in as ${JSON.stringify(email)}`);
   })
   .command("logout", "Log out from Glue")
-  .action(() => {
-    throw new Error("Not implemented");
+  .action(async () => {
+    await kv.delete(["userEmail"]);
+    console.log("Logged out");
   })
   .command("whoami", "Get the current user")
-  .action(() => {
-    throw new Error("Not implemented");
+  .action(async () => {
+    const { value: userEmail } = await kv.get<string>(["userEmail"]);
+    if (!userEmail) {
+      console.log("You are not logged in.");
+    } else {
+      console.log(`Logged in as ${JSON.stringify(userEmail)}`);
+    }
   });
 
 await cmd.parse(Deno.args);
