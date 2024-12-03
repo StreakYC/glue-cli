@@ -1,6 +1,7 @@
 import { kv } from "./db.ts";
 import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
+import { load as dotEnvLoad } from "@std/dotenv";
 
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
   "https://glue-test-71.deno.dev";
@@ -14,14 +15,45 @@ const cmd = new Command()
     cmd.showHelp();
   })
   .command("dev", "Run a glue locally for development")
-  // .option("-n, --name <name:string>", "Set glue name") // is this needed for dev?
+  .option("-n, --name <name:string>", "Set glue name")
+  .option("--allow-stdin", "Allow stdin")
+  .option("--keep-full-env", "Keep full environment")
+  // TODO debugging options
   .arguments("<file:string>")
-  .action(async (_options, ..._args) => {
+  .action(async (options, file) => {
+    const name = options.name ?? file.split("/").pop()!;
+
+    const env: Record<string, string> = {
+      GLUE_API_SERVER,
+      GLUE_DEV: "true",
+      GLUE_AUTHORIZATION_HEADER: "Bearer 123",
+      GLUE_NAME: name,
+    };
+
+    if (!options.keepFullEnv) {
+      const envKeysToKeep = ["LANG", "TZ", "TERM"];
+      for (const envKeyToKeep of envKeysToKeep) {
+        const value = Deno.env.get(envKeyToKeep);
+        if (value) {
+          env[envKeyToKeep] = value;
+        }
+      }
+    }
+
+    // include .env file
+    const dotEnv = await dotEnvLoad();
+    for (const [key, value] of Object.entries(dotEnv)) {
+      env[key] = value;
+    }
+
     const command = new Deno.Command(Deno.execPath(), {
-      args: ["eval", "console.log('Hello World')"],
-      stdin: "inherit",
+      args: ["run", "--no-prompt", "--allow-env", "--allow-net", file],
+      stdin: options.allowStdin ? "inherit" : "null",
       stdout: "inherit",
+      clearEnv: !options.keepFullEnv,
+      env,
     });
+
     const child = command.spawn();
     const status = await child.status;
     Deno.exit(status.code);
