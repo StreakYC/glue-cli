@@ -21,10 +21,22 @@ export function onWebhook(fn: (event: unknown) => unknown): void {
 
 const app = new Hono();
 
-app.get("/__glue__/getRegistrations", (c) => {
-  return c.json({
+interface RegisteredWebhookTrigger {
+  label: string;
+}
+
+interface RegisteredTriggers {
+  webhooks?: Array<RegisteredWebhookTrigger>;
+}
+
+function getRegisteredTriggers(): RegisteredTriggers {
+  return {
     webhooks: Array.from(registeredWebhooks.keys()).map((label) => ({ label })),
-  });
+  };
+}
+
+app.get("/__glue__/getRegistrations", (c) => {
+  return c.json(getRegisteredTriggers());
 });
 
 app.post("/webhooks/:id", async (c) => {
@@ -67,11 +79,7 @@ function scheduleInit() {
               },
               body: JSON.stringify({
                 name: GLUE_NAME,
-                webhooks: Array.from(registeredWebhooks.keys()).map((
-                  label,
-                ) => ({
-                  label,
-                })),
+                triggers: getRegisteredTriggers(),
               }),
             },
           );
