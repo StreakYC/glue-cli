@@ -71,13 +71,14 @@ function scheduleInit() {
           )!;
           const glueName = Deno.env.get("GLUE_NAME")!;
           const res = await fetch(
-            `${GLUE_API_SERVER}/glues/${glueName}/dev`,
+            `${GLUE_API_SERVER}/glues/dev`,
             {
               method: "POST",
               headers: {
                 Authorization: GLUE_AUTHORIZATION_HEADER,
               },
               body: JSON.stringify({
+                name: glueName,
                 triggers: getRegisteredTriggers(),
               }),
             },

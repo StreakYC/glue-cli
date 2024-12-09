@@ -65,12 +65,13 @@ const cmd = new Command()
   .action(async (options, file) => {
     const glueName = options.name ?? basename(file);
     const body = {
+      name: glueName,
       entryPointUrl: basename(file),
       assets: {
         [basename(file)]: await Deno.readTextFile(file),
       },
     };
-    const res = await fetch(`${GLUE_API_SERVER}/glues/${glueName}/deploy`, {
+    const res = await fetch(`${GLUE_API_SERVER}/glues/deploy`, {
       // TODO auth headers
       method: "POST",
       body: JSON.stringify(body),
