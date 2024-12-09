@@ -2,7 +2,8 @@ import { kv } from "./db.ts";
 import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
 import { load as dotEnvLoad } from "@std/dotenv";
-import { basename } from "@std/path/basename";
+import { basename, dirname, relative } from "@std/path";
+import { walk } from "jsr:@std/fs/walk";
 
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
   "https://glue-test-71.deno.dev";
@@ -64,12 +65,33 @@ const cmd = new Command()
   .arguments("<file:string>")
   .action(async (options, file) => {
     const glueName = options.name ?? basename(file);
+
+    // For now, we're just uploading all .js/.ts files in the same directory as
+    // the entry point. TODO follow imports and only upload necessary files.
+    const fileDir = dirname(file);
+
+    const entryFile = basename(file);
+
+    const filesToUpload: string[] = [entryFile];
+    for await (
+      const dirEntry of walk(fileDir, {
+        exts: ["ts", "js"],
+        includeDirs: false,
+      })
+    ) {
+      const relativePath = relative(fileDir, dirEntry.path);
+      filesToUpload.push(relativePath);
+    }
+
+    const assets: Record<string, string> = Object.fromEntries(
+      await Promise.all(filesToUpload
+        .map(async (file) => [file, await Deno.readTextFile(file)])),
+    );
+
     const body = {
       name: glueName,
-      entryPointUrl: basename(file),
-      assets: {
-        [basename(file)]: await Deno.readTextFile(file),
-      },
+      entryPointUrl: entryFile,
+      assets,
     };
     const res = await fetch(`${GLUE_API_SERVER}/glues/deploy`, {
       // TODO auth headers
