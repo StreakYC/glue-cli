@@ -79,6 +79,7 @@ function scheduleInit() {
               },
               body: JSON.stringify({
                 name: glueName,
+                state: "active",
                 triggers: getRegisteredTriggers(),
               }),
             },
@@ -87,7 +88,7 @@ function scheduleInit() {
             throw new Error(`Failed to register webhooks: ${res.statusText}`);
           }
           const data = await res.json();
-          const websocketUrl = data.websocketUrl;
+          const websocketUrl = data.devEventsWebsocketUrl;
           const ws = new WebSocket(websocketUrl);
           ws.addEventListener("open", () => {
             console.log("Websocket connected.");
