@@ -2,6 +2,7 @@ import { kv } from "./db.ts";
 import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
 import { load as dotEnvLoad } from "@std/dotenv";
+import { basename } from "@std/path/basename";
 
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
   "https://glue-test-71.deno.dev";
@@ -61,12 +62,18 @@ const cmd = new Command()
   .command("deploy", "Deploy a glue") // --name flag
   .option("-n, --name <name:string>", "Glue name") // defaults based on file name
   .arguments("<file:string>")
-  .action(async (_options, file) => {
-    const code = await Deno.readTextFile(file);
-    const res = await fetch(`${GLUE_API_SERVER}/deploy`, {
+  .action(async (options, file) => {
+    const glueName = options.name ?? basename(file);
+    const body = {
+      entryPointUrl: basename(file),
+      assets: {
+        [basename(file)]: await Deno.readTextFile(file),
+      },
+    };
+    const res = await fetch(`${GLUE_API_SERVER}/glues/${glueName}/deploy`, {
       // TODO auth headers
       method: "POST",
-      body: JSON.stringify({ code }),
+      body: JSON.stringify(body),
     });
     console.log(await res.text());
   })
