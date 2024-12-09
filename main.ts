@@ -22,13 +22,13 @@ const cmd = new Command()
   // TODO debugging options
   .arguments("<file:string>")
   .action(async (options, file) => {
-    const name = options.name ?? file.split("/").pop()!;
+    const glueName = options.name ?? basename(file);
 
     const env: Record<string, string> = {
       GLUE_API_SERVER,
       GLUE_DEV: "true",
       GLUE_AUTHORIZATION_HEADER: "Bearer 123",
-      GLUE_NAME: name,
+      GLUE_NAME: glueName,
     };
 
     if (!options.keepFullEnv) {

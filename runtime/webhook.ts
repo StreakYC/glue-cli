@@ -69,16 +69,15 @@ function scheduleInit() {
           const GLUE_AUTHORIZATION_HEADER = Deno.env.get(
             "GLUE_AUTHORIZATION_HEADER",
           )!;
-          const GLUE_NAME = Deno.env.get("GLUE_NAME")!;
+          const glueName = Deno.env.get("GLUE_NAME")!;
           const res = await fetch(
-            `${GLUE_API_SERVER}/dev`,
+            `${GLUE_API_SERVER}/glues/${glueName}/dev`,
             {
               method: "POST",
               headers: {
                 Authorization: GLUE_AUTHORIZATION_HEADER,
               },
               body: JSON.stringify({
-                name: GLUE_NAME,
                 triggers: getRegisteredTriggers(),
               }),
             },
