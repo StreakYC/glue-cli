@@ -1,16 +1,46 @@
 // TODO this will be moved into glue-runtime once things are a little more
 // stable.
+import { z } from "zod";
 import { Hono } from "hono";
 
-const registeredWebhooks = new Map<string, (event: unknown) => unknown>();
+const GlueDevResponse = z.object({
+  devEventsWebsocketUrl: z.string(),
+});
+type GlueDevResponse = z.infer<typeof GlueDevResponse>;
+
+const WebhookEvent = z.object({
+  method: z.string(),
+  urlParams: z.record(z.string(), z.string()),
+  headers: z.record(z.string(), z.string()),
+  bodyText: z.string().optional(),
+});
+type WebhookEvent = z.infer<typeof WebhookEvent>;
+
+const TriggerEvent = z.object({
+  type: z.literal("webhook"),
+  label: z.string(),
+  data: WebhookEvent,
+});
+type TriggerEvent = z.infer<typeof TriggerEvent>;
+
+const registeredWebhooks = new Map<
+  string,
+  (event: WebhookEvent) => void | Promise<void>
+>();
 
 let nextWebhookLabel = 0;
 
-// Will this need to return the id?
-export function onWebhook(fn: (event: unknown) => unknown): void {
+interface OnWebhookOptions {
+  label?: string;
+}
+
+export function onWebhook(
+  fn: (event: WebhookEvent) => void | Promise<void>,
+  options: OnWebhookOptions = {},
+): void {
   scheduleInit();
 
-  const label = String(nextWebhookLabel++);
+  const label = options.label ?? String(nextWebhookLabel++);
   if (registeredWebhooks.has(label)) {
     throw new Error(
       `Webhook label ${JSON.stringify(label)} already registered`,
@@ -18,8 +48,6 @@ export function onWebhook(fn: (event: unknown) => unknown): void {
   }
   registeredWebhooks.set(label, fn);
 }
-
-const app = new Hono();
 
 interface RegisteredWebhookTrigger {
   label: string;
@@ -35,19 +63,16 @@ function getRegisteredTriggers(): RegisteredTriggers {
   };
 }
 
-app.get("/__glue__/getRegistrations", (c) => {
-  return c.json(getRegisteredTriggers());
-});
-
-app.post("/webhooks/:id", async (c) => {
-  const id = c.req.param("id");
-  const callback = registeredWebhooks.get(id);
-  if (callback == null) {
-    return c.text("Invalid webhook id", 404);
+async function handleTrigger(event: TriggerEvent) {
+  if (event.type !== "webhook") {
+    throw new Error(`Unknown event type: ${event.type}`);
   }
-  const callbackResult = await callback({});
-  return c.text(String(callbackResult));
-});
+  const callback = registeredWebhooks.get(event.label);
+  if (callback == null) {
+    throw new Error(`Unknown webhook label: ${event.label}`);
+  }
+  await callback(event.data);
+}
 
 let initPhase: "uninit" | "scheduled" | "initialized" = "uninit";
 
@@ -87,9 +112,9 @@ function scheduleInit() {
           if (!res.ok) {
             throw new Error(`Failed to register webhooks: ${res.statusText}`);
           }
-          const data = await res.json();
-          const websocketUrl = data.devEventsWebsocketUrl;
-          const ws = new WebSocket(websocketUrl);
+
+          const glueDevResponse = GlueDevResponse.parse(await res.json());
+          const ws = new WebSocket(glueDevResponse.devEventsWebsocketUrl);
           ws.addEventListener("open", () => {
             console.log("Websocket connected.");
           });
@@ -100,16 +125,13 @@ function scheduleInit() {
             } else if (event.data === "pong") {
               return;
             }
-
-            const wsMessage = JSON.parse(event.data);
-            console.log("Websocket message:", wsMessage);
-            if (wsMessage.event?.request) {
-              app.fetch(
-                new Request(
-                  wsMessage.event.request.url,
-                  wsMessage.event.request,
-                ),
-              );
+            const message = JSON.parse(event.data);
+            if (message?.type === "trigger") {
+              const wsMessage = TriggerEvent.parse(message.trigger);
+              console.log("Websocket trigger:", wsMessage);
+              handleTrigger(wsMessage);
+            } else {
+              console.warn("Unknown websocket message:", message);
             }
           });
           ws.addEventListener("error", (event) => {
@@ -121,6 +143,15 @@ function scheduleInit() {
             // TODO reconnect
           });
         } else {
+          const app = new Hono();
+          app.get("/__glue__/getRegisteredTriggers", (c) => {
+            return c.json(getRegisteredTriggers());
+          });
+          app.post("/__glue__/trigger", async (c) => {
+            const body = TriggerEvent.parse(await c.req.json());
+            await handleTrigger(body);
+            return c.text("Success");
+          });
           Deno.serve(app.fetch);
         }
       });
