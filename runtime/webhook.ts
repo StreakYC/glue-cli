@@ -5,6 +5,12 @@ import { Hono } from "hono";
 
 const GlueDevResponse = z.object({
   devEventsWebsocketUrl: z.string(),
+  webhooks: z.array(
+    z.object({
+      label: z.string(),
+      url: z.string(),
+    }),
+  ),
 });
 type GlueDevResponse = z.infer<typeof GlueDevResponse>;
 
@@ -114,6 +120,9 @@ function scheduleInit() {
           }
 
           const glueDevResponse = GlueDevResponse.parse(await res.json());
+
+          console.log("Registered webhooks:", glueDevResponse.webhooks);
+
           const ws = new WebSocket(glueDevResponse.devEventsWebsocketUrl);
           ws.addEventListener("open", () => {
             console.log("Websocket connected.");
