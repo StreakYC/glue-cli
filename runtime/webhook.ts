@@ -147,7 +147,7 @@ function scheduleInit() {
           app.get("/__glue__/getRegisteredTriggers", (c) => {
             return c.json(getRegisteredTriggers());
           });
-          app.post("/__glue__/trigger", async (c) => {
+          app.post("/__glue__/triggerEvent", async (c) => {
             const body = TriggerEvent.parse(await c.req.json());
             await handleTrigger(body);
             return c.text("Success");
