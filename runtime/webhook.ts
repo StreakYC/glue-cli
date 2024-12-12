@@ -3,16 +3,21 @@
 import { z } from "zod";
 import { Hono } from "hono";
 
-const GlueDevResponse = z.object({
-  devEventsWebsocketUrl: z.string(),
-  webhooks: z.array(
-    z.object({
-      label: z.string(),
-      url: z.string(),
-    }),
-  ),
-});
-type GlueDevResponse = z.infer<typeof GlueDevResponse>;
+/** taken from glue-backend */
+interface GlueDTO {
+  id: string; // string hex representation of the int64 in the db for easy display
+  name: string;
+  environment: string;
+  user_id: string;
+  version: number;
+  description: string | null;
+  created_at: number; // milliseconds since epoch
+  updated_at: number; // milliseconds since epoch
+  creator: unknown;
+  triggers: object[];
+  state: string;
+  dev_events_websocket_url?: string;
+}
 
 const WebhookEvent = z.object({
   method: z.string(),
@@ -101,29 +106,66 @@ function scheduleInit() {
             "GLUE_AUTHORIZATION_HEADER",
           )!;
           const glueName = Deno.env.get("GLUE_NAME")!;
-          const res = await fetch(
-            `${GLUE_API_SERVER}/glues/dev`,
-            {
+
+          // TODO hit endpoint to search for single glue by name
+          const allGluesResponse = await fetch(`${GLUE_API_SERVER}/glues`, {
+            headers: {
+              Authorization: GLUE_AUTHORIZATION_HEADER,
+            },
+          });
+          if (!allGluesResponse.ok) {
+            throw new Error(
+              `Failed to fetch all glues: ${allGluesResponse.statusText}`,
+            );
+          }
+          const allGlues = (await allGluesResponse.json()) as GlueDTO[];
+          const existingGlue = allGlues.find(
+            (glue) => glue.name === glueName && glue.environment === "dev",
+          );
+
+          let res: Response;
+          if (existingGlue == null) {
+            res = await fetch(`${GLUE_API_SERVER}/glues`, {
               method: "POST",
               headers: {
                 Authorization: GLUE_AUTHORIZATION_HEADER,
               },
               body: JSON.stringify({
                 name: glueName,
-                state: "active",
-                triggers: getRegisteredTriggers(),
+                environment: "dev",
+                // triggers: getRegisteredTriggers(),
               }),
-            },
-          );
+            });
+          } else {
+            res = await fetch(
+              `${GLUE_API_SERVER}/glues/${existingGlue.id}`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: GLUE_AUTHORIZATION_HEADER,
+                },
+                body: JSON.stringify({
+                  name: glueName,
+                  environment: "dev",
+                  // triggers: getRegisteredTriggers(),
+                }),
+              },
+            );
+          }
           if (!res.ok) {
             throw new Error(`Failed to register webhooks: ${res.statusText}`);
           }
 
-          const glueDevResponse = GlueDevResponse.parse(await res.json());
+          const glueDevResponse = await res.json() as GlueDTO;
 
-          console.log("Registered webhooks:", glueDevResponse.webhooks);
+          // TODO
+          // console.log("Registered webhooks:", glueDevResponse.webhooks);
 
-          const ws = new WebSocket(glueDevResponse.devEventsWebsocketUrl);
+          if (glueDevResponse.dev_events_websocket_url == null) {
+            throw new Error("No dev events websocket URL found");
+          }
+
+          const ws = new WebSocket(glueDevResponse.dev_events_websocket_url);
           ws.addEventListener("open", () => {
             console.log("Websocket connected.");
           });

@@ -12,6 +12,7 @@
     "jsr:@std/assert@1": "1.0.8",
     "jsr:@std/assert@~1.0.6": "1.0.8",
     "jsr:@std/dotenv@~0.225.2": "0.225.2",
+    "jsr:@std/encoding@^1.0.5": "1.0.5",
     "jsr:@std/encoding@~1.0.5": "1.0.5",
     "jsr:@std/fmt@~1.0.2": "1.0.2",
     "jsr:@std/fs@*": "1.0.6",
@@ -28,7 +29,7 @@
       "integrity": "f71c921cce224c13d322e5cedba4f38e8f7354c7d855c9cb22729362a53f25aa",
       "dependencies": [
         "jsr:@cliffy/internal",
-        "jsr:@std/encoding",
+        "jsr:@std/encoding@~1.0.5",
         "jsr:@std/io"
       ]
     },
@@ -122,6 +123,7 @@
       "jsr:@hono/hono@^4.6.11",
       "jsr:@std/assert@1",
       "jsr:@std/dotenv@~0.225.2",
+      "jsr:@std/encoding@^1.0.5",
       "jsr:@std/fs@^1.0.6",
       "jsr:@std/path@^1.0.8",
       "npm:zod@^3.24.0"

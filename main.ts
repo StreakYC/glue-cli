@@ -3,7 +3,8 @@ import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
 import { load as dotEnvLoad } from "@std/dotenv";
 import { basename, dirname, relative } from "@std/path";
-import { walk } from "jsr:@std/fs/walk";
+import { encodeBase64 } from "@std/encoding";
+import { walk } from "@std/fs/walk";
 
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
   "https://glue-test-71.deno.dev";
@@ -25,10 +26,15 @@ const cmd = new Command()
   .action(async (options, file) => {
     const glueName = options.name ?? basename(file);
 
+    const { value: userEmail } = await kv.get<string>(["userEmail"]);
+    if (!userEmail) {
+      throw new Error("You are not logged in.");
+    }
+
     const env: Record<string, string> = {
       GLUE_API_SERVER,
       GLUE_DEV: "true",
-      GLUE_AUTHORIZATION_HEADER: "Bearer 123",
+      GLUE_AUTHORIZATION_HEADER: "Basic " + encodeBase64(userEmail + ":"),
       GLUE_NAME: glueName,
     };
 
