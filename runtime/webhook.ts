@@ -34,6 +34,12 @@ const TriggerEvent = z.object({
 });
 type TriggerEvent = z.infer<typeof TriggerEvent>;
 
+const ServerWebsocketMessage = z.object({
+  type: z.literal("trigger"),
+  event: TriggerEvent,
+});
+type ServerWebsocketMessage = z.infer<typeof ServerWebsocketMessage>;
+
 const registeredWebhooks = new Map<
   string,
   (event: WebhookEvent) => void | Promise<void>
@@ -176,11 +182,12 @@ function scheduleInit() {
             } else if (event.data === "pong") {
               return;
             }
-            const message = JSON.parse(event.data);
-            if (message?.type === "trigger") {
-              const wsMessage = TriggerEvent.parse(message.trigger);
-              console.log("Websocket trigger:", wsMessage);
-              handleTrigger(wsMessage);
+            const message = ServerWebsocketMessage.parse(
+              JSON.parse(event.data),
+            );
+            if (message.type === "trigger") {
+              console.log("Websocket trigger event:", message.event);
+              handleTrigger(message.event);
             } else {
               console.warn("Unknown websocket message:", message);
             }
