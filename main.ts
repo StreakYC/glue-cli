@@ -126,6 +126,23 @@ const cmd = new Command()
   .action(async () => {
     // TODO actual auth
     const email: string = await Input.prompt(`What's your email address?`);
+    const signupRes = await fetch(`${GLUE_API_SERVER}/signup`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    if (
+      signupRes.status === 400 &&
+      /^application\/json(^|;)/.test(
+        signupRes.headers.get("Content-Type") ?? "",
+      ) &&
+      (await signupRes.json()).error === "User already exists"
+    ) {
+      // it's fine
+    } else if (!signupRes.ok) {
+      console.log("status", signupRes.status);
+      console.log("header", signupRes.headers.get("Content-Type"));
+      throw new Error(`Failed to sign up: ${signupRes.statusText}`);
+    }
     await kv.set(["userEmail"], email);
     console.log(`Logged in as ${JSON.stringify(email)}`);
   })
