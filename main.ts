@@ -7,7 +7,7 @@ import { encodeBase64 } from "@std/encoding";
 import { walk } from "@std/fs/walk";
 
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
-  "https://glue-test-71.deno.dev";
+  `https://${Deno.env.get("SUDO_USER") ?? Deno.env.get("USER")}-glue.ngrok.app`;
 
 const cmd = new Command()
   .name("glue")
