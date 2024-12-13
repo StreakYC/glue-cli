@@ -186,7 +186,6 @@ function scheduleInit() {
               JSON.parse(event.data),
             );
             if (message.type === "trigger") {
-              console.log("Websocket trigger event:", message.event);
               handleTrigger(message.event);
             } else {
               console.warn("Unknown websocket message:", message);
