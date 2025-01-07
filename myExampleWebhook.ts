@@ -3,7 +3,7 @@ import { IncomingWebhook } from "npm:@slack/webhook";
 
 const slackWebhook = new IncomingWebhook(Deno.env.get("SLACK_WEBHOOK_URL")!);
 
-onWebhook(async (event) => {
+onWebhook(async (_event) => {
   await slackWebhook.send({
     text: "Hello, world!",
   });
