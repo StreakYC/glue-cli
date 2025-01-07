@@ -1,20 +1,34 @@
 // TODO this will be moved into glue-runtime once things are a little more
 // stable.
 import { Hono } from "hono";
-import { RegisteredTrigger, TriggerEvent, WebhookEvent } from "./common.ts";
+import { GmailEvent, RegisteredTrigger, TriggerEvent, WebhookEvent } from "./common.ts";
 
 const registeredWebhooks = new Map<string, (event: WebhookEvent) => void | Promise<void>>();
 
-let nextWebhookLabel = 0;
+const registeredGmailEvents = new Map<string, (event: GmailEvent) => void | Promise<void>>();
 
-interface OnWebhookOptions {
+let nextAutomaticLabel = 0;
+
+interface CommonTriggerOptions {
   label?: string;
 }
 
-export function onWebhook(fn: (event: WebhookEvent) => void | Promise<void>, options: OnWebhookOptions = {}): void {
+export function onGmailEvent(fn: (event: GmailEvent) => void | Promise<void>, options: CommonTriggerOptions = {}): void {
   scheduleInit();
 
-  const label = options.label ?? String(nextWebhookLabel++);
+  const label = options.label ?? String(nextAutomaticLabel++);
+  if (registeredGmailEvents.has(label)) {
+    throw new Error(
+      `Gmail label ${JSON.stringify(label)} already registered`,
+    );
+  }
+  registeredGmailEvents.set(label, fn);
+}
+
+export function onWebhook(fn: (event: WebhookEvent) => void | Promise<void>, options: CommonTriggerOptions = {}): void {
+  scheduleInit();
+
+  const label = options.label ?? String(nextAutomaticLabel++);
   if (registeredWebhooks.has(label)) {
     throw new Error(
       `Webhook label ${JSON.stringify(label)} already registered`,
@@ -24,21 +38,39 @@ export function onWebhook(fn: (event: WebhookEvent) => void | Promise<void>, opt
 }
 
 function getRegisteredTriggers(): RegisteredTrigger[] {
-  return Array.from(registeredWebhooks.keys()).map((label) => ({
-    label,
-    type: "webhook",
-  }));
+  return [
+    ...Array.from(registeredWebhooks.keys()).map((label) => ({
+      type: "webhook",
+      label,
+    })),
+    ...Array.from(registeredGmailEvents.keys()).map((label) => ({
+      type: "gmail",
+      label,
+    })),
+  ];
 }
 
 async function handleTrigger(event: TriggerEvent) {
-  if (event.type !== "webhook") {
-    throw new Error(`Unknown event type: ${event.type}`);
+  switch (event.type) {
+    case "webhook": {
+      const callback = registeredWebhooks.get(event.label);
+      if (callback == null) {
+        throw new Error(`Unknown webhook label: ${event.label}`);
+      }
+      await callback(event.data);
+      break;
+    }
+    case "gmail": {
+      const callback = registeredGmailEvents.get(event.label);
+      if (callback == null) {
+        throw new Error(`Unknown gmail label: ${event.label}`);
+      }
+      await callback(event.data);
+      break;
+    }
+    default:
+      throw new Error(`Unknown event type: ${(event as TriggerEvent).type}`);
   }
-  const callback = registeredWebhooks.get(event.label);
-  if (callback == null) {
-    throw new Error(`Unknown webhook label: ${event.label}`);
-  }
-  await callback(event.data);
 }
 
 let hasScheduledInit = false;
