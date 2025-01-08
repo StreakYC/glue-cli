@@ -1,6 +1,5 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts",
     "cli": "deno run --allow-env --allow-read --allow-net --allow-run main.ts",
     "debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run main.ts",
     "check": "deno check main.ts",
