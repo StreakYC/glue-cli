@@ -1,13 +1,11 @@
 import { kv } from "./db.ts";
 import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
-import { load as dotEnvLoad } from "@std/dotenv";
 import { basename, dirname, relative } from "@std/path";
-import { encodeBase64 } from "@std/encoding";
 import { walk } from "@std/fs/walk";
+import { GLUE_API_SERVER } from "./common.ts";
 import { logout } from "./commands/logout.ts";
-const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
-  `https://${Deno.env.get("SUDO_USER") ?? Deno.env.get("USER")}-glue.ngrok.app`;
+import { dev } from "./commands/dev.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -23,49 +21,7 @@ const cmd = new Command()
   .option("--keep-full-env", "Keep full environment")
   // TODO debugging options
   .arguments("<file:string>")
-  .action(async (options, file) => {
-    const glueName = options.name ?? basename(file);
-
-    const { value: userEmail } = await kv.get<string>(["userEmail"]);
-    if (!userEmail) {
-      throw new Error("You are not logged in.");
-    }
-
-    const env: Record<string, string> = {
-      GLUE_API_SERVER,
-      GLUE_DEV: "true",
-      GLUE_AUTHORIZATION_HEADER: "Basic " + encodeBase64(userEmail + ":"),
-      GLUE_NAME: glueName,
-    };
-
-    if (!options.keepFullEnv) {
-      const envKeysToKeep = ["LANG", "TZ", "TERM"];
-      for (const envKeyToKeep of envKeysToKeep) {
-        const value = Deno.env.get(envKeyToKeep);
-        if (value) {
-          env[envKeyToKeep] = value;
-        }
-      }
-    }
-
-    // include .env file
-    const dotEnv = await dotEnvLoad();
-    for (const [key, value] of Object.entries(dotEnv)) {
-      env[key] = value;
-    }
-
-    const command = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--no-prompt", "--allow-env", "--allow-net", file],
-      stdin: options.allowStdin ? "inherit" : "null",
-      stdout: "inherit",
-      clearEnv: !options.keepFullEnv,
-      env,
-    });
-
-    const child = command.spawn();
-    const status = await child.status;
-    Deno.exit(status.code);
-  })
+  .action(dev)
   .command("deploy", "Deploy a glue") // --name flag
   .option("-n, --name <name:string>", "Glue name") // defaults based on file name
   .arguments("<file:string>")
