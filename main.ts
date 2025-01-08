@@ -5,7 +5,7 @@ import { load as dotEnvLoad } from "@std/dotenv";
 import { basename, dirname, relative } from "@std/path";
 import { encodeBase64 } from "@std/encoding";
 import { walk } from "@std/fs/walk";
-
+import { logout } from "./commands/logout.ts";
 const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") ||
   `https://${Deno.env.get("SUDO_USER") ?? Deno.env.get("USER")}-glue.ngrok.app`;
 
@@ -153,10 +153,7 @@ const cmd = new Command()
     console.log(`Logged in as ${JSON.stringify(email)}`);
   })
   .command("logout", "Log out from Glue")
-  .action(async () => {
-    await kv.delete(["userEmail"]);
-    console.log("Logged out");
-  })
+  .action(logout)
   .command("whoami", "Get the current user")
   .action(async () => {
     const { value: userEmail } = await kv.get<string>(["userEmail"]);
