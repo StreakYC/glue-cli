@@ -5,22 +5,7 @@ import { basename } from "@std/path";
 import { GLUE_API_SERVER } from "../common.ts";
 import { RegisteredTriggers, TriggerEvent } from "../runtime/common.ts";
 import { getLoggedInUser } from "../auth.ts";
-
-/** taken from glue-backend */
-interface GlueDTO {
-  id: string; // string hex representation of the int64 in the db for easy display
-  name: string;
-  environment: string;
-  user_id: string;
-  version: number;
-  description: string | null;
-  created_at: number; // milliseconds since epoch
-  updated_at: number; // milliseconds since epoch
-  creator: unknown;
-  triggers: object[];
-  state: string;
-  dev_events_websocket_url?: string;
-}
+import { backendRequest, GlueDTO } from "../backend.ts";
 
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -41,7 +26,7 @@ export async function dev(options: DevOptions, file: string) {
 
   const userEmail = await getLoggedInUser();
   const authHeader = "Basic " + encodeBase64(userEmail + ":");
-  const existingGlue = await getExistingGlue(authHeader, glueName);
+  const existingGlue = await getGlueByName(glueName, "dev");
 
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
@@ -82,28 +67,6 @@ export async function dev(options: DevOptions, file: string) {
   await runWebsocket(authHeader, glueName, existingGlue?.id, glueDevPort);
 
   await endPromise;
-}
-
-async function getExistingGlue(
-  authHeader: string,
-  glueName: string,
-): Promise<GlueDTO | undefined> {
-  const allGluesResponse = await fetch(
-    `${GLUE_API_SERVER}/glues?name=${glueName}`,
-    {
-      headers: { Authorization: authHeader },
-    },
-  );
-  if (!allGluesResponse.ok) {
-    throw new Error(
-      `Failed to fetch all glues: ${allGluesResponse.statusText}`,
-    );
-  }
-  const allGlues = (await allGluesResponse.json()) as GlueDTO[];
-  const existingGlue = allGlues.find(
-    (glue) => glue.name === glueName && glue.environment === "dev",
-  );
-  return existingGlue;
 }
 
 async function runWebsocket(
