@@ -91,7 +91,8 @@ async function handleTrigger(event: TriggerEvent) {
   await callback(event.data);
 }
 
-let initPhase: "uninit" | "scheduled" | "initialized" = "uninit";
+let hasScheduledInit = false;
+let hasInited = false;
 
 /**
  * This function needs to be called when any triggers are registered. It
@@ -99,123 +100,122 @@ let initPhase: "uninit" | "scheduled" | "initialized" = "uninit";
  * error if that initialization has already happened.
  */
 function scheduleInit() {
-  switch (initPhase) {
-    case "uninit":
-      initPhase = "scheduled";
-      Promise.resolve().then(async () => {
-        initPhase = "initialized";
+  if (hasInited) {
+    throw new Error("Already initialized");
+  }
+  if (hasScheduledInit) {
+    return;
+  }
+  hasScheduledInit = true;
 
-        if (Deno.env.get("GLUE_DEV") === "true") {
-          // connect websocket
-          const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER")!;
-          const GLUE_AUTHORIZATION_HEADER = Deno.env.get(
-            "GLUE_AUTHORIZATION_HEADER",
-          )!;
-          const glueName = Deno.env.get("GLUE_NAME")!;
+  Promise.resolve().then(async () => {
+    hasInited = true;
 
-          // TODO hit endpoint to search for single glue by name
-          const allGluesResponse = await fetch(`${GLUE_API_SERVER}/glues`, {
+    if (Deno.env.get("GLUE_DEV") === "true") {
+      // connect websocket
+      const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER")!;
+      const GLUE_AUTHORIZATION_HEADER = Deno.env.get(
+        "GLUE_AUTHORIZATION_HEADER",
+      )!;
+      const glueName = Deno.env.get("GLUE_NAME")!;
+
+      // TODO hit endpoint to search for single glue by name
+      const allGluesResponse = await fetch(`${GLUE_API_SERVER}/glues`, {
+        headers: {
+          Authorization: GLUE_AUTHORIZATION_HEADER,
+        },
+      });
+      if (!allGluesResponse.ok) {
+        throw new Error(
+          `Failed to fetch all glues: ${allGluesResponse.statusText}`,
+        );
+      }
+      const allGlues = (await allGluesResponse.json()) as GlueDTO[];
+      const existingGlue = allGlues.find(
+        (glue) => glue.name === glueName && glue.environment === "dev",
+      );
+
+      let res: Response;
+      if (existingGlue == null) {
+        res = await fetch(`${GLUE_API_SERVER}/glues`, {
+          method: "POST",
+          headers: {
+            Authorization: GLUE_AUTHORIZATION_HEADER,
+          },
+          body: JSON.stringify({
+            name: glueName,
+            environment: "dev",
+            // triggers: getRegisteredTriggers(),
+          }),
+        });
+      } else {
+        res = await fetch(
+          `${GLUE_API_SERVER}/glues/${existingGlue.id}`,
+          {
+            method: "POST",
             headers: {
               Authorization: GLUE_AUTHORIZATION_HEADER,
             },
-          });
-          if (!allGluesResponse.ok) {
-            throw new Error(
-              `Failed to fetch all glues: ${allGluesResponse.statusText}`,
-            );
-          }
-          const allGlues = (await allGluesResponse.json()) as GlueDTO[];
-          const existingGlue = allGlues.find(
-            (glue) => glue.name === glueName && glue.environment === "dev",
-          );
+            body: JSON.stringify({
+              name: glueName,
+              environment: "dev",
+              // triggers: getRegisteredTriggers(),
+            }),
+          },
+        );
+      }
+      if (!res.ok) {
+        throw new Error(`Failed to register webhooks: ${res.statusText}`);
+      }
 
-          let res: Response;
-          if (existingGlue == null) {
-            res = await fetch(`${GLUE_API_SERVER}/glues`, {
-              method: "POST",
-              headers: {
-                Authorization: GLUE_AUTHORIZATION_HEADER,
-              },
-              body: JSON.stringify({
-                name: glueName,
-                environment: "dev",
-                // triggers: getRegisteredTriggers(),
-              }),
-            });
-          } else {
-            res = await fetch(
-              `${GLUE_API_SERVER}/glues/${existingGlue.id}`,
-              {
-                method: "POST",
-                headers: {
-                  Authorization: GLUE_AUTHORIZATION_HEADER,
-                },
-                body: JSON.stringify({
-                  name: glueName,
-                  environment: "dev",
-                  // triggers: getRegisteredTriggers(),
-                }),
-              },
-            );
-          }
-          if (!res.ok) {
-            throw new Error(`Failed to register webhooks: ${res.statusText}`);
-          }
+      const glueDevResponse = await res.json() as GlueDTO;
 
-          const glueDevResponse = await res.json() as GlueDTO;
+      // TODO
+      // console.log("Registered webhooks:", glueDevResponse.webhooks);
 
-          // TODO
-          // console.log("Registered webhooks:", glueDevResponse.webhooks);
+      if (glueDevResponse.dev_events_websocket_url == null) {
+        throw new Error("No dev events websocket URL found");
+      }
 
-          if (glueDevResponse.dev_events_websocket_url == null) {
-            throw new Error("No dev events websocket URL found");
-          }
-
-          const ws = new WebSocket(glueDevResponse.dev_events_websocket_url);
-          ws.addEventListener("open", () => {
-            console.log("Websocket connected.");
-          });
-          ws.addEventListener("message", (event) => {
-            if (event.data === "ping") {
-              ws.send("pong");
-              return;
-            } else if (event.data === "pong") {
-              return;
-            }
-            const message = ServerWebsocketMessage.parse(
-              JSON.parse(event.data),
-            );
-            if (message.type === "trigger") {
-              handleTrigger(message.event);
-            } else {
-              console.warn("Unknown websocket message:", message);
-            }
-          });
-          ws.addEventListener("error", (event) => {
-            console.error("Websocket error:", event);
-            // TODO reconnect or throw error?
-          });
-          ws.addEventListener("close", (event) => {
-            console.log("Websocket closed:", event);
-            // TODO reconnect
-          });
+      const ws = new WebSocket(glueDevResponse.dev_events_websocket_url);
+      ws.addEventListener("open", () => {
+        console.log("Websocket connected.");
+      });
+      ws.addEventListener("message", (event) => {
+        if (event.data === "ping") {
+          ws.send("pong");
+          return;
+        } else if (event.data === "pong") {
+          return;
+        }
+        const message = ServerWebsocketMessage.parse(
+          JSON.parse(event.data),
+        );
+        if (message.type === "trigger") {
+          handleTrigger(message.event);
         } else {
-          const app = new Hono();
-          app.get("/__glue__/getRegisteredTriggers", (c) => {
-            return c.json(getRegisteredTriggers());
-          });
-          app.post("/__glue__/triggerEvent", async (c) => {
-            const body = TriggerEvent.parse(await c.req.json());
-            await handleTrigger(body);
-            return c.text("Success");
-          });
-          Deno.serve(app.fetch);
+          console.warn("Unknown websocket message:", message);
         }
       });
-      break;
-    case "scheduled":
-      break;
-    case "initialized":
-      throw new Error("Already initialized");
-  }
+      ws.addEventListener("error", (event) => {
+        console.error("Websocket error:", event);
+        // TODO reconnect or throw error?
+      });
+      ws.addEventListener("close", (event) => {
+        console.log("Websocket closed:", event);
+        // TODO reconnect
+      });
+    } else {
+      const app = new Hono();
+      app.get("/__glue__/getRegisteredTriggers", (c) => {
+        return c.json(getRegisteredTriggers());
+      });
+      app.post("/__glue__/triggerEvent", async (c) => {
+        const body = TriggerEvent.parse(await c.req.json());
+        await handleTrigger(body);
+        return c.text("Success");
+      });
+      Deno.serve(app.fetch);
+    }
+  });
 }
