@@ -101,7 +101,9 @@ let hasInited = false;
  */
 function scheduleInit() {
   if (hasInited) {
-    throw new Error("Already initialized");
+    throw new Error(
+      "Looks like you're trying to register a trigger inside the handler of another trigger. This is not allowed, you must register all triggers at the top level, see: https://docs.glue.wtf/triggers#TODO",
+    );
   }
   if (hasScheduledInit) {
     return;
