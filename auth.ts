@@ -13,5 +13,5 @@ export async function getLoggedInUser(shouldExitIfNotLoggedIn = true) {
 }
 
 export async function isLoggedIn() {
-  return (await getLoggedInUser()) !== undefined;
+  return (await getLoggedInUser(false)) !== undefined;
 }
