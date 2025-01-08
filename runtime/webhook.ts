@@ -1,7 +1,7 @@
 // TODO this will be moved into glue-runtime once things are a little more
 // stable.
 import { Hono } from "hono";
-import { TriggerEvent } from "./common.ts";
+import { RegisteredTriggers, TriggerEvent, WebhookEvent } from "./common.ts";
 
 const registeredWebhooks = new Map<
   string,
