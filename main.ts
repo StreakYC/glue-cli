@@ -1,15 +1,14 @@
 import { Command } from "@cliffy/command";
-import { basename, dirname, relative } from "@std/path";
-import { walk } from "@std/fs/walk";
-import { GLUE_API_SERVER } from "./common.ts";
 import { logout } from "./commands/logout.ts";
+import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
 import { whoami } from "./commands/whoami.ts";
+import { version } from "./deno.json" with { type: "json" };
 
 const cmd = new Command()
   .name("glue")
-  // .version("0.1.0") // TODO use version from deno.json
+  .version(version)
   .description("Glue CLI utility")
   .action(() => {
     // Show help by default
@@ -19,54 +18,17 @@ const cmd = new Command()
   .option("-n, --name <name:string>", "Set glue name")
   .option("--allow-stdin", "Allow stdin")
   .option("--keep-full-env", "Keep full environment")
-  // TODO debugging options
   .arguments("<file:string>")
   .action(dev)
-  .command("deploy", "Deploy a glue") // --name flag
-  .option("-n, --name <name:string>", "Glue name") // defaults based on file name
+  .command("deploy", "Deploy a glue")
+  .option("-n, --name <name:string>", "Glue name")
   .arguments("<file:string>")
-  .action(async (options, file) => {
-    const glueName = options.name ?? basename(file);
-
-    // For now, we're just uploading all .js/.ts files in the same directory as
-    // the entry point. TODO follow imports and only upload necessary files.
-    const fileDir = dirname(file);
-
-    const entryFile = basename(file);
-
-    const filesToUpload: string[] = [entryFile];
-    for await (
-      const dirEntry of walk(fileDir, {
-        exts: ["ts", "js"],
-        includeDirs: false,
-      })
-    ) {
-      const relativePath = relative(fileDir, dirEntry.path);
-      filesToUpload.push(relativePath);
-    }
-
-    const assets: Record<string, string> = Object.fromEntries(
-      await Promise.all(filesToUpload
-        .map(async (file) => [file, await Deno.readTextFile(file)])),
-    );
-
-    const body = {
-      name: glueName,
-      entryPointUrl: entryFile,
-      assets,
-    };
-    const res = await fetch(`${GLUE_API_SERVER}/glues/deploy`, {
-      // TODO auth headers
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    console.log(await res.text());
-  })
+  .action(deploy)
   .command("init", "Initialize a new glue")
   .action(() => {
-    // prompt user for name. TODO instead of prompting for name, prompt
-    // "describe what you're building" and use AI to generate the glue script.
-    throw new Error("Not implemented");
+    throw new Error(
+      "Not implemented but eventually this will prompt the user for a filename or ask them what they are trying to build and autogen filename and code using AI",
+    );
   })
   .command("list", "List your glues")
   .action(() => {
