@@ -1,11 +1,11 @@
-import { kv } from "./db.ts";
-import { Input } from "@cliffy/prompt";
 import { Command } from "@cliffy/command";
 import { basename, dirname, relative } from "@std/path";
 import { walk } from "@std/fs/walk";
 import { GLUE_API_SERVER } from "./common.ts";
 import { logout } from "./commands/logout.ts";
 import { dev } from "./commands/dev.ts";
+import { login } from "./commands/login.ts";
+import { whoami } from "./commands/whoami.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -85,39 +85,10 @@ const cmd = new Command()
     throw new Error("Not implemented");
   })
   .command("login", "Log in to Glue")
-  .action(async () => {
-    // TODO actual auth
-    const email: string = await Input.prompt(`What's your email address?`);
-    const signupRes = await fetch(`${GLUE_API_SERVER}/signup`, {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-    if (
-      signupRes.status === 400 &&
-      /^application\/json(^|;)/.test(
-        signupRes.headers.get("Content-Type") ?? "",
-      ) &&
-      (await signupRes.json()).error === "User already exists"
-    ) {
-      // it's fine
-    } else if (!signupRes.ok) {
-      console.log("status", signupRes.status);
-      console.log("header", signupRes.headers.get("Content-Type"));
-      throw new Error(`Failed to sign up: ${signupRes.statusText}`);
-    }
-    await kv.set(["userEmail"], email);
-    console.log(`Logged in as ${JSON.stringify(email)}`);
-  })
+  .action(login)
   .command("logout", "Log out from Glue")
   .action(logout)
   .command("whoami", "Get the current user")
-  .action(async () => {
-    const { value: userEmail } = await kv.get<string>(["userEmail"]);
-    if (!userEmail) {
-      console.log("You are not logged in.");
-    } else {
-      console.log(`Logged in as ${JSON.stringify(userEmail)}`);
-    }
-  });
+  .action(whoami);
 
 await cmd.parse(Deno.args);
