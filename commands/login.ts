@@ -1,4 +1,4 @@
-import { kv } from "../db.ts";
+import { setLoggedInUser } from "../auth.ts";
 import { Input } from "@cliffy/prompt";
 import { GLUE_API_SERVER } from "../common.ts";
 
@@ -20,6 +20,6 @@ export const login = async () => {
   } else if (!signupRes.ok) {
     throw new Error(`Failed to sign up: ${signupRes.statusText}`);
   }
-  await kv.set(["userEmail"], email);
+  await setLoggedInUser(email);
   console.log(`Logged in as ${JSON.stringify(email)}`);
 };

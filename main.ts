@@ -4,6 +4,7 @@ import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
 import { logout } from "./commands/logout.ts";
 import { whoami } from "./commands/whoami.ts";
+import { list } from "./commands/list.ts";
 import denoJson from "./deno.json" with { type: "json" };
 
 const cmd = new Command()
@@ -25,7 +26,7 @@ const cmd = new Command()
   .option("-n, --name <name:string>", "Glue name")
   .arguments("<file:string>")
   .action(deploy)
-  // INIT ----------------------------
+  // CREATE ----------------------------
   .command("create", "Create a new glue from a template")
   .action(() => {
     throw new Error(
@@ -34,11 +35,16 @@ const cmd = new Command()
   })
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
+  .option("-f, --filter <nameFilter:string>", "Filter glues by name")
+  .action(list)
+  // PAUSE ----------------------------
+  .command("pause", "Pause a deployed glue")
+  .arguments("<name:string>")
   .action(() => {
     throw new Error("Not implemented");
   })
-  // DELETE ----------------------------
-  .command("delete", "Delete a deployedglue")
+  // RESUME ----------------------------
+  .command("resume", "Resume a paused glue")
   .arguments("<name:string>")
   .action(() => {
     throw new Error("Not implemented");

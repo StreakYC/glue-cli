@@ -2,9 +2,9 @@ import { z } from "zod";
 import { retry } from "@std/async/retry";
 import { encodeBase64 } from "@std/encoding";
 import { basename } from "@std/path";
-import { kv } from "../db.ts";
 import { GLUE_API_SERVER } from "../common.ts";
 import { RegisteredTriggers, TriggerEvent } from "../runtime/common.ts";
+import { getLoggedInUser } from "../auth.ts";
 
 /** taken from glue-backend */
 interface GlueDTO {
@@ -39,13 +39,9 @@ export async function dev(options: DevOptions, file: string) {
 
   const glueDevPort = 8567; // TODO pick a random unused port or maybe use a unix socket
 
-  const { value: userEmail } = await kv.get<string>(["userEmail"]);
-  if (!userEmail) {
-    throw new Error("You are not logged in.");
-  }
+  const userEmail = await getLoggedInUser();
   const authHeader = "Basic " + encodeBase64(userEmail + ":");
-
-  const existingGlueId = await getExistingGlueId(authHeader, glueName);
+  const existingGlue = await getExistingGlue(authHeader, glueName);
 
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
@@ -88,14 +84,16 @@ export async function dev(options: DevOptions, file: string) {
   await endPromise;
 }
 
-async function getExistingGlueId(
+async function getExistingGlue(
   authHeader: string,
   glueName: string,
-): Promise<string | undefined> {
-  // TODO use a specific endpoint to search for single glue by name
-  const allGluesResponse = await fetch(`${GLUE_API_SERVER}/glues`, {
-    headers: { Authorization: authHeader },
-  });
+): Promise<GlueDTO | undefined> {
+  const allGluesResponse = await fetch(
+    `${GLUE_API_SERVER}/glues?name=${glueName}`,
+    {
+      headers: { Authorization: authHeader },
+    },
+  );
   if (!allGluesResponse.ok) {
     throw new Error(
       `Failed to fetch all glues: ${allGluesResponse.statusText}`,
