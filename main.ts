@@ -1,44 +1,49 @@
 import { Command } from "@cliffy/command";
-import { logout } from "./commands/logout.ts";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
+import { logout } from "./commands/logout.ts";
 import { whoami } from "./commands/whoami.ts";
-import { version } from "./deno.json" with { type: "json" };
+import denoJson from "./deno.json" with { type: "json" };
 
 const cmd = new Command()
   .name("glue")
-  .version(version)
+  .version(denoJson.version)
   .description("Glue CLI utility")
   .action(() => {
-    // Show help by default
     cmd.showHelp();
   })
+  // DEV ----------------------------
   .command("dev", "Run a glue locally for development")
   .option("-n, --name <name:string>", "Set glue name")
   .option("--allow-stdin", "Allow stdin")
   .option("--keep-full-env", "Keep full environment")
   .arguments("<file:string>")
   .action(dev)
+  // DEPLOY ----------------------------
   .command("deploy", "Deploy a glue")
   .option("-n, --name <name:string>", "Glue name")
   .arguments("<file:string>")
   .action(deploy)
-  .command("init", "Initialize a new glue")
+  // INIT ----------------------------
+  .command("create", "Create a new glue from a template")
   .action(() => {
     throw new Error(
       "Not implemented but eventually this will prompt the user for a filename or ask them what they are trying to build and autogen filename and code using AI",
     );
   })
-  .command("list", "List your glues")
+  // LIST ----------------------------
+  .command("list", "List all of your deployed glues")
   .action(() => {
     throw new Error("Not implemented");
   })
-  .command("delete", "Delete a glue")
+  // DELETE ----------------------------
+  .command("delete", "Delete a deployedglue")
   .arguments("<name:string>")
   .action(() => {
     throw new Error("Not implemented");
   })
+  // VERSIONS ----------------------------
   .command(
     "versions",
     "List, view, upload and deploy versions of your Glue code",
@@ -46,10 +51,13 @@ const cmd = new Command()
   .action(() => {
     throw new Error("Not implemented");
   })
+  // LOGIN ----------------------------
   .command("login", "Log in to Glue")
   .action(login)
+  // LOGOUT ----------------------------
   .command("logout", "Log out from Glue")
   .action(logout)
+  // WHOAMI ----------------------------
   .command("whoami", "Get the current user")
   .action(whoami);
 
