@@ -79,7 +79,7 @@ export async function dev(options: DevOptions, file: string) {
     Deno.exit(status.code);
   });
 
-  await runWebsocket(authHeader, glueName, existingGlueId, glueDevPort);
+  await runWebsocket(authHeader, glueName, existingGlue?.id, glueDevPort);
 
   await endPromise;
 }
@@ -103,7 +103,7 @@ async function getExistingGlue(
   const existingGlue = allGlues.find(
     (glue) => glue.name === glueName && glue.environment === "dev",
   );
-  return existingGlue?.id;
+  return existingGlue;
 }
 
 async function runWebsocket(
