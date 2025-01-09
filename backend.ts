@@ -1,12 +1,9 @@
 import { getLoggedInUser } from "./auth.ts";
 import { encodeBase64 } from "@std/encoding";
 import { GLUE_API_SERVER } from "./common.ts";
-import { RegisteredTriggers } from "./runtime/common.ts";
+import { RegisteredTrigger } from "./runtime/common.ts";
 
-export async function backendRequest<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+export async function backendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const userEmail = await getLoggedInUser();
   const res = await fetch(`${GLUE_API_SERVER}${path}`, {
     ...options,
@@ -20,10 +17,7 @@ export async function backendRequest<T>(
   return res.json() as Promise<T>;
 }
 
-export async function getGlueByName(
-  name: string,
-  environment: string,
-): Promise<GlueDTO | undefined> {
+export async function getGlueByName(name: string, environment: string): Promise<GlueDTO | undefined> {
   const params = new URLSearchParams({ name, environment });
   const glues = await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
   return glues[0];
@@ -33,47 +27,30 @@ export async function getGlueById(id: string): Promise<GlueDTO | undefined> {
   return await backendRequest<GlueDTO>(`/glues/${id}`);
 }
 
-export async function createGlue(
-  name: string,
-  registeredTriggers: RegisteredTriggers,
-  environment: string,
-): Promise<GlueDTO> {
-  const optimisticTriggers = registeredTriggers.webhooks?.map((w) => ({
-    type: "webhook",
-    label: w.label,
-  }));
+export async function createGlue(name: string, registeredTriggers: RegisteredTrigger[], environment: string): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues`, {
     method: "POST",
     body: JSON.stringify({
       name,
-      deployment: { optimisticTriggers },
+      deployment: { optimisticTriggers: registeredTriggers },
       environment,
     }),
   });
   return res;
 }
 
-export async function createDeployment(
-  glueId: string,
-  registeredTriggers: RegisteredTriggers,
-) {
-  const optimisticTriggers = registeredTriggers.webhooks?.map((w) => ({
-    type: "webhook",
-    label: w.label,
-  }));
+export async function createDeployment(glueId: string, registeredTriggers: RegisteredTrigger[]) {
   const res = await backendRequest<DeploymentDTO>(
     `/glues/${glueId}/deployments`,
     {
       method: "POST",
-      body: JSON.stringify({ optimisticTriggers }),
+      body: JSON.stringify({ optimisticTriggers: registeredTriggers }),
     },
   );
   return res;
 }
 
-export async function getDeploymentById(
-  id: string,
-): Promise<DeploymentDTO | undefined> {
+export async function getDeploymentById(id: string): Promise<DeploymentDTO | undefined> {
   return await backendRequest<DeploymentDTO>(`/deployments/${id}`);
 }
 

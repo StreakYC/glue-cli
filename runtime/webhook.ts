@@ -1,12 +1,9 @@
 // TODO this will be moved into glue-runtime once things are a little more
 // stable.
 import { Hono } from "hono";
-import { RegisteredTriggers, TriggerEvent, WebhookEvent } from "./common.ts";
+import { RegisteredTrigger, TriggerEvent, WebhookEvent } from "./common.ts";
 
-const registeredWebhooks = new Map<
-  string,
-  (event: WebhookEvent) => void | Promise<void>
->();
+const registeredWebhooks = new Map<string, (event: WebhookEvent) => void | Promise<void>>();
 
 let nextWebhookLabel = 0;
 
@@ -14,10 +11,7 @@ interface OnWebhookOptions {
   label?: string;
 }
 
-export function onWebhook(
-  fn: (event: WebhookEvent) => void | Promise<void>,
-  options: OnWebhookOptions = {},
-): void {
+export function onWebhook(fn: (event: WebhookEvent) => void | Promise<void>, options: OnWebhookOptions = {}): void {
   scheduleInit();
 
   const label = options.label ?? String(nextWebhookLabel++);
@@ -29,10 +23,11 @@ export function onWebhook(
   registeredWebhooks.set(label, fn);
 }
 
-function getRegisteredTriggers(): RegisteredTriggers {
-  return {
-    webhooks: Array.from(registeredWebhooks.keys()).map((label) => ({ label })),
-  };
+function getRegisteredTriggers(): RegisteredTrigger[] {
+  return Array.from(registeredWebhooks.keys()).map((label) => ({
+    label,
+    type: "webhook",
+  }));
 }
 
 async function handleTrigger(event: TriggerEvent) {

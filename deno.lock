@@ -141,7 +141,9 @@
       "jsr:@hono/hono@^4.6.11",
       "jsr:@std/assert@1",
       "jsr:@std/async@^1.0.9",
+      "jsr:@std/cli@^1.0.6",
       "jsr:@std/encoding@^1.0.5",
+      "jsr:@std/fmt@^1.0.3",
       "jsr:@std/fs@^1.0.6",
       "jsr:@std/path@^1.0.8",
       "npm:zod@^3.24.0"

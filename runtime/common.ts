@@ -15,10 +15,7 @@ export const TriggerEvent = z.object({
 });
 export type TriggerEvent = z.infer<typeof TriggerEvent>;
 
-export interface RegisteredWebhookTrigger {
+export interface RegisteredTrigger {
   label: string;
-}
-
-export interface RegisteredTriggers {
-  webhooks?: Array<RegisteredWebhookTrigger>;
+  type: string;
 }
