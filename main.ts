@@ -35,7 +35,7 @@ const cmd = new Command()
   })
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
-  .option("-f, --filter <nameFilter:string>", "Filter glues by name")
+  .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
   .action(list)
   // PAUSE ----------------------------
   .command("pause", "Pause a deployed glue")

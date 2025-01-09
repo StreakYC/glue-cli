@@ -1,11 +1,15 @@
 import { z } from "zod";
+import {
+  createDeployment,
+  createGlue,
+  getDeploymentById,
+  getGlueById,
+  getGlueByName,
+} from "../backend.ts";
 import { retry } from "@std/async/retry";
-import { encodeBase64 } from "@std/encoding";
 import { basename } from "@std/path";
-import { GLUE_API_SERVER } from "../common.ts";
 import { RegisteredTriggers, TriggerEvent } from "../runtime/common.ts";
-import { getLoggedInUser } from "../auth.ts";
-import { backendRequest, GlueDTO } from "../backend.ts";
+import { GlueDTO } from "../backend.ts";
 
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -21,11 +25,7 @@ interface DevOptions {
 
 export async function dev(options: DevOptions, file: string) {
   const glueName = options.name ?? basename(file);
-
   const glueDevPort = 8567; // TODO pick a random unused port or maybe use a unix socket
-
-  const userEmail = await getLoggedInUser();
-  const authHeader = "Basic " + encodeBase64(userEmail + ":");
   const existingGlue = await getGlueByName(glueName, "dev");
 
   const env: Record<string, string> = {
@@ -43,6 +43,78 @@ export async function dev(options: DevOptions, file: string) {
     }
   }
 
+  const localRunnerEndPromise = spawnLocalDenoRunner(file, options, env);
+  await waitForLocalRunnerToBeReady(glueDevPort);
+  const registeredTriggers = await getRegisteredTriggers(glueDevPort);
+  let newDeploymentId: string;
+  let glueId: string;
+  if (!existingGlue) {
+    const newGlue = await createGlue(glueName, registeredTriggers, "dev");
+    if (!newGlue.currentDeploymentId) {
+      throw new Error("Failed to create glue");
+    }
+    newDeploymentId = newGlue.currentDeploymentId;
+    glueId = newGlue.id;
+  } else {
+    const newDeployment = await createDeployment(
+      existingGlue.id,
+      registeredTriggers,
+    );
+    newDeploymentId = newDeployment.id;
+    glueId = existingGlue.id;
+  }
+
+  await pollForDeploymentToBeReady(newDeploymentId);
+
+  const glue = await getGlueById(glueId);
+  if (!glue) {
+    throw new Error("Glue not found");
+  }
+
+  runWebsocket(glue, glueDevPort);
+
+  await localRunnerEndPromise;
+}
+
+async function pollForDeploymentToBeReady(deploymentId: string) {
+  await retry(async () => {
+    const deployment = await getDeploymentById(deploymentId);
+    if (!deployment) {
+      throw new Error("Deployment not found");
+    }
+    if (deployment.isInitializing) {
+      throw new Error("Deployment not ready");
+    }
+  });
+}
+
+async function waitForLocalRunnerToBeReady(glueDevPort: number) {
+  const res = await fetch(
+    `http://127.0.0.1:${glueDevPort}/__glue__/getRegisteredTriggers`,
+  );
+  if (!res.ok) {
+    throw new Error(`Failed health check: ${res.statusText}`);
+  }
+}
+
+async function getRegisteredTriggers(
+  glueDevPort: number,
+): Promise<RegisteredTriggers> {
+  const res = await fetch(
+    `http://127.0.0.1:${glueDevPort}/__glue__/getRegisteredTriggers`,
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to get registered triggers: ${res.statusText}`);
+  }
+  const registeredTriggers = await res.json() as RegisteredTriggers;
+  return registeredTriggers;
+}
+
+function spawnLocalDenoRunner(
+  file: string,
+  options: DevOptions,
+  env: Record<string, string>,
+) {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -63,65 +135,15 @@ export async function dev(options: DevOptions, file: string) {
   const endPromise = child.status.then((status) => {
     Deno.exit(status.code);
   });
-
-  await runWebsocket(authHeader, glueName, existingGlue?.id, glueDevPort);
-
-  await endPromise;
+  return endPromise;
 }
 
-async function runWebsocket(
-  authHeader: string,
-  glueName: string,
-  existingGlueId: string | undefined,
-  glueDevPort: number,
-) {
-  // the child process might not be ready yet so we might need to retry this request
-  const registeredTriggers = retry(async () => {
-    const res = await fetch(
-      `http://127.0.0.1:${glueDevPort}/__glue__/getRegisteredTriggers`,
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to get registered triggers: ${res.statusText}`);
-    }
-    return res.json() as Promise<RegisteredTriggers>;
-  });
-
-  let res: Response;
-  if (existingGlueId == null) {
-    res = await fetch(`${GLUE_API_SERVER}/glues`, {
-      method: "POST",
-      headers: { Authorization: authHeader },
-      body: JSON.stringify({
-        name: glueName,
-        environment: "dev",
-        triggers: registeredTriggers,
-      }),
-    });
-  } else {
-    res = await fetch(`${GLUE_API_SERVER}/glues/${existingGlueId}`, {
-      method: "POST",
-      headers: { Authorization: authHeader },
-      body: JSON.stringify({
-        name: glueName,
-        environment: "dev",
-        triggers: registeredTriggers,
-      }),
-    });
-  }
-  if (!res.ok) {
-    throw new Error(`Failed to register webhooks: ${res.statusText}`);
-  }
-
-  const glueDevResponse = await res.json() as GlueDTO;
-
-  // TODO
-  // console.log("Registered webhooks:", glueDevResponse.webhooks);
-
-  if (glueDevResponse.dev_events_websocket_url == null) {
+function runWebsocket(glue: GlueDTO, glueDevPort: number) {
+  if (glue.devEventsWebsocketUrl == null) {
     throw new Error("No dev events websocket URL found");
   }
 
-  const ws = new WebSocket(glueDevResponse.dev_events_websocket_url);
+  const ws = new WebSocket(glue.devEventsWebsocketUrl);
   ws.addEventListener("open", () => {
     console.log("Websocket connected.");
   });
