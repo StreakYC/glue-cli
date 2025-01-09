@@ -8,7 +8,7 @@ export async function backendRequest<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const userEmail = await getLoggedInUser();
-  const res = await fetch(`${GLUE_API_SERVER}/${path}`, {
+  const res = await fetch(`${GLUE_API_SERVER}${path}`, {
     ...options,
     headers: {
       Authorization: `Basic ${encodeBase64(userEmail + ":")}`,

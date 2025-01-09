@@ -10,7 +10,7 @@ import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { RegisteredTriggers, TriggerEvent } from "../runtime/common.ts";
 import { GlueDTO } from "../backend.ts";
-
+import { runStep } from "../ui.ts";
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
   event: TriggerEvent,
@@ -26,7 +26,11 @@ interface DevOptions {
 export async function dev(options: DevOptions, file: string) {
   const glueName = options.name ?? basename(file);
   const glueDevPort = 8567; // TODO pick a random unused port or maybe use a unix socket
-  const existingGlue = await getGlueByName(glueName, "dev");
+
+  const existingGlue = await runStep(
+    "Checking for existing glue",
+    () => getGlueByName(glueName, "dev"),
+  );
 
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
@@ -43,35 +47,53 @@ export async function dev(options: DevOptions, file: string) {
     }
   }
 
-  const localRunnerEndPromise = spawnLocalDenoRunner(file, options, env);
-  await waitForLocalRunnerToBeReady(glueDevPort);
-  const registeredTriggers = await getRegisteredTriggers(glueDevPort);
+  const localRunnerEndPromise = runStep(
+    "Starting local runner",
+    () => spawnLocalDenoRunner(file, options, env),
+  );
+  await runStep(
+    "Waiting for local runner to be ready",
+    () => waitForLocalRunnerToBeReady(glueDevPort),
+  );
+  const registeredTriggers = await runStep(
+    "Getting registered triggers",
+    () => getRegisteredTriggers(glueDevPort),
+  );
   let newDeploymentId: string;
   let glueId: string;
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, registeredTriggers, "dev");
+    const newGlue = await runStep(
+      "Creating glue...",
+      () => createGlue(glueName, registeredTriggers, "dev"),
+    );
     if (!newGlue.currentDeploymentId) {
       throw new Error("Failed to create glue");
     }
     newDeploymentId = newGlue.currentDeploymentId;
     glueId = newGlue.id;
   } else {
-    const newDeployment = await createDeployment(
-      existingGlue.id,
-      registeredTriggers,
+    const newDeployment = await runStep(
+      "Creating new deployment...",
+      () => createDeployment(existingGlue.id, registeredTriggers),
     );
     newDeploymentId = newDeployment.id;
     glueId = existingGlue.id;
   }
 
-  await pollForDeploymentToBeReady(newDeploymentId);
+  await runStep(
+    "Waiting for deployment to be ready",
+    () => pollForDeploymentToBeReady(newDeploymentId),
+  );
 
-  const glue = await getGlueById(glueId);
+  const glue = await runStep(
+    "Getting registered triggers",
+    () => getGlueById(glueId),
+  );
   if (!glue) {
     throw new Error("Glue not found");
   }
 
-  runWebsocket(glue, glueDevPort);
+  runStep("Running websocket", () => runWebsocket(glue, glueDevPort));
 
   await localRunnerEndPromise;
 }
