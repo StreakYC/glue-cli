@@ -7,10 +7,6 @@ import { whoami } from "./commands/whoami.ts";
 import { list } from "./commands/list.ts";
 import denoJson from "./deno.json" with { type: "json" };
 
-Deno.addSignalListener("SIGINT", () => {
-  Deno.exit();
-});
-
 const cmd = new Command()
   .name("glue")
   .version(denoJson.version)

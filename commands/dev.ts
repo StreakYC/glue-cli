@@ -18,6 +18,10 @@ interface DevOptions {
 }
 
 export async function dev(options: DevOptions, file: string) {
+  Deno.addSignalListener("SIGINT", () => {
+    Deno.exit();
+  });
+
   const glueName = options.name ?? basename(file).replace(/\.[^.]+$/, "");
   const glueDevPort = 8567; // TODO pick a random unused port or maybe use a unix socket
 
