@@ -74,7 +74,13 @@ function scheduleInit() {
     });
     app.post("/__glue__/triggerEvent", async (c) => {
       const body = TriggerEvent.parse(await c.req.json());
+      console.log(`[${new Date().toISOString()}] Trigger ${body.type}(${body.label}) received ----------------------------`);
+      const start = performance.now();
       await handleTrigger(body);
+      const elapsed = performance.now() - start;
+      console.log(
+        `[${new Date().toISOString()}] Trigger ${body.type}(${body.label}) handled (${Math.round(elapsed * 10) / 10}ms) ----------------------------`,
+      );
       return c.text("Success");
     });
 

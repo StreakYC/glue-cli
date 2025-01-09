@@ -40,36 +40,50 @@ export async function dev(options: DevOptions, file: string) {
     }
   }
 
-  const existingGlue = await runStep("Checking for existing glue", () => getGlueByName(glueName, "dev"));
+  const existingGlue = await runStep("Checking for an existing glue", () => getGlueByName(glueName, "dev"));
 
-  const localRunnerEndPromise = (await runStep("Starting local runner...", () => spawnLocalDenoRunner(file, options, env))).endPromise;
+  const localRunnerEndPromise = spawnLocalDenoRunner(file, options, env).endPromise;
 
-  await runStep("Waiting for local runner to be ready", () => waitForLocalRunnerToBeReady(glueDevPort));
-  const registeredTriggers = await runStep("Getting registered triggers", () => getRegisteredTriggers(glueDevPort));
+  await runStep("Booting up your code", () => waitForLocalRunnerToBeReady(glueDevPort));
+  const registeredTriggers = await runStep("Figuring out your triggers", () => getRegisteredTriggers(glueDevPort));
+  console.log(`  Found ${registeredTriggers.length} registered triggers`);
 
   let newDeploymentId: string;
   let glueId: string;
   if (!existingGlue) {
-    const newGlue = await runStep("Creating glue...", () => createGlue(glueName, registeredTriggers, "dev"));
+    const newGlue = await runStep("Creating glue", () => createGlue(glueName, registeredTriggers, "dev"));
     if (!newGlue.currentDeploymentId) {
       throw new Error("Failed to create glue");
     }
     newDeploymentId = newGlue.currentDeploymentId;
     glueId = newGlue.id;
   } else {
-    const newDeployment = await runStep("Creating new deployment...", () => createDeployment(existingGlue.id, registeredTriggers));
+    const newDeployment = await runStep("Creating new deployment", () => createDeployment(existingGlue.id, registeredTriggers));
     newDeploymentId = newDeployment.id;
     glueId = existingGlue.id;
   }
 
-  await runStep("Waiting for deployment to be ready", () => pollForDeploymentToBeReady(newDeploymentId));
+  const glue = await runStep("Waiting for deployment to be ready", async () => {
+    await pollForDeploymentToBeReady(newDeploymentId);
+    const glue = await getGlueById(glueId);
+    if (!glue) {
+      throw new Error("Glue not found");
+    }
+    return glue;
+  });
 
-  const glue = await runStep("Getting registered triggers", () => getGlueById(glueId));
-  if (!glue) {
-    throw new Error("Glue not found");
-  }
+  await runStep("Setting up tunnel to local runner", () => runWebsocket(glue, glueDevPort));
 
-  await runStep("Running websocket", () => runWebsocket(glue, glueDevPort));
+  const triggersString = glue.currentDeployment?.triggers?.map((t) => {
+    let info = `    ${t.type} ${t.label}: `;
+    if (t.type === "webhook") {
+      info += t.data.webhookUrl;
+    } else if (t.type === "cron") {
+      info += t.data.cron;
+    }
+    return info;
+  }).join("\n");
+  console.log(`  Triggers:\n${triggersString}`);
 
   await localRunnerEndPromise;
 }
