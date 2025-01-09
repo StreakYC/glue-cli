@@ -108,6 +108,7 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
+      "--quiet",
       "--watch",
       "--env-file",
       "--no-prompt",
@@ -135,7 +136,7 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
 
   const ws = new WebSocket(glue.devEventsWebsocketUrl);
   ws.addEventListener("open", () => {
-    console.log("Websocket connected.");
+    // console.log("Websocket connected.");
   });
   ws.addEventListener("message", (event) => {
     if (event.data === "ping") {

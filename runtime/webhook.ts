@@ -66,6 +66,7 @@ function scheduleInit() {
     const GLUE_DEV_PORT = Deno.env.get("GLUE_DEV_PORT");
 
     const serveOptions: Deno.ServeTcpOptions = GLUE_DEV_PORT ? { hostname: "127.0.0.1", port: Number(GLUE_DEV_PORT) } : {};
+    serveOptions.onListen = () => {};
 
     const app = new Hono();
     app.get("/__glue__/getRegisteredTriggers", (c) => {
