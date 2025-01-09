@@ -19,5 +19,8 @@
     "@std/fmt": "jsr:@std/fmt@^1.0.3",
     "@std/cli": "jsr:@std/cli@^1.0.6"
   },
+  "fmt": {
+    "lineWidth": 160
+  },
   "version": "0.1.0"
 }
