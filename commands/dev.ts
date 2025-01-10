@@ -5,6 +5,8 @@ import { basename } from "@std/path";
 import { RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
 import { GlueDTO } from "../backend.ts";
 import { runStep } from "../ui.ts";
+import * as mod from "@std/fmt/colors";
+
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
   event: TriggerEvent,
@@ -74,15 +76,19 @@ export async function dev(options: DevOptions, file: string) {
 
   await runStep("Setting up tunnel to local runner", () => runWebsocket(glue, glueDevPort));
 
-  const triggersString = glue.currentDeployment?.triggers?.map((t) => {
-    let info = `    ${t.type} ${t.label}: `;
-    if (t.type === "webhook") {
-      info += t.data.webhookUrl;
-    } else if (t.type === "cron") {
-      info += t.data.cron;
-    }
-    return info;
-  }).join("\n");
+  const triggersString = glue.currentDeployment?.triggers
+    ?.sort((a, b) => a.type.localeCompare(b.type))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
+    .map((t) => {
+      let info = `    ${t.type} ${t.label}: `;
+      if (t.type === "webhook") {
+        info += t.data.webhookUrl;
+      } else if (t.type === "cron") {
+        info += t.data.cron;
+      }
+      return info;
+    })
+    .join("\n");
   console.log(`  Triggers:\n${triggersString}`);
 
   await localRunnerEndPromise;
@@ -97,6 +103,10 @@ async function pollForDeploymentToBeReady(deploymentId: string) {
     if (deployment.isInitializing) {
       throw new Error("Deployment not ready");
     }
+  }, {
+    multiplier: 1,
+    minTimeout: 500,
+    maxAttempts: 20,
   });
 }
 
@@ -127,11 +137,12 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
     args: [
       "run",
       "--quiet",
-      "--watch",
+      // "--watch", // TODO commented out for now because when the user code changes, we need to potentially resetup the triggers
       "--env-file",
       "--no-prompt",
       "--allow-env",
       "--allow-net",
+      "--allow-sys", // TODO check if this is supported in deno subhosting
       file,
     ],
     stdin: options.allowStdin ? "inherit" : "null",
@@ -156,7 +167,7 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
   ws.addEventListener("open", () => {
     // console.log("Websocket connected.");
   });
-  ws.addEventListener("message", (event) => {
+  ws.addEventListener("message", async (event) => {
     if (event.data === "ping") {
       ws.send("pong");
       return;
@@ -165,11 +176,18 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
     }
     const message = ServerWebsocketMessage.parse(JSON.parse(event.data));
     if (message.type === "trigger") {
-      fetch(`http://127.0.0.1:${glueDevPort}/__glue__/triggerEvent`, {
+      const separator = mod.cyan("----------------------------");
+      const triggerStartString = mod.cyan(`Trigger ${message.event.type}(${message.event.label}) received`);
+      console.log(`\n${getFormattedDateString()} ${triggerStartString} ${separator}`);
+      const start = performance.now();
+      await fetch(`http://127.0.0.1:${glueDevPort}/__glue__/triggerEvent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(message.event satisfies TriggerEvent),
       });
+      const elapsed = performance.now() - start;
+      const triggerEndString = mod.cyan(`Trigger ${message.event.type}(${message.event.label}) handled`);
+      console.log(`${getFormattedDateString()} ${triggerEndString} ${getFormattedElapsedString(elapsed)} ${separator}`);
     } else {
       console.warn("Unknown websocket message:", message);
     }
@@ -182,4 +200,12 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
     console.log("Websocket closed:", event);
     // TODO reconnect
   });
+}
+
+function getFormattedDateString() {
+  return mod.dim(`[${new Date().toISOString()}]`);
+}
+
+function getFormattedElapsedString(elapsed: number) {
+  return mod.dim(`(${Math.round(elapsed * 10) / 10}ms)`);
 }
