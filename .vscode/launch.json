@@ -6,7 +6,7 @@
   "configurations": [
     {
       "request": "launch",
-      "name": "Dev debug",
+      "name": "CLI debug",
       "type": "node",
       "cwd": "${workspaceFolder}",
       "env": {},
