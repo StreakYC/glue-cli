@@ -1,9 +1,9 @@
-import { onGmailEvent, onWebhook } from "./runtime/webhook.ts";
+import { onGmailMessage, onWebhook } from "./runtime/glue.ts";
 // import { IncomingWebhook } from "npm:@slack/webhook";
 
 // const slackWebhook = new IncomingWebhook(Deno.env.get("SLACK_WEBHOOK_URL")!);
 
-onGmailEvent((event) => {
+onGmailMessage((event) => {
   console.log("got gmail event", event);
 });
 

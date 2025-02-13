@@ -13,7 +13,7 @@ interface CommonTriggerOptions {
   label?: string;
 }
 
-export function onGmailEvent(fn: (event: GmailEvent) => void | Promise<void>, options: CommonTriggerOptions = {}): void {
+export function onGmailMessage(fn: (event: GmailEvent) => void | Promise<void>, options: CommonTriggerOptions = {}): void {
   scheduleInit();
 
   const label = options.label ?? String(nextAutomaticLabel++);
