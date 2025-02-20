@@ -63,29 +63,23 @@ export interface DeploymentDTO {
   createdAt: number; // milliseconds since epoch
   updatedAt: number; // milliseconds since epoch
   triggers?: TriggerDTO[];
+  triggerStorage?: Record<string, unknown>;
 }
 
-export type TriggerDTO = WebhookTriggerDTO | CronTriggerDTO;
-export interface TriggerDTOBase {
+export interface TriggerDTO {
   id: string;
   deploymentId: string;
   type: string;
   label: string;
+  routingId?: string;
+  accountId?: string;
+  config?: Record<string, unknown>;
+
   createdAt: number;
   updatedAt: number;
-  stableId?: string;
-}
-export interface WebhookTriggerDTO extends TriggerDTOBase {
-  type: "webhook";
-  data: {
-    webhookUrl: string;
-  };
-}
-export interface CronTriggerDTO extends TriggerDTOBase {
-  type: "cron";
-  data: {
-    cron: string;
-  };
+
+  accountSetupUrl?: string;
+  description?: string;
 }
 
 export interface GlueDTO {

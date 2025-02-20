@@ -79,15 +79,7 @@ export async function dev(options: DevOptions, file: string) {
   const triggersString = glue.currentDeployment?.triggers
     ?.sort((a, b) => a.type.localeCompare(b.type))
     .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
-    .map((t) => {
-      let info = `    ${t.type} ${t.label}: `;
-      if (t.type === "webhook") {
-        info += t.data.webhookUrl;
-      } else if (t.type === "cron") {
-        info += t.data.cron;
-      }
-      return info;
-    })
+    .map((t) => `    ${t.type} ${t.label}: ${t.description}`)
     .join("\n");
   console.log(`  Triggers:\n${triggersString}`);
 
