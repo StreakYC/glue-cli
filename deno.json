@@ -1,7 +1,7 @@
 {
   "tasks": {
     "cli": "deno run --allow-env --allow-read --allow-net --allow-run main.ts",
-    "debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run main.ts",
+    "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run main.ts",
     "check": "deno check main.ts runtime/glue.ts",
     "test": "deno test --permit-no-files"
   },

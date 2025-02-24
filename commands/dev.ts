@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createDeployment, createGlue, getDeploymentById, getGlueById, getGlueByName } from "../backend.ts";
+import { createDeployment, createGlue, getBuildLogs, getDeploymentById, getGlueById, getGlueByName } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
@@ -64,6 +64,12 @@ export async function dev(options: DevOptions, file: string) {
     newDeploymentId = newDeployment.id;
     glueId = existingGlue.id;
   }
+
+  await runStep("Watching deployment logs", async () => {
+    for await (const buildLog of getBuildLogs(newDeploymentId)) {
+      console.log(buildLog);
+    }
+  });
 
   const glue = await runStep("Waiting for deployment to be ready", async () => {
     await pollForDeploymentToBeReady(newDeploymentId);

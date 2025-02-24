@@ -1,4 +1,5 @@
 import { getLoggedInUser } from "./auth.ts";
+import { delay } from "@std/async/delay";
 import { encodeBase64 } from "@std/encoding";
 import { GLUE_API_SERVER } from "./common.ts";
 import { RegisteredTrigger } from "./runtime/common.ts";
@@ -52,6 +53,41 @@ export async function createDeployment(glueId: string, registeredTriggers: Regis
 
 export async function getDeploymentById(id: string): Promise<DeploymentDTO | undefined> {
   return await backendRequest<DeploymentDTO>(`/deployments/${id}`);
+}
+
+interface BuildLogsResponse {
+  logs: BuildStepLogDTO[];
+}
+
+type StepStatus = "success" | "failure" | "running";
+
+interface BuildStepLogDTO {
+  id: string;
+  deploymentId: string;
+  stepStatus: StepStatus;
+  text: string;
+  previousLogId?: string;
+  code?: string;
+  createdAt: number;
+}
+
+export async function* getBuildLogs(deploymentId: string): AsyncIterable<BuildStepLogDTO> {
+  let dateAfter: number | undefined;
+  while (true) {
+    const params = new URLSearchParams();
+    if (dateAfter != null) {
+      params.set("dateAfter", dateAfter.toString());
+    }
+    const res = await backendRequest<BuildLogsResponse>(`/deployments/${deploymentId}/buildlogs?${params.toString()}`);
+    for (const log of res.logs) {
+      yield log;
+      if (log.code === "DEPLOYMENT_COMPLETE") {
+        return;
+      }
+    }
+    dateAfter = res.logs.at(-1)?.createdAt;
+    await delay(5_000);
+  }
 }
 
 /** taken from glue-backend */
