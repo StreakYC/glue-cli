@@ -1,5 +1,6 @@
 import { basename, dirname, relative } from "@std/path";
 import { walk } from "@std/fs/walk";
+import { exists } from "@std/fs/exists";
 import { runStep } from "../ui.ts";
 import { createDeployment, CreateDeploymentParams, createGlue, DeploymentAsset, getBuildLogs, getGlueById, getGlueByName } from "../backend.ts";
 
@@ -59,6 +60,14 @@ async function getCreateDeploymentParams(file: string): Promise<CreateDeployment
   const entryPointUrl = relative(fileDir, file);
 
   const filesToUpload: string[] = [entryPointUrl];
+
+  const uploadIfExists = ["deno.json"];
+  for (const file of uploadIfExists) {
+    if (await exists(file)) {
+      filesToUpload.push(file);
+    }
+  }
+
   for await (
     const dirEntry of walk(fileDir, {
       exts: ["ts", "js"],
