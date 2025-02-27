@@ -1,5 +1,6 @@
 import { getLoggedInUser } from "./auth.ts";
 import { delay } from "@std/async/delay";
+import { zip } from "@std/collections/zip";
 import { encodeBase64 } from "@std/encoding";
 import { GLUE_API_SERVER } from "./common.ts";
 import { RegisteredTrigger } from "./runtime/common.ts";
@@ -55,51 +56,69 @@ export async function getDeploymentById(id: string): Promise<DeploymentDTO | und
   return await backendRequest<DeploymentDTO>(`/deployments/${id}`);
 }
 
-interface BuildLogsResponse {
-  logs: BuildStepLogDTO[];
+async function getDeploymentByIdWithLogs(id: string): Promise<DeploymentWithLogsDTO | undefined> {
+  return await backendRequest<DeploymentWithLogsDTO>(`/deployments/${id}?includeBuildSteps=true`);
 }
 
-type StepStatus = "success" | "failure" | "running";
-
-interface BuildStepLogDTO {
-  id: string;
-  deploymentId: string;
-  stepStatus: StepStatus;
-  text: string;
-  previousLogId?: string;
-  code?: string;
-  createdAt: number;
+function areDeploymentsWithLogsEqual(a: DeploymentWithLogsDTO, b: DeploymentWithLogsDTO): boolean {
+  if (a.status !== b.status || a.buildSteps.length !== b.buildSteps.length) {
+    return false;
+  }
+  if (
+    zip(a.buildSteps, b.buildSteps)
+      .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.title !== stepB.title || stepA.status !== stepB.status)
+  ) {
+    return false;
+  }
+  return true;
 }
 
-export async function* getBuildLogs(deploymentId: string): AsyncIterable<BuildStepLogDTO> {
-  let dateAfter: number | undefined;
+export async function* getBuildLogs(deploymentId: string): AsyncIterable<DeploymentWithLogsDTO> {
+  let lastDeployment: DeploymentWithLogsDTO | undefined;
   while (true) {
-    const params = new URLSearchParams();
-    if (dateAfter != null) {
-      params.set("dateAfter", dateAfter.toString());
+    const deployment = await getDeploymentByIdWithLogs(deploymentId);
+    if (!deployment) {
+      throw new Error(`Deployment ${deploymentId} not found`);
     }
-    const res = await backendRequest<BuildLogsResponse>(`/deployments/${deploymentId}/buildlogs?${params.toString()}`);
-    for (const log of res.logs) {
-      yield log;
-      if (log.code === "DEPLOYMENT_COMPLETE") {
+    if (!lastDeployment || !areDeploymentsWithLogsEqual(lastDeployment, deployment)) {
+      lastDeployment = deployment;
+      yield deployment;
+      if (deployment.status !== "pending") {
         return;
       }
     }
-    dateAfter = res.logs.at(-1)?.createdAt;
     await delay(5_000);
   }
 }
+
+type DeploymentStatus = "pending" | "success" | "failure";
 
 /** taken from glue-backend */
 export interface DeploymentDTO {
   id: string;
   glueId: string;
-  isInitializing: boolean;
+  status: DeploymentStatus;
   needsUserAuth: boolean;
   createdAt: number; // milliseconds since epoch
   updatedAt: number; // milliseconds since epoch
   triggers?: TriggerDTO[];
   triggerStorage?: Record<string, unknown>;
+}
+
+type StepStatus = "success" | "failure" | "running";
+
+export interface BuildStepDTO {
+  name: string;
+  deploymentId: string;
+  title: string;
+  status: StepStatus;
+  text?: string;
+  startTime?: number;
+  endTime?: number;
+}
+
+export interface DeploymentWithLogsDTO extends DeploymentDTO {
+  buildSteps: BuildStepDTO[];
 }
 
 export interface TriggerDTO {

@@ -13,10 +13,11 @@
     "jsr:@std/assert@~1.0.6": "1.0.8",
     "jsr:@std/async@^1.0.9": "1.0.9",
     "jsr:@std/cli@^1.0.6": "1.0.8",
+    "jsr:@std/collections@^1.0.10": "1.0.10",
     "jsr:@std/encoding@^1.0.5": "1.0.5",
     "jsr:@std/encoding@~1.0.5": "1.0.5",
     "jsr:@std/fmt@^1.0.3": "1.0.3",
-    "jsr:@std/fmt@~1.0.2": "1.0.2",
+    "jsr:@std/fmt@~1.0.2": "1.0.3",
     "jsr:@std/fs@*": "1.0.6",
     "jsr:@std/fs@^1.0.6": "1.0.6",
     "jsr:@std/internal@^1.0.5": "1.0.5",
@@ -93,6 +94,9 @@
     },
     "@std/cli@1.0.8": {
       "integrity": "3762d8dc9a373715c08d871c38d45e637b25266f013a1d0bbe560bca409de94e"
+    },
+    "@std/collections@1.0.10": {
+      "integrity": "903af106a3d92970d74e20f7ebff77d9658af9bef4403f1dc42a7801c0575899"
     },
     "@std/encoding@1.0.5": {
       "integrity": "ecf363d4fc25bd85bd915ff6733a7e79b67e0e7806334af15f4645c569fefc04"
@@ -262,6 +266,7 @@
       "jsr:@std/assert@1",
       "jsr:@std/async@^1.0.9",
       "jsr:@std/cli@^1.0.6",
+      "jsr:@std/collections@^1.0.10",
       "jsr:@std/encoding@^1.0.5",
       "jsr:@std/fmt@^1.0.3",
       "jsr:@std/fs@^1.0.6",

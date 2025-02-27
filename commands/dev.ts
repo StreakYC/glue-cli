@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createDeployment, createGlue, getBuildLogs, getDeploymentById, getGlueById, getGlueByName } from "../backend.ts";
+import { createDeployment, createGlue, getBuildLogs, getDeploymentById, getDeploymentByIdWithLogs, getGlueById, getGlueByName } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
@@ -66,13 +66,12 @@ export async function dev(options: DevOptions, file: string) {
   }
 
   await runStep("Watching deployment logs", async () => {
-    for await (const buildLog of getBuildLogs(newDeploymentId)) {
-      console.log(buildLog);
+    for await (const deployment of getBuildLogs(newDeploymentId)) {
+      console.log(deployment.buildSteps);
     }
   });
 
-  const glue = await runStep("Waiting for deployment to be ready", async () => {
-    await pollForDeploymentToBeReady(newDeploymentId);
+  const glue = await runStep("Fetching glue", async () => {
     const glue = await getGlueById(glueId);
     if (!glue) {
       throw new Error("Glue not found");
@@ -90,22 +89,6 @@ export async function dev(options: DevOptions, file: string) {
   console.log(`  Triggers:\n${triggersString}`);
 
   await localRunnerEndPromise;
-}
-
-async function pollForDeploymentToBeReady(deploymentId: string) {
-  await retry(async () => {
-    const deployment = await getDeploymentById(deploymentId);
-    if (!deployment) {
-      throw new Error("Deployment not found");
-    }
-    if (deployment.isInitializing) {
-      throw new Error("Deployment not ready");
-    }
-  }, {
-    multiplier: 1,
-    minTimeout: 500,
-    maxAttempts: 20,
-  });
 }
 
 async function waitForLocalRunnerToBeReady(glueDevPort: number) {
