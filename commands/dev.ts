@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createDeployment, createGlue, getBuildLogs, getDeploymentById, getDeploymentByIdWithLogs, getGlueById, getGlueByName } from "../backend.ts";
+import { createDeployment, createGlue, getBuildLogs, getGlueById, getGlueByName } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
