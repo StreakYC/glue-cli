@@ -1,9 +1,59 @@
+import { z } from "zod";
 import { getLoggedInUser } from "./auth.ts";
 import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { encodeBase64 } from "@std/encoding";
 import { GLUE_API_SERVER } from "./common.ts";
-import { RegisteredTrigger } from "./runtime/common.ts";
+
+export const GlueEnvironment = z.enum(["dev", "deploy"]);
+export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
+
+export const GlueState = z.enum(["running", "notRunning"]);
+export type GlueState = z.infer<typeof GlueState>;
+
+// based on type from glue-backend
+export const TriggerCreateParams = z.object({
+  type: z.string(),
+  label: z.string(),
+  config: z.object({}).optional(),
+});
+export type TriggerCreateParams = z.infer<typeof TriggerCreateParams>;
+
+export const DeploymentAsset = z.object({
+  kind: z.literal("file"),
+  content: z.string(),
+  encoding: z.enum(["utf-8", "base64"]).optional(),
+});
+export type DeploymentAsset = z.infer<typeof DeploymentAsset>;
+
+const DeploymentContent = z.object({
+  entryPointUrl: z.string(),
+  assets: z.record(z.string(), DeploymentAsset),
+});
+export type DeploymentContent = z.infer<typeof DeploymentContent>;
+
+const CreateDeploymentParams = z.object({
+  deploymentContent: DeploymentContent.optional(),
+  optimisticTriggers: z.array(TriggerCreateParams).optional(),
+});
+export type CreateDeploymentParams = z.infer<typeof CreateDeploymentParams>;
+
+export const CreateGlueParams = z.object({
+  name: z.string(),
+  environment: GlueEnvironment,
+  description: z.string().optional().nullable(),
+  deployment: CreateDeploymentParams,
+});
+export type CreateGlueParams = z.infer<typeof CreateGlueParams>;
+
+export const UpdateGlueParams = z.object({
+  name: z.string().optional(),
+  description: z.string().optional().nullable(),
+  state: GlueState.optional(),
+  currentDeploymentId: z.string().optional(),
+  triggerStorage: z.record(z.string(), z.unknown()).optional(),
+});
+export type UpdateGlueParams = z.infer<typeof UpdateGlueParams>;
 
 export async function backendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const userEmail = await getLoggedInUser();
@@ -19,7 +69,7 @@ export async function backendRequest<T>(path: string, options: RequestInit = {})
   return res.json() as Promise<T>;
 }
 
-export async function getGlueByName(name: string, environment: string): Promise<GlueDTO | undefined> {
+export async function getGlueByName(name: string, environment: GlueEnvironment): Promise<GlueDTO | undefined> {
   const params = new URLSearchParams({ name, environment });
   const glues = await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
   return glues[0];
@@ -29,24 +79,26 @@ export async function getGlueById(id: string): Promise<GlueDTO | undefined> {
   return await backendRequest<GlueDTO>(`/glues/${id}`);
 }
 
-export async function createGlue(name: string, registeredTriggers: RegisteredTrigger[], environment: string): Promise<GlueDTO> {
+export async function createGlue(name: string, deployment: CreateDeploymentParams, environment: GlueEnvironment): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues`, {
     method: "POST",
-    body: JSON.stringify({
-      name,
-      deployment: { optimisticTriggers: registeredTriggers },
-      environment,
-    }),
+    body: JSON.stringify(
+      {
+        name,
+        deployment,
+        environment,
+      } satisfies CreateGlueParams,
+    ),
   });
   return res;
 }
 
-export async function createDeployment(glueId: string, registeredTriggers: RegisteredTrigger[]) {
+export async function createDeployment(glueId: string, deployment: CreateDeploymentParams): Promise<DeploymentDTO> {
   const res = await backendRequest<DeploymentDTO>(
     `/glues/${glueId}/deployments`,
     {
       method: "POST",
-      body: JSON.stringify({ optimisticTriggers: registeredTriggers }),
+      body: JSON.stringify(deployment),
     },
   );
   return res;
@@ -151,8 +203,6 @@ export interface GlueDTO {
   currentDeploymentId?: string;
   devEventsWebsocketUrl?: string;
 }
-
-export type GlueEnvironment = "dev" | "deploy";
 
 export interface UserDTO {
   id: string;

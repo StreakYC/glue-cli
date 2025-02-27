@@ -53,14 +53,14 @@ export async function dev(options: DevOptions, file: string) {
   let newDeploymentId: string;
   let glueId: string;
   if (!existingGlue) {
-    const newGlue = await runStep("Creating glue", () => createGlue(glueName, registeredTriggers, "dev"));
+    const newGlue = await runStep("Creating glue", () => createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev"));
     if (!newGlue.currentDeploymentId) {
       throw new Error("Failed to create glue");
     }
     newDeploymentId = newGlue.currentDeploymentId;
     glueId = newGlue.id;
   } else {
-    const newDeployment = await runStep("Creating new deployment", () => createDeployment(existingGlue.id, registeredTriggers));
+    const newDeployment = await runStep("Creating new deployment", () => createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers }));
     newDeploymentId = newDeployment.id;
     glueId = existingGlue.id;
   }
