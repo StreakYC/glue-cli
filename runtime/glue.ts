@@ -2,7 +2,9 @@
 // stable.
 import { Hono } from "hono";
 import { GmailEvent, RegisteredTrigger, TriggerEvent, WebhookEvent } from "./common.ts";
-import { Log, runInLoggingContext } from "./logging.ts";
+import { Log, patchConsoleGlobal, runInLoggingContext } from "./logging.ts";
+
+patchConsoleGlobal();
 
 interface TriggerEventResponse {
   logs: Log[];
