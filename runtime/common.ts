@@ -32,3 +32,5 @@ export interface RegisteredTrigger {
   label: string;
   type: string;
 }
+
+export type Awaitable<T> = T | Promise<T>;

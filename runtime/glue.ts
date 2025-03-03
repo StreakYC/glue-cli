@@ -2,6 +2,11 @@
 // stable.
 import { Hono } from "hono";
 import { GmailEvent, RegisteredTrigger, TriggerEvent, WebhookEvent } from "./common.ts";
+import { Log, runInLoggingContext } from "./logging.ts";
+
+interface TriggerEventResponse {
+  logs: Log[];
+}
 
 const registeredWebhooks = new Map<string, (event: WebhookEvent) => void | Promise<void>>();
 
@@ -106,8 +111,9 @@ function scheduleInit() {
     });
     app.post("/__glue__/triggerEvent", async (c) => {
       const body = TriggerEvent.parse(await c.req.json());
-      await handleTrigger(body);
-      return c.text("Success");
+      const { logs } = await runInLoggingContext(() => handleTrigger(body));
+      const response: TriggerEventResponse = { logs };
+      return c.json(response);
     });
 
     Deno.serve(serveOptions, app.fetch);
