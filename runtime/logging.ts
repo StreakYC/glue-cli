@@ -59,11 +59,24 @@ export function manualLog(log: Log) {
   }
 }
 
-export async function runInLoggingContext<T>(fn: () => Awaitable<T>): Promise<{ result: T; logs: Log[] }> {
+export interface Logger {
+  log(...args: unknown[]): void;
+  error(...args: unknown[]): void;
+}
+
+export async function runInLoggingContext<T>(fn: (logger: Logger) => Awaitable<T>): Promise<{ result: T; logs: Log[] }> {
   const logs: Log[] = [];
   const logContext: LogContext = { logs };
+  const logger: Logger = {
+    log: (...args) => {
+      logContext.logs?.push({ timestamp: Date.now(), type: "stdout", text: serializeConsoleArgumentsToString(args) });
+    },
+    error: (...args) => {
+      logContext.logs?.push({ timestamp: Date.now(), type: "stderr", text: serializeConsoleArgumentsToString(args) });
+    },
+  };
   // TODO do we need to handle errors here?
-  const result: T = await asyncLocalStorage.run(logContext, fn);
+  const result: T = await asyncLocalStorage.run(logContext, () => fn(logger));
   logContext.logs = undefined;
   return { result, logs };
 }
