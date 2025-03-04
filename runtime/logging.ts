@@ -12,6 +12,8 @@ interface LogContext {
   logs: Log[] | undefined;
 }
 
+const originalConsoleMethods = { ...console };
+
 const asyncLocalStorage = new AsyncLocalStorage<LogContext>();
 
 export function patchConsoleGlobal() {
@@ -69,10 +71,14 @@ export async function runInLoggingContext<T>(fn: (logger: Logger) => Awaitable<T
   const logContext: LogContext = { logs };
   const logger: Logger = {
     log: (...args) => {
-      logContext.logs?.push({ timestamp: Date.now(), type: "stdout", text: serializeConsoleArgumentsToString(args) });
+      const timestamp = Date.now();
+      originalConsoleMethods.log.apply(console, args);
+      logContext.logs?.push({ timestamp, type: "stdout", text: serializeConsoleArgumentsToString(args) });
     },
     error: (...args) => {
-      logContext.logs?.push({ timestamp: Date.now(), type: "stderr", text: serializeConsoleArgumentsToString(args) });
+      const timestamp = Date.now();
+      originalConsoleMethods.error.apply(console, args);
+      logContext.logs?.push({ timestamp, type: "stderr", text: serializeConsoleArgumentsToString(args) });
     },
   };
   // TODO do we need to handle errors here?
