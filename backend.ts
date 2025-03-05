@@ -8,9 +8,6 @@ import { GLUE_API_SERVER } from "./common.ts";
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
 export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
 
-export const GlueState = z.enum(["running", "notRunning"]);
-export type GlueState = z.infer<typeof GlueState>;
-
 // based on type from glue-backend
 export const TriggerCreateParams = z.object({
   type: z.string(),
@@ -49,7 +46,7 @@ export type CreateGlueParams = z.infer<typeof CreateGlueParams>;
 export const UpdateGlueParams = z.object({
   name: z.string().optional(),
   description: z.string().optional().nullable(),
-  state: GlueState.optional(),
+  running: z.boolean().optional(),
   currentDeploymentId: z.string().optional(),
   triggerStorage: z.record(z.string(), z.unknown()).optional(),
 });
@@ -114,6 +111,10 @@ export async function createDeployment(glueId: string, deployment: CreateDeploym
 
 export async function getDeploymentById(id: string): Promise<DeploymentDTO | undefined> {
   return await backendRequest<DeploymentDTO>(`/deployments/${id}`);
+}
+
+export async function getDeployments(id: string): Promise<DeploymentDTO[]> {
+  return await backendRequest<DeploymentDTO[]>(`/glues/${id}/deployments`);
 }
 
 async function getDeploymentByIdWithLogs(id: string): Promise<DeploymentWithLogsDTO | undefined> {
@@ -206,7 +207,7 @@ export interface GlueDTO {
   createdAt: number;
   updatedAt: number;
   creator: UserDTO;
-  state: string;
+  running: boolean;
   currentDeployment?: DeploymentDTO;
   currentDeploymentId?: string;
   devEventsWebsocketUrl?: string;
