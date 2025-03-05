@@ -75,6 +75,14 @@ export async function getGlueByName(name: string, environment: GlueEnvironment):
   return glues[0];
 }
 
+export async function getGlues(environment: GlueEnvironment, nameFilter?: string): Promise<GlueDTO[]> {
+  const params = new URLSearchParams({ environment });
+  if (nameFilter) {
+    params.set("name", nameFilter);
+  }
+  return await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
+}
+
 export async function getGlueById(id: string): Promise<GlueDTO | undefined> {
   return await backendRequest<GlueDTO>(`/glues/${id}`);
 }

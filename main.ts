@@ -1,16 +1,17 @@
-import { Command } from "@cliffy/command";
+import { Command, EnumType } from "@cliffy/command";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
 import { logout } from "./commands/logout.ts";
-import { whoami } from "./commands/whoami.ts";
-import { list } from "./commands/list.ts";
+import { whoami } from "./commands/whoami.tsx";
+import { list } from "./commands/list.tsx";
 import denoJson from "./deno.json" with { type: "json" };
 
 const cmd = new Command()
   .name("glue")
   .version(denoJson.version)
   .description("Glue CLI utility")
+  .globalType("format", new EnumType(["table", "json"]))
   .action(() => {
     cmd.showHelp();
   })
@@ -36,6 +37,7 @@ const cmd = new Command()
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
   .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
+  .option("-f, --format <format:format>", "Output format")
   .action(list)
   // PAUSE ----------------------------
   .command("pause", "Pause a deployed glue")

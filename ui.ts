@@ -35,3 +35,19 @@ class DummySpinner {
   start() {}
   stop() {}
 }
+
+export function formatEpochMillis(ms: number) {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return Temporal.Instant
+    .fromEpochMilliseconds(ms)
+    .toZonedDateTimeISO(timeZone)
+    .toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+      timeZoneName: "short",
+    });
+}
