@@ -7,11 +7,10 @@ import { runStep } from "../ui.ts";
 import { Select } from "@cliffy/prompt/select";
 
 interface DeploymentsOptions {
-  name?: string;
   format?: "table" | "json";
 }
 
-export const deployments = async (options: DeploymentsOptions, name: string) => {
+export const deployments = async (options: DeploymentsOptions, name?: string) => {
   let glue: GlueDTO;
 
   if (name) {
