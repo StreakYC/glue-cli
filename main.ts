@@ -6,6 +6,7 @@ import { logout } from "./commands/logout.ts";
 import { whoami } from "./commands/whoami.ts";
 import { list } from "./commands/list.ts";
 import { deployments } from "./commands/deployments.ts";
+import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
 
 const cmd = new Command()
@@ -60,6 +61,11 @@ const cmd = new Command()
   .arguments("[name:string]")
   .option("-f, --format <format:formatType>", "Output format")
   .action(deployments)
+  // DESCRIBE ----------------------------
+  .command("describe", "Describe a glue or any other resource. Query can be a glue name or any id for any resource")
+  .arguments("[query:string]")
+  .option("-f, --format <format:formatType>", "Output format")
+  .action(describe)
   // LOGIN ----------------------------
   .command("login", "Log in to Glue")
   .action(login)

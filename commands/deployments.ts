@@ -1,10 +1,8 @@
-import { getDeployments, getGlueByName, getGlues, GlueDTO } from "../backend.ts";
+import { getDeployments, getGlueByName, GlueDTO } from "../backend.ts";
 import { Table } from "@cliffy/table";
-import { green, red } from "@std/fmt/colors";
-import { formatEpochMillis } from "../ui.ts";
+import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis } from "../ui.ts";
 import { runStep } from "../ui.ts";
-
-import { Select } from "@cliffy/prompt/select";
+import { askUserForGlue } from "./common.ts";
 
 interface DeploymentsOptions {
   format?: "table" | "json";
@@ -22,18 +20,7 @@ export const deployments = async (options: DeploymentsOptions, name?: string) =>
       return glueByName;
     });
   } else if (Deno.stdout.isTerminal()) {
-    const glues = await runStep("Loading glues...", async () => {
-      const glues = await getGlues("deploy");
-      if (glues.length === 0) {
-        throw new Error("No glues found");
-      }
-      return glues;
-    });
-    glue = await Select.prompt({
-      message: "Choose a glue",
-      search: true,
-      options: glues.map((glue) => ({ name: glue.name, value: glue })),
-    });
+    glue = await askUserForGlue();
   } else {
     throw new Error("You must provide a glue name when not running in a terminal");
   }
@@ -47,14 +34,19 @@ export const deployments = async (options: DeploymentsOptions, name?: string) =>
     return;
   }
 
-  // TODO make this table better
+  console.log("");
+  console.log("DEPLOYMENTS");
   new Table()
-    // .header(["Name", "State", "Created", "Last deployed"])
+    .header(["Id", "Status", "Created", "Triggers", "Build steps"])
     .body(
       deployments.map((
         deployment,
       ) => [
         deployment.id,
+        formatDeploymentStatus(deployment.status),
+        formatEpochMillis(deployment.createdAt),
+        deployment.triggers.length,
+        formatBuildSteps(deployment.buildSteps),
       ]),
     )
     .padding(4)

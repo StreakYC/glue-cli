@@ -117,11 +117,7 @@ export async function getDeployments(id: string): Promise<DeploymentDTO[]> {
   return await backendRequest<DeploymentDTO[]>(`/glues/${id}/deployments`);
 }
 
-async function getDeploymentByIdWithLogs(id: string): Promise<DeploymentWithLogsDTO | undefined> {
-  return await backendRequest<DeploymentWithLogsDTO>(`/deployments/${id}?includeBuildSteps=true`);
-}
-
-function areDeploymentsWithLogsEqual(a: DeploymentWithLogsDTO, b: DeploymentWithLogsDTO): boolean {
+function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   if (a.status !== b.status || a.buildSteps.length !== b.buildSteps.length) {
     return false;
   }
@@ -134,14 +130,15 @@ function areDeploymentsWithLogsEqual(a: DeploymentWithLogsDTO, b: DeploymentWith
   return true;
 }
 
-export async function* getBuildLogs(deploymentId: string): AsyncIterable<DeploymentWithLogsDTO> {
-  let lastDeployment: DeploymentWithLogsDTO | undefined;
+// TODO rename this
+export async function* getBuildLogs(deploymentId: string): AsyncIterable<DeploymentDTO> {
+  let lastDeployment: DeploymentDTO | undefined;
   while (true) {
-    const deployment = await getDeploymentByIdWithLogs(deploymentId);
+    const deployment = await getDeploymentById(deploymentId);
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }
-    if (!lastDeployment || !areDeploymentsWithLogsEqual(lastDeployment, deployment)) {
+    if (!lastDeployment || !areDeploymentsEqual(lastDeployment, deployment)) {
       lastDeployment = deployment;
       yield deployment;
       if (deployment.status !== "pending") {
@@ -152,7 +149,7 @@ export async function* getBuildLogs(deploymentId: string): AsyncIterable<Deploym
   }
 }
 
-type DeploymentStatus = "pending" | "success" | "failure";
+export type DeploymentStatus = "pending" | "success" | "failure";
 
 /** taken from glue-backend */
 export interface DeploymentDTO {
@@ -162,11 +159,11 @@ export interface DeploymentDTO {
   needsUserAuth: boolean;
   createdAt: number; // milliseconds since epoch
   updatedAt: number; // milliseconds since epoch
-  triggers?: TriggerDTO[];
-  triggerStorage?: Record<string, unknown>;
+  triggers: TriggerDTO[];
+  buildSteps: BuildStepDTO[];
 }
 
-type StepStatus = "success" | "failure" | "running";
+export type StepStatus = "success" | "failure" | "in_progress" | "not_started" | "skipped";
 
 export interface BuildStepDTO {
   name: string;
@@ -176,10 +173,6 @@ export interface BuildStepDTO {
   text?: string;
   startTime?: number;
   endTime?: number;
-}
-
-export interface DeploymentWithLogsDTO extends DeploymentDTO {
-  buildSteps: BuildStepDTO[];
 }
 
 export interface TriggerDTO {

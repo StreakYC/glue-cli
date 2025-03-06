@@ -1,5 +1,6 @@
 import { Spinner } from "@std/cli/unstable-spinner";
 import * as mod from "@std/fmt/colors";
+import { BuildStepDTO, DeploymentStatus } from "./backend.ts";
 
 export async function runStep<T>(
   message: string,
@@ -50,4 +51,36 @@ export function formatEpochMillis(ms: number) {
       hourCycle: "h23",
       timeZoneName: "short",
     });
+}
+
+export function formatBuildSteps(steps: BuildStepDTO[]) {
+  return steps.map((step) => {
+    return `${convertBuildStepStatusToEmoji(step.status)} ${step.name}`;
+  }).join("\n") + "\n";
+}
+
+export function formatDeploymentStatus(status: DeploymentStatus) {
+  switch (status) {
+    case "pending":
+      return mod.yellow("pending");
+    case "success":
+      return mod.green("success");
+    case "failure":
+      return mod.red("failure");
+  }
+}
+
+function convertBuildStepStatusToEmoji(status: string) {
+  switch (status) {
+    case "success":
+      return mod.green("◉");
+    case "failure":
+      return mod.red("◉");
+    case "in_progress":
+      return mod.yellow("◕");
+    case "not_started":
+      return mod.gray("○");
+    case "skipped":
+      return mod.gray("⊙");
+  }
 }
