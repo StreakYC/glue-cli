@@ -55,7 +55,7 @@ export function formatEpochMillis(ms: number) {
 
 export function formatBuildSteps(steps: BuildStepDTO[]) {
   return steps.map((step) => {
-    return `${convertBuildStepStatusToEmoji(step.status)} ${step.name}`;
+    return `${convertBuildStepStatusToEmoji(step.status)} ${step.title}`;
   }).join("\n") + "\n";
 }
 
