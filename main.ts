@@ -8,7 +8,7 @@ import { list } from "./commands/list.ts";
 import { deployments } from "./commands/deployments.ts";
 import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
-
+import { tail } from "./commands/tail.ts";
 const cmd = new Command()
   .name("glue")
   .version(denoJson.version)
@@ -66,6 +66,14 @@ const cmd = new Command()
   .arguments("[query:string]")
   .option("-f, --format <format:formatType>", "Output format")
   .action(describe)
+  // TAIL ----------------------------
+  .command("tail", "View a live stream of the executions of a glue. Provide a glue name or id.")
+  .arguments("[name:string]")
+  .option("-f, --format <format:formatType>", "Output format, if JSON, will use JSONL format", { default: "table" })
+  .option("-n, --number <number:number>", "Number of historical executions to print initially", { default: 10 })
+  .option("-N, --no-follow", "Don't follow the executions, just print the latest")
+  .option("-l --log-lines <logLines:number>", "Number of log lines to print for each execution. Set to 0 to hide log lines", { default: 10 })
+  .action(tail)
   // LOGIN ----------------------------
   .command("login", "Log in to Glue")
   .action(login)

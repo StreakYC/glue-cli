@@ -149,6 +149,30 @@ export async function* getBuildLogs(deploymentId: string): AsyncIterable<Deploym
   }
 }
 
+export async function getExecutions(glueId: string, limit: number, startingPoint: Date, direction: "asc" | "desc"): Promise<ExecutionDTO[]> {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    startingPoint: startingPoint.getTime().toString(),
+    direction,
+  });
+  return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
+}
+
+export interface ExecutionDTO {
+  id: string;
+  deploymentId: string;
+  logs?: Log[];
+  startedAt: number;
+  endedAt?: number;
+  state: string;
+}
+
+export interface Log {
+  timestamp: number;
+  type: "stdout" | "stderr";
+  text: string;
+}
+
 export type DeploymentStatus = "pending" | "success" | "failure";
 
 /** taken from glue-backend */

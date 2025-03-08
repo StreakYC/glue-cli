@@ -3,8 +3,7 @@ import { Table } from "@cliffy/table";
 import { green, red } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui.ts";
 import { runStep } from "../ui.ts";
-
-import { Select } from "@cliffy/prompt/select";
+import { askUserForGlue } from "./common.ts";
 
 interface DescribeOptions {
   format?: "table" | "json";
@@ -23,21 +22,7 @@ export const describe = async (options: DescribeOptions, query?: string) => {
       glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"));
     }
   } else if (Deno.stdout.isTerminal()) {
-    const glues = await runStep("Loading glues...", async () => {
-      const glues = await getGlues("deploy");
-      if (glues.length === 0) {
-        throw new Error("No glues found");
-      }
-      return glues;
-    });
-    if (glues.length === 0) {
-      throw new Error("No glues found");
-    }
-    glue = await Select.prompt({
-      message: "Choose a glue",
-      search: true,
-      options: glues.map((glue) => ({ name: glue.name, value: glue })),
-    });
+    glue = await askUserForGlue();
   } else {
     throw new Error("You must provide a glue name or query when not running in a terminal");
   }

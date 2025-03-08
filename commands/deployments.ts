@@ -9,25 +9,23 @@ interface DeploymentsOptions {
 }
 
 export const deployments = async (options: DeploymentsOptions, name?: string) => {
-  let glue: GlueDTO;
+  let glue: GlueDTO | undefined;
 
   if (name) {
-    glue = await runStep("Loading glue...", async () => {
-      const glueByName = await getGlueByName(name, "deploy");
-      if (!glueByName) {
-        throw new Error(`Glue ${name} not found`);
-      }
-      return glueByName;
-    });
+    glue = await runStep("Loading glue...", () => getGlueByName(name, "deploy"));
   } else if (Deno.stdout.isTerminal()) {
     glue = await askUserForGlue();
   } else {
     throw new Error("You must provide a glue name when not running in a terminal");
   }
 
-  const deployments = await runStep(`Loading deployments for ${glue.name}...`, async () => {
-    return await getDeployments(glue.id);
-  });
+  if (!glue) {
+    const errorMsg = name ? `Glue ${name} not found` : "No glue found";
+    throw new Error(errorMsg);
+  }
+
+  const deployments = await runStep(`Loading deployments for ${glue.name}...`, () => getDeployments(glue.id));
+  deployments.sort((a, b) => b.createdAt - a.createdAt);
 
   if (options.format === "json") {
     console.log(JSON.stringify(deployments, null, 2));

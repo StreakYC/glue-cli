@@ -3,13 +3,10 @@ import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui.ts";
 
 export async function askUserForGlue() {
-  const glues = await runStep("Loading glues...", async () => {
-    const glues = await getGlues("deploy");
-    if (glues.length === 0) {
-      throw new Error("No glues found");
-    }
-    return glues;
-  });
+  const glues = await runStep("Loading glues...", () => getGlues("deploy"));
+  if (!glues) {
+    return undefined;
+  }
   return await Select.prompt({
     message: "Choose a glue",
     search: true,
