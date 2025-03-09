@@ -161,7 +161,7 @@ export async function getExecutions(glueId: string, limit: number, startingPoint
 export interface ExecutionDTO {
   id: string;
   deploymentId: string;
-  logs?: Log[];
+  logs: Log[];
   startedAt: number;
   endedAt?: number;
   state: string;

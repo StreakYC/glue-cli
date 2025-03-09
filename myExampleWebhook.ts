@@ -6,4 +6,6 @@ import { onWebhook } from "./runtime/glue.ts";
 
 onWebhook((event) => {
   console.log(`event details: ${JSON.stringify(event)}`);
+  console.log("one log line");
+  console.log("another log line");
 });

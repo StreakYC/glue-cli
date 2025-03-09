@@ -1,10 +1,9 @@
-import { DeploymentDTO, ExecutionDTO, getDeploymentById, getDeployments, getExecutions, getGlueById, getGlueByName, getGlues, GlueDTO } from "../backend.ts";
-import { Table } from "@cliffy/table";
-import { green, red } from "@std/fmt/colors";
-import { formatEpochMillis } from "../ui.ts";
+import { ExecutionDTO, getExecutions, getGlueByName, GlueDTO } from "../backend.ts";
+import { cyan, dim, green, red } from "@std/fmt/colors";
 import { runStep } from "../ui.ts";
 import { askUserForGlue } from "./common.ts";
 import { delay } from "@std/async/delay";
+import { Spinner } from "@std/cli/unstable-spinner";
 
 interface TailOptions {
   format: "table" | "json";
@@ -36,7 +35,9 @@ export const tail = async (options: TailOptions, name?: string) => {
 
   let startingPoint = now;
   while (!options.noFollow) {
-    const executions = await runStep(`Loading executions for ${glue.name}...`, () => getExecutions(glue.id, 10, startingPoint, "asc"));
+    const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
+    pollingSpinner.start();
+    const executions = await getExecutions(glue.id, 10, startingPoint, "asc");
     if (executions.length > 0) {
       renderExecutions(executions, options.logLines, options.format);
       startingPoint = new Date(executions[executions.length - 1].startedAt);
@@ -47,13 +48,32 @@ export const tail = async (options: TailOptions, name?: string) => {
 
 function renderExecutions(executions: ExecutionDTO[], logLines: number, format: "table" | "json") {
   if (format === "table") {
-    // console.log(executions.map((e) => e.id).join("\n"));
+    executions.forEach((e) => {
+      console.log(`[${new Date(e.startedAt).toISOString()}] ${e.id} ${colorState(e.state)}`);
+      e.logs.slice(0, logLines).forEach((l) => {
+        console.log(dim(`[${new Date(l.timestamp).toISOString()}] ${l.text.trim()}`));
+      });
+      console.log("\n");
+    });
   } else {
     executions.forEach((e) => {
-      // if (e.logs) {
-      //   e.logs = e.logs.slice(0, logLines);
-      // }
+      if (e.logs) {
+        e.logs = e.logs.slice(0, logLines);
+      }
       console.log(JSON.stringify(e));
     });
+  }
+}
+
+function colorState(state: string): string {
+  switch (state) {
+    case "success":
+      return green(state.toUpperCase());
+    case "failure":
+      return red(state.toUpperCase());
+    case "running":
+      return cyan(state.toUpperCase());
+    default:
+      return dim(state.toUpperCase());
   }
 }
