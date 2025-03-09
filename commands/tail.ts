@@ -10,6 +10,7 @@ interface TailOptions {
   number: number;
   noFollow?: boolean;
   logLines: number;
+  fullLogLines?: boolean;
 }
 
 export const tail = async (options: TailOptions, name?: string) => {
@@ -31,29 +32,34 @@ export const tail = async (options: TailOptions, name?: string) => {
   const now = new Date();
   const historicalExecutions = await runStep(`Loading historical executions for ${glue.name}...`, () => getExecutions(glue.id, options.number, now, "desc"));
   historicalExecutions.reverse();
-  renderExecutions(historicalExecutions, options.logLines, options.format);
+  renderExecutions(historicalExecutions, options.logLines, options.format, !!options.fullLogLines);
 
   let startingPoint = now;
+  const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (!options.noFollow) {
-    const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
     pollingSpinner.start();
     const executions = await getExecutions(glue.id, 10, startingPoint, "asc");
     if (executions.length > 0) {
-      renderExecutions(executions, options.logLines, options.format);
+      pollingSpinner.stop();
+      renderExecutions(executions, options.logLines, options.format, !!options.fullLogLines);
       startingPoint = new Date(executions[executions.length - 1].startedAt);
+      pollingSpinner.start();
     }
     await delay(1000);
   }
 };
 
-function renderExecutions(executions: ExecutionDTO[], logLines: number, format: "table" | "json") {
+function renderExecutions(executions: ExecutionDTO[], logLines: number, format: "table" | "json", fullLogLines: boolean) {
   if (format === "table") {
     executions.forEach((e) => {
       console.log(`[${new Date(e.startedAt).toISOString()}] ${e.id} ${colorState(e.state)}`);
       e.logs.slice(0, logLines).forEach((l) => {
-        console.log(dim(`[${new Date(l.timestamp).toISOString()}] ${l.text.trim()}`));
+        let toConsole = dim(`[${new Date(l.timestamp).toISOString()}] ${l.text.trim()}`);
+        if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
+          toConsole = toConsole.slice(0, Deno.consoleSize().columns - 3) + "...";
+        }
+        console.log(toConsole);
       });
-      console.log("\n");
     });
   } else {
     executions.forEach((e) => {
