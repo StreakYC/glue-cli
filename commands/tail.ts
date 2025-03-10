@@ -52,7 +52,7 @@ export const tail = async (options: TailOptions, name?: string) => {
 function renderExecutions(executions: ExecutionDTO[], logLines: number, format: "table" | "json", fullLogLines: boolean) {
   if (format === "table") {
     executions.forEach((e) => {
-      console.log(`[${new Date(e.startedAt).toISOString()}] ${e.id} ${colorState(e.state)}`);
+      console.log(`[${new Date(e.startedAt).toISOString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
       e.logs.slice(0, logLines).forEach((l) => {
         let toConsole = dim(`[${new Date(l.timestamp).toISOString()}] ${l.text.trim()}`);
         if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
