@@ -131,7 +131,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
 }
 
 // TODO rename this
-export async function* getBuildLogs(deploymentId: string): AsyncIterable<DeploymentDTO> {
+export async function* streamChangesToDeployment(deploymentId: string): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
     const deployment = await getDeploymentById(deploymentId);
@@ -145,7 +145,7 @@ export async function* getBuildLogs(deploymentId: string): AsyncIterable<Deploym
         return;
       }
     }
-    await delay(5_000);
+    await delay(2_000);
   }
 }
 

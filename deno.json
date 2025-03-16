@@ -18,6 +18,7 @@
     "@std/path": "jsr:@std/path@^1.0.8",
     "hono": "jsr:@hono/hono@^4.6.11",
     "ink": "npm:ink@^5.1.1",
+    "ink-spinner": "npm:ink-spinner@^5.0.0",
     "react": "npm:react@^18.3.1",
     "zod": "npm:zod@^3.24.0",
     "@std/fmt": "jsr:@std/fmt@^1.0.3",

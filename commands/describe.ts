@@ -1,8 +1,8 @@
 import { DeploymentDTO, getDeploymentById, getDeployments, getGlueById, getGlueByName, getGlues, GlueDTO } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green, red } from "@std/fmt/colors";
-import { formatEpochMillis } from "../ui.ts";
-import { runStep } from "../ui.ts";
+import { formatEpochMillis } from "../ui/utils.ts";
+import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 
 interface DescribeOptions {

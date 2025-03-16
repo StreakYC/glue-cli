@@ -1,6 +1,6 @@
 import { ExecutionDTO, getExecutions, getGlueByName, GlueDTO } from "../backend.ts";
 import { cyan, dim, green, red } from "@std/fmt/colors";
-import { runStep } from "../ui.ts";
+import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";

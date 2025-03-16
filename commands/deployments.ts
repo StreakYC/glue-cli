@@ -1,7 +1,7 @@
 import { getDeployments, getGlueByName, GlueDTO } from "../backend.ts";
 import { Table } from "@cliffy/table";
-import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis } from "../ui.ts";
-import { runStep } from "../ui.ts";
+import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis } from "../ui/utils.ts";
+import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 
 interface DeploymentsOptions {

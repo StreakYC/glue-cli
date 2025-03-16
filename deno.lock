@@ -30,6 +30,7 @@
     "npm:@slack/webhook@*": "7.0.4",
     "npm:@types/node@*": "22.5.4",
     "npm:@types/react@18": "18.3.18",
+    "npm:ink-spinner@5": "5.0.0_ink@5.1.1__react@18.3.1_react@18.3.1_@types+react@18.3.18",
     "npm:ink@5": "5.1.1_react@18.3.1",
     "npm:ink@^5.1.1": "5.1.1_react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
@@ -230,6 +231,9 @@
         "restore-cursor"
       ]
     },
+    "cli-spinners@2.9.2": {
+      "integrity": "sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg=="
+    },
     "cli-truncate@4.0.0": {
       "integrity": "sha512-nPdaFdQ0h/GEigbPClz11D0v/ZJEwxmeVZGeMo3Z5StPtUTkA9o1lD6QwoirYiSDzbcwn2XcjwmCp68W1IS4TA==",
       "dependencies": [
@@ -293,10 +297,49 @@
     "indent-string@5.0.0": {
       "integrity": "sha512-m6FAo/spmsW2Ab2fU35JTYwtOKa2yAwXSwgjSv1TJzh4Mh7mC3lzAOVLBprb72XsTrgkEIsl7YrFNAiDiRhIGg=="
     },
+    "ink-spinner@5.0.0_ink@5.1.1__react@18.3.1_react@18.3.1_@types+react@18.3.18": {
+      "integrity": "sha512-EYEasbEjkqLGyPOUc8hBJZNuC5GvXGMLu0w5gdTNskPc7Izc5vO3tdQEYnzvshucyGCBXc86ig0ujXPMWaQCdA==",
+      "dependencies": [
+        "cli-spinners",
+        "ink@5.1.1_react@18.3.1_@types+react@18.3.18",
+        "react"
+      ]
+    },
     "ink@5.1.1_react@18.3.1": {
       "integrity": "sha512-4QU6v46XbtupvRjey9yxAFU3AvoBq4h2O68rhZttFd98yx0Zu6bw1ZBhRiFxyeJY6TXseU62HU/LvGtgCGi3Aw==",
       "dependencies": [
         "@alcalzone/ansi-tokenize",
+        "ansi-escapes",
+        "ansi-styles",
+        "auto-bind",
+        "chalk",
+        "cli-boxes",
+        "cli-cursor",
+        "cli-truncate",
+        "code-excerpt",
+        "es-toolkit",
+        "indent-string",
+        "is-in-ci",
+        "patch-console",
+        "react",
+        "react-reconciler",
+        "scheduler",
+        "signal-exit",
+        "slice-ansi@7.1.0",
+        "stack-utils",
+        "string-width",
+        "type-fest",
+        "widest-line",
+        "wrap-ansi",
+        "ws",
+        "yoga-wasm-web"
+      ]
+    },
+    "ink@5.1.1_react@18.3.1_@types+react@18.3.18": {
+      "integrity": "sha512-4QU6v46XbtupvRjey9yxAFU3AvoBq4h2O68rhZttFd98yx0Zu6bw1ZBhRiFxyeJY6TXseU62HU/LvGtgCGi3Aw==",
+      "dependencies": [
+        "@alcalzone/ansi-tokenize",
+        "@types/react",
         "ansi-escapes",
         "ansi-styles",
         "auto-bind",
@@ -509,6 +552,7 @@
       "jsr:@std/fs@^1.0.6",
       "jsr:@std/path@^1.0.8",
       "npm:@types/react@18",
+      "npm:ink-spinner@5",
       "npm:ink@^5.1.1",
       "npm:react@^18.3.1",
       "npm:zod@^3.24.0"

@@ -1,8 +1,8 @@
 import { getGlues } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green, red } from "@std/fmt/colors";
-import { formatEpochMillis } from "../ui.ts";
-import { runStep } from "../ui.ts";
+import { formatEpochMillis } from "../ui/utils.ts";
+import { runStep } from "../ui/utils.ts";
 
 interface ListOptions {
   nameFilter?: string;

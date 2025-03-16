@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { createDeployment, createGlue, getBuildLogs, getGlueById, getGlueByName } from "../backend.ts";
+import { BuildStepDTO, createDeployment, createGlue, getGlueById, getGlueByName, streamChangesToDeployment } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
 import { GlueDTO } from "../backend.ts";
-import { runStep } from "../ui.ts";
+import { runStep } from "../ui/utils.ts";
 import * as mod from "@std/fmt/colors";
 
 const ServerWebsocketMessage = z.object({
@@ -48,7 +48,7 @@ export async function dev(options: DevOptions, file: string) {
 
   await runStep("Booting up your code", () => waitForLocalRunnerToBeReady(glueDevPort));
   const registeredTriggers = await runStep("Figuring out your triggers", () => getRegisteredTriggers(glueDevPort));
-  console.log(`  Found ${registeredTriggers.length} registered triggers`);
+  console.log(`\t\tFound ${registeredTriggers.length} registered triggers`);
 
   let newDeploymentId: string;
   let glueId: string;
@@ -65,9 +65,9 @@ export async function dev(options: DevOptions, file: string) {
     glueId = existingGlue.id;
   }
 
-  await runStep("Watching deployment logs", async () => {
-    for await (const deployment of getBuildLogs(newDeploymentId)) {
-      console.log(deployment.buildSteps);
+  await runStep("Watching build steps", async () => {
+    for await (const deployment of streamChangesToDeployment(newDeploymentId)) {
+      renderBuildSteps(deployment.buildSteps);
     }
   });
 
@@ -189,4 +189,10 @@ function getFormattedDateString() {
 
 function getFormattedElapsedString(elapsed: number) {
   return mod.dim(`(${Math.round(elapsed * 10) / 10}ms)`);
+}
+
+function renderBuildSteps(buildSteps: BuildStepDTO[]) {
+  for (const step of buildSteps) {
+    console.log(`  ${step.name}: ${step.status}`);
+  }
 }
