@@ -7,7 +7,7 @@ import React from "react";
 export type CodeAnalysisState = "checking" | "done";
 export type ExistingGlueState = "not_started" | "checking" | "creatingNewGlue" | "createdNewGlue" | "usedExistingGlue";
 
-export type DeploymentProgressProps = {
+export type DeployUIProps = {
   deployment?: DeploymentDTO;
   existingGlueState: ExistingGlueState;
   existingGlueDuration: number;
@@ -15,8 +15,8 @@ export type DeploymentProgressProps = {
   codeAnalysisDuration: number;
 };
 
-export const DeploymentProgress = (
-  { deployment, existingGlueState, existingGlueDuration, codeAnalysisState, codeAnalysisDuration }: DeploymentProgressProps,
+export const DeployUI = (
+  { deployment, existingGlueState, existingGlueDuration, codeAnalysisState, codeAnalysisDuration }: DeployUIProps,
 ) => {
   return (
     <>

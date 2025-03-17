@@ -3,7 +3,7 @@ import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
 import { createDeployment, CreateDeploymentParams, createGlue, DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
 import { render } from "ink";
-import { DeploymentProgress, DeploymentProgressProps } from "../ui/DeploymentProgress.tsx";
+import { DeployUI, DeployUIProps } from "../ui/DeployUI.tsx";
 import React from "react";
 interface DeployOptions {
   name?: string;
@@ -11,20 +11,20 @@ interface DeployOptions {
 
 export async function deploy(options: DeployOptions, file: string) {
   const glueName = options.name ?? basename(file);
-  const deploymentProgressProps: DeploymentProgressProps = {
+  const deploymentProgressProps: DeployUIProps = {
     existingGlueState: "not_started",
     codeAnalysisState: "checking",
     existingGlueDuration: 0,
     codeAnalysisDuration: 0,
   };
-  render(React.createElement(DeploymentProgress, deploymentProgressProps));
+  render(React.createElement(DeployUI, deploymentProgressProps));
 
   let duration = performance.now();
   const deploymentParams = await getCreateDeploymentParams(file);
   deploymentProgressProps.codeAnalysisDuration = performance.now() - duration;
   deploymentProgressProps.codeAnalysisState = "done";
   deploymentProgressProps.existingGlueState = "checking";
-  render(React.createElement(DeploymentProgress, deploymentProgressProps));
+  render(React.createElement(DeployUI, deploymentProgressProps));
 
   duration = performance.now();
   const existingGlue = await getGlueByName(glueName, "deploy");
@@ -32,7 +32,7 @@ export async function deploy(options: DeployOptions, file: string) {
   let newDeploymentId: string;
   if (!existingGlue) {
     deploymentProgressProps.existingGlueState = "creatingNewGlue";
-    render(React.createElement(DeploymentProgress, deploymentProgressProps));
+    render(React.createElement(DeployUI, deploymentProgressProps));
     const newGlue = await createGlue(glueName, deploymentParams, "deploy");
     if (!newGlue.currentDeploymentId) {
       throw new Error("Failed to create glue");
@@ -40,16 +40,16 @@ export async function deploy(options: DeployOptions, file: string) {
     newDeploymentId = newGlue.currentDeploymentId;
   } else {
     deploymentProgressProps.existingGlueState = "usedExistingGlue";
-    render(React.createElement(DeploymentProgress, deploymentProgressProps));
+    render(React.createElement(DeployUI, deploymentProgressProps));
     const newDeployment = await createDeployment(existingGlue.id, deploymentParams);
     deploymentProgressProps.deployment = newDeployment;
-    render(React.createElement(DeploymentProgress, deploymentProgressProps));
+    render(React.createElement(DeployUI, deploymentProgressProps));
     newDeploymentId = newDeployment.id;
   }
 
   for await (const deployment of streamChangesToDeployment(newDeploymentId)) {
     deploymentProgressProps.deployment = deployment;
-    render(React.createElement(DeploymentProgress, deploymentProgressProps));
+    render(React.createElement(DeployUI, deploymentProgressProps));
   }
 }
 
