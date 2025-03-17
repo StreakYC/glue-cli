@@ -3,15 +3,13 @@ import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
 import { createDeployment, CreateDeploymentParams, createGlue, DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
 import { render } from "ink";
-import { DeployUI, DeployUIProps } from "../ui/DeployUI.tsx";
+import { DeployUI, DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
 interface DeployOptions {
   name?: string;
 }
 
 export async function deploy(options: DeployOptions, file: string) {
-  const glueName = options.name ?? basename(file);
-
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
     codeAnalysisState: "not_started",
@@ -28,6 +26,7 @@ export async function deploy(options: DeployOptions, file: string) {
   updateUI({ codeAnalysisState: "in_progress", codeAnalysisDuration: 0 });
 
   let duration = performance.now();
+  const glueName = options.name ?? basename(file);
   const deploymentParams = await getCreateDeploymentParams(file);
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
 

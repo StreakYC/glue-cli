@@ -1,11 +1,13 @@
 import { z } from "zod";
-import { BuildStepDTO, createDeployment, createGlue, getGlueById, getGlueByName, streamChangesToDeployment } from "../backend.ts";
+import { createDeployment, createGlue, getGlueById, getGlueByName, streamChangesToDeployment } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
 import { GlueDTO } from "../backend.ts";
-import { runStep } from "../ui/utils.ts";
-import * as mod from "@std/fmt/colors";
+import { DevUI, DevUIProps } from "../ui/dev.tsx";
+import React from "react";
+import { render } from "ink";
+import { delay } from "@std/async/delay";
 
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -24,6 +26,27 @@ export async function dev(options: DevOptions, file: string) {
     Deno.exit();
   });
 
+  let devProgressProps: DevUIProps = {
+    codeAnalysisState: "not_started",
+    codeAnalysisDuration: 0,
+    bootingCodeState: "not_started",
+    bootingCodeDuration: 0,
+    creatingTriggersState: "not_started",
+    creatingTriggersDuration: 0,
+    registeringGlueState: "not_started",
+    registeringGlueDuration: 0,
+    connectingToTunnelState: "not_started",
+    connectingToTunnelDuration: 0,
+    deployment: undefined,
+  };
+
+  const updateUI = (patch: Partial<DevUIProps>) => {
+    devProgressProps = { ...devProgressProps, ...patch };
+    render(React.createElement(DevUI, devProgressProps));
+  };
+
+  let start = performance.now();
+  updateUI({ codeAnalysisState: "in_progress", codeAnalysisDuration: 0 });
   const glueName = options.name ?? basename(file).replace(/\.[^.]+$/, "");
   const glueDevPort = 8567; // TODO pick a random unused port or maybe use a unix socket
 
@@ -42,51 +65,52 @@ export async function dev(options: DevOptions, file: string) {
     }
   }
 
-  const existingGlue = await runStep("Checking for an existing glue", () => getGlueByName(glueName, "dev"));
-
   const localRunnerEndPromise = spawnLocalDenoRunner(file, options, env).endPromise;
 
-  await runStep("Booting up your code", () => waitForLocalRunnerToBeReady(glueDevPort));
-  const registeredTriggers = await runStep("Figuring out your triggers", () => getRegisteredTriggers(glueDevPort));
-  console.log(`\t\tFound ${registeredTriggers.length} registered triggers`);
+  updateUI({ codeAnalysisState: "success", codeAnalysisDuration: performance.now() - start });
 
+  start = performance.now();
+  updateUI({ bootingCodeState: "in_progress", bootingCodeDuration: 0 });
+  await waitForLocalRunnerToBeReady(glueDevPort);
+  updateUI({ bootingCodeState: "success", bootingCodeDuration: performance.now() - start });
+
+  start = performance.now();
+  updateUI({ creatingTriggersState: "in_progress", creatingTriggersDuration: 0 });
+  const registeredTriggers = await getRegisteredTriggers(glueDevPort);
+  updateUI({ creatingTriggersState: "success", creatingTriggersDuration: performance.now() - start });
+
+  start = performance.now();
+  updateUI({ registeringGlueState: "in_progress", registeringGlueDuration: 0 });
+  const existingGlue = await getGlueByName(glueName, "dev");
   let newDeploymentId: string;
   let glueId: string;
   if (!existingGlue) {
-    const newGlue = await runStep("Creating glue", () => createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev"));
+    const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
     if (!newGlue.currentDeploymentId) {
       throw new Error("Failed to create glue");
     }
     newDeploymentId = newGlue.currentDeploymentId;
     glueId = newGlue.id;
   } else {
-    const newDeployment = await runStep("Creating new deployment", () => createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers }));
+    const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
     newDeploymentId = newDeployment.id;
     glueId = existingGlue.id;
   }
+  updateUI({ registeringGlueState: "success", registeringGlueDuration: performance.now() - start });
 
-  await runStep("Watching build steps", async () => {
-    for await (const deployment of streamChangesToDeployment(newDeploymentId)) {
-      renderBuildSteps(deployment.buildSteps);
-    }
-  });
+  for await (const deployment of streamChangesToDeployment(newDeploymentId)) {
+    updateUI({ deployment });
+  }
 
-  const glue = await runStep("Fetching glue", async () => {
-    const glue = await getGlueById(glueId);
-    if (!glue) {
-      throw new Error("Glue not found");
-    }
-    return glue;
-  });
+  start = performance.now();
+  updateUI({ connectingToTunnelState: "in_progress", connectingToTunnelDuration: 0 });
+  const glue = await getGlueById(glueId);
+  if (!glue) {
+    throw new Error("Glue not found");
+  }
 
-  await runStep("Setting up tunnel to local runner", () => runWebsocket(glue, glueDevPort));
-
-  const triggersString = glue.currentDeployment?.triggers
-    ?.sort((a, b) => a.type.localeCompare(b.type))
-    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
-    .map((t) => `    ${t.type} ${t.label}: ${t.description}`)
-    .join("\n");
-  console.log(`  Triggers:\n${triggersString}`);
+  await runWebsocket(glue, glueDevPort);
+  updateUI({ connectingToTunnelState: "success", connectingToTunnelDuration: performance.now() - start });
 
   await localRunnerEndPromise;
 }
@@ -157,42 +181,21 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
     }
     const message = ServerWebsocketMessage.parse(JSON.parse(event.data));
     if (message.type === "trigger") {
-      const separator = mod.cyan("----------------------------");
-      const triggerStartString = mod.cyan(`Trigger ${message.event.type}(${message.event.label}) received`);
-      console.log(`\n${getFormattedDateString()} ${triggerStartString} ${separator}`);
-      const start = performance.now();
       await fetch(`http://127.0.0.1:${glueDevPort}/__glue__/triggerEvent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(message.event satisfies TriggerEvent),
       });
-      const elapsed = performance.now() - start;
-      const triggerEndString = mod.cyan(`Trigger ${message.event.type}(${message.event.label}) handled`);
-      console.log(`${getFormattedDateString()} ${triggerEndString} ${getFormattedElapsedString(elapsed)} ${separator}`);
     } else {
       console.warn("Unknown websocket message:", message);
     }
   });
   ws.addEventListener("error", (event) => {
-    console.error("Websocket error:", event);
+    // console.error("Websocket error:", event);
     // TODO reconnect or throw error?
   });
   ws.addEventListener("close", (event) => {
-    console.log("Websocket closed:", event);
+    // console.log("Websocket closed:", event);
     // TODO reconnect
   });
-}
-
-function getFormattedDateString() {
-  return mod.dim(`[${new Date().toISOString()}]`);
-}
-
-function getFormattedElapsedString(elapsed: number) {
-  return mod.dim(`(${Math.round(elapsed * 10) / 10}ms)`);
-}
-
-function renderBuildSteps(buildSteps: BuildStepDTO[]) {
-  for (const step of buildSteps) {
-    console.log(`  ${step.name}: ${step.status}`);
-  }
 }

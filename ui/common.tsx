@@ -1,38 +1,8 @@
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
+import { BuildStepDTO, StepStatus, TriggerDTO } from "../backend.ts";
 
-import { BuildStepDTO, DeploymentDTO, StepStatus, TriggerDTO } from "../backend.ts";
-import React from "react";
-
-export type DeployUIProps = {
-  codeAnalysisState: StepStatus;
-  codeAnalysisDuration: number;
-  uploadingCodeState: StepStatus;
-  uploadingCodeDuration: number;
-  deployment?: DeploymentDTO;
-};
-
-export const DeployUI = (
-  { deployment, codeAnalysisState, codeAnalysisDuration, uploadingCodeState, uploadingCodeDuration }: DeployUIProps,
-) => {
-  return (
-    <>
-      <ClientStepRow stepState={codeAnalysisState} stepDuration={codeAnalysisDuration} stepTitle="Analyzing code" />
-      <ClientStepRow stepState={uploadingCodeState} stepDuration={uploadingCodeDuration} stepTitle="Uploading code" />
-      {deployment && deployment.buildSteps.map((step: BuildStepDTO) => (
-        <React.Fragment key={step.name}>
-          <BuildStepStatusRow step={step} />
-          {step.name === "triggerAuth" && deployment.triggers.some((t) => !!t.accountSetupUrl) && <AuthTriggerList triggers={deployment.triggers} />}
-          {step.name === "triggerSetup" && step.status === "success" && deployment.triggers.some((t) => !!t.routingId) && (
-            <SetupTriggerList triggers={deployment.triggers} />
-          )}
-        </React.Fragment>
-      ))}
-    </>
-  );
-};
-
-const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
+export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
   if (step.status === "success") {
     return (
       <Text>
@@ -59,7 +29,7 @@ const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
   }
 };
 
-const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
+export const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       <Text backgroundColor="red" color="white">Need authentication:</Text>
@@ -72,7 +42,7 @@ const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   );
 };
 
-const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
+export const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {triggers.filter((t) => !!t.routingId).map((t) => (
@@ -84,7 +54,7 @@ const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   );
 };
 
-const ClientStepRow = ({ stepState, stepDuration, stepTitle }: { stepState: StepStatus; stepDuration: number; stepTitle: string }) => {
+export const ClientStepRow = ({ stepState, stepDuration, stepTitle }: { stepState: StepStatus; stepDuration: number; stepTitle: string }) => {
   if (stepState === "not_started") {
     return <Text color="gray">○ {stepTitle}</Text>;
   } else if (stepState === "success") {
