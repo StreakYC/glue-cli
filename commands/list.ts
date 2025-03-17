@@ -6,7 +6,7 @@ import { runStep } from "../ui/utils.ts";
 
 interface ListOptions {
   nameFilter?: string;
-  format?: "table" | "json";
+  json?: boolean;
 }
 
 export const list = async (options: ListOptions) => {
@@ -14,7 +14,7 @@ export const list = async (options: ListOptions) => {
     return await getGlues("deploy", options.nameFilter);
   });
 
-  if (options.format === "json") {
+  if (options.json) {
     console.log(JSON.stringify(glues, null, 2));
     return;
   }
