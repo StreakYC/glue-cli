@@ -5,7 +5,7 @@ import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 
 interface DeploymentsOptions {
-  format?: "table" | "json";
+  json?: boolean;
 }
 
 export const deployments = async (options: DeploymentsOptions, name?: string) => {
@@ -27,7 +27,7 @@ export const deployments = async (options: DeploymentsOptions, name?: string) =>
   const deployments = await runStep(`Loading deployments for ${glue.name}...`, () => getDeployments(glue.id));
   deployments.sort((a, b) => b.createdAt - a.createdAt);
 
-  if (options.format === "json") {
+  if (options.json) {
     console.log(JSON.stringify(deployments, null, 2));
     return;
   }

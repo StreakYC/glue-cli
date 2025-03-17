@@ -6,7 +6,7 @@ import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 
 interface TailOptions {
-  format: "table" | "json";
+  json?: boolean;
   number: number;
   noFollow?: boolean;
   logLines: number;
@@ -32,7 +32,7 @@ export const tail = async (options: TailOptions, name?: string) => {
   const now = new Date();
   const historicalExecutions = await runStep(`Loading historical executions for ${glue.name}...`, () => getExecutions(glue.id, options.number, now, "desc"));
   historicalExecutions.reverse();
-  renderExecutions(historicalExecutions, options.logLines, options.format, !!options.fullLogLines);
+  renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines, options.json);
 
   let startingPoint = now;
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
@@ -41,7 +41,7 @@ export const tail = async (options: TailOptions, name?: string) => {
     const executions = await getExecutions(glue.id, 10, startingPoint, "asc");
     if (executions.length > 0) {
       pollingSpinner.stop();
-      renderExecutions(executions, options.logLines, options.format, !!options.fullLogLines);
+      renderExecutions(executions, options.logLines, !!options.fullLogLines, options.json);
       startingPoint = new Date(executions[executions.length - 1].startedAt);
       pollingSpinner.start();
     }
@@ -49,8 +49,8 @@ export const tail = async (options: TailOptions, name?: string) => {
   }
 };
 
-function renderExecutions(executions: ExecutionDTO[], logLines: number, format: "table" | "json", fullLogLines: boolean) {
-  if (format === "table") {
+function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogLines: boolean, json?: boolean) {
+  if (!json) {
     executions.forEach((e) => {
       console.log(`[${new Date(e.startedAt).toISOString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
       e.logs.slice(0, logLines).forEach((l) => {

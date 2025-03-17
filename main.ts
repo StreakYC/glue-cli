@@ -13,7 +13,6 @@ const cmd = new Command()
   .name("glue")
   .version(denoJson.version)
   .description("Glue CLI utility")
-  .globalType("formatType", new EnumType(["table", "json"]))
   .action(() => {
     cmd.showHelp();
   })
@@ -39,7 +38,7 @@ const cmd = new Command()
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
   .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
-  .option("-f, --format <format:formatType>", "Output format")
+  .option("-j, --json", "Output in JSON format")
   .action(list)
   // PAUSE ----------------------------
   .command("pause", "Pause a deployed glue")
@@ -59,17 +58,17 @@ const cmd = new Command()
     "List all the deployments of a Glue",
   )
   .arguments("[name:string]")
-  .option("-f, --format <format:formatType>", "Output format")
+  .option("-j, --json", "Output in JSON format")
   .action(deployments)
   // DESCRIBE ----------------------------
   .command("describe", "Describe a glue or any other resource. Query can be a glue name or any id for any resource")
   .arguments("[query:string]")
-  .option("-f, --format <format:formatType>", "Output format")
+  .option("-j, --json", "Output in JSON format")
   .action(describe)
   // TAIL ----------------------------
   .command("tail", "View a live stream of the executions of a glue. Provide a glue name or id.")
   .arguments("[name:string]")
-  .option("-f, --format <format:formatType>", "Output format, if JSON, will use JSONL format", { default: "table" })
+  .option("-j, --json", "Output in JSON format")
   .option("-n, --number <number:number>", "Number of historical executions to print initially", { default: 10 })
   .option("-l --log-lines <logLines:number>", "Number of log lines to print for each execution. Set to 0 to hide log lines", { default: 10 })
   .option("-N, --no-follow", "Don't follow the executions, just print the latest and exit", { default: false })

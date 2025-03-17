@@ -1,12 +1,9 @@
 import { DeploymentDTO, getDeploymentById, getDeployments, getGlueById, getGlueByName, getGlues, GlueDTO } from "../backend.ts";
-import { Table } from "@cliffy/table";
-import { green, red } from "@std/fmt/colors";
-import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 
 interface DescribeOptions {
-  format?: "table" | "json";
+  json?: boolean;
 }
 
 export const describe = async (options: DescribeOptions, query?: string) => {
@@ -40,7 +37,7 @@ export const describe = async (options: DescribeOptions, query?: string) => {
 };
 
 function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
-  if (options.format === "json") {
+  if (options.json) {
     console.log(JSON.stringify(deployment, null, 2));
     return;
   }
@@ -48,7 +45,7 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
 }
 
 function renderGlueAndDeployments(glue: GlueDTO, deployments: DeploymentDTO[], options: DescribeOptions) {
-  if (options.format === "json") {
+  if (options.json) {
     console.log(JSON.stringify({ ...glue, deployments: deployments }, null, 2));
     return;
   }
