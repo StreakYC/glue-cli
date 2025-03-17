@@ -1,27 +1,24 @@
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 
-import { BuildStepDTO, DeploymentDTO, TriggerDTO } from "../backend.ts";
+import { BuildStepDTO, DeploymentDTO, StepStatus, TriggerDTO } from "../backend.ts";
 import React from "react";
 
-export type CodeAnalysisState = "checking" | "done";
-export type ExistingGlueState = "not_started" | "checking" | "creatingNewGlue" | "createdNewGlue" | "usedExistingGlue";
-
 export type DeployUIProps = {
-  deployment?: DeploymentDTO;
-  existingGlueState: ExistingGlueState;
-  existingGlueDuration: number;
-  codeAnalysisState: CodeAnalysisState;
+  codeAnalysisState: StepStatus;
   codeAnalysisDuration: number;
+  uploadingCodeState: StepStatus;
+  uploadingCodeDuration: number;
+  deployment?: DeploymentDTO;
 };
 
 export const DeployUI = (
-  { deployment, existingGlueState, existingGlueDuration, codeAnalysisState, codeAnalysisDuration }: DeployUIProps,
+  { deployment, codeAnalysisState, codeAnalysisDuration, uploadingCodeState, uploadingCodeDuration }: DeployUIProps,
 ) => {
   return (
     <>
-      <CodeAnalysisStateRow codeAnalysisState={codeAnalysisState} codeAnalysisDuration={codeAnalysisDuration} />
-      <ExistingGlueStateRow existingGlueState={existingGlueState} existingGlueDuration={existingGlueDuration} />
+      <ClientStepRow stepState={codeAnalysisState} stepDuration={codeAnalysisDuration} stepTitle="Analyzing code" />
+      <ClientStepRow stepState={uploadingCodeState} stepDuration={uploadingCodeDuration} stepTitle="Uploading code" />
       {deployment && deployment.buildSteps.map((step: BuildStepDTO) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
@@ -87,59 +84,28 @@ const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   );
 };
 
-const ExistingGlueStateRow = ({ existingGlueState, existingGlueDuration }: { existingGlueState: ExistingGlueState; existingGlueDuration: number }) => {
-  if (existingGlueState === "not_started") {
-    return <Text color="gray">○ Checking for existing glue</Text>;
-  } else if (existingGlueState === "checking") {
+const ClientStepRow = ({ stepState, stepDuration, stepTitle }: { stepState: StepStatus; stepDuration: number; stepTitle: string }) => {
+  if (stepState === "not_started") {
+    return <Text color="gray">○ {stepTitle}</Text>;
+  } else if (stepState === "success") {
     return (
       <Text>
-        <Spinner type="dots" /> Checking for existing glue
+        <Text color="green">✔︎</Text> {stepTitle} <Text color="gray">{`(${Math.round(stepDuration)}ms)`}</Text>
       </Text>
     );
-  } else if (existingGlueState === "creatingNewGlue") {
-    return (
-      <React.Fragment>
-        <Text>
-          <Text color="green">✔︎</Text> Checking for existing glue
-        </Text>
-        <Text>
-          <Spinner type="dots" /> Creating new glue
-        </Text>
-      </React.Fragment>
-    );
-  } else if (existingGlueState === "createdNewGlue") {
-    return (
-      <React.Fragment>
-        <Text>
-          <Text color="green">✔︎</Text> Checking for existing glue
-        </Text>
-        <Text>
-          <Text color="green">✔︎</Text> Creating new glue
-        </Text>
-      </React.Fragment>
-    );
-  } else if (existingGlueState === "usedExistingGlue") {
+  } else if (stepState === "failure") {
     return (
       <Text>
-        <Text color="green">✔︎</Text> Checking for existing glue <Text color="gray">{`(${Math.round(existingGlueDuration)}ms)`}</Text>
+        <Text color="red">✗</Text> {stepTitle}
       </Text>
     );
-  }
-};
-
-const CodeAnalysisStateRow = ({ codeAnalysisState, codeAnalysisDuration }: { codeAnalysisState: CodeAnalysisState; codeAnalysisDuration: number }) => {
-  if (codeAnalysisState === "checking") {
+  } else if (stepState === "in_progress") {
     return (
       <Text>
-        <Spinner type="dots" />
-        Analyzing code
+        <Spinner type="dots" /> {stepTitle}
       </Text>
     );
-  } else if (codeAnalysisState === "done") {
-    return (
-      <Text>
-        <Text color="green">✔︎</Text> Analyzing code <Text color="gray">{`(${Math.round(codeAnalysisDuration)}ms)`}</Text>
-      </Text>
-    );
+  } else if (stepState === "skipped") {
+    return <Text color="gray">◉ {stepTitle}</Text>;
   }
 };
