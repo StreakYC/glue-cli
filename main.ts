@@ -1,4 +1,4 @@
-import { Command, EnumType } from "@cliffy/command";
+import { Command } from "@cliffy/command";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
