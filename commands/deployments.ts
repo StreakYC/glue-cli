@@ -41,7 +41,7 @@ export const deployments = async (options: DeploymentsOptions, name?: string) =>
         deployment,
       ) => [
         deployment.id,
-        formatDeploymentStatus(deployment.status),
+        formatDeploymentStatus(deployment.status, deployment.id === glue.currentDeploymentId),
         formatEpochMillis(deployment.createdAt),
         deployment.triggers.length,
         formatBuildSteps(deployment.buildSteps),

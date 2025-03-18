@@ -59,12 +59,15 @@ export function formatBuildSteps(steps: BuildStepDTO[]) {
   }).join("\n") + "\n";
 }
 
-export function formatDeploymentStatus(status: DeploymentStatus) {
+export function formatDeploymentStatus(status: DeploymentStatus, isRunning: boolean) {
+  if (isRunning) {
+    return mod.green("RUNNING");
+  }
   switch (status) {
     case "pending":
       return mod.yellow("pending");
     case "success":
-      return mod.green("success");
+      return mod.cyan("success");
     case "failure":
       return mod.red("failure");
   }
