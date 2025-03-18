@@ -10,27 +10,28 @@ interface ListOptions {
 }
 
 export const list = async (options: ListOptions) => {
-  const glues = await runStep("Loading glues...", async () => {
-    return await getGlues("deploy", options.nameFilter);
-  });
-
   if (options.json) {
+    const glues = await getGlues("deploy", options.nameFilter);
     console.log(JSON.stringify(glues, null, 2));
     return;
+  } else {
+    const glues = await runStep("Loading glues...", async () => {
+      return await getGlues("deploy", options.nameFilter);
+    });
+    new Table()
+      .header(["Name", "Running", "Runs", "Last run", "Last deployed"])
+      .body(
+        glues.map((
+          glue,
+        ) => [
+          glue.name,
+          glue.running ? green("RUNNING") : red("NOT RUNNING"),
+          glue.executionSummary.count,
+          glue.executionSummary.mostRecent === 0 ? "-" : formatEpochMillis(glue.executionSummary.mostRecent),
+          glue.currentDeployment ? formatEpochMillis(glue.currentDeployment.createdAt) : "-",
+        ]),
+      )
+      .padding(4)
+      .render();
   }
-
-  new Table()
-    .header(["Name", "Running", "Created", "Last deployed"])
-    .body(
-      glues.map((
-        glue,
-      ) => [
-        glue.name,
-        glue.running ? green("RUNNING") : red("NOT RUNNING"),
-        formatEpochMillis(glue.createdAt),
-        glue.currentDeployment ? formatEpochMillis(glue.currentDeployment.createdAt) : "-",
-      ]),
-    )
-    .padding(4)
-    .render();
 };

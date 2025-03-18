@@ -226,9 +226,15 @@ export interface GlueDTO {
   updatedAt: number;
   creator: UserDTO;
   running: boolean;
+  executionSummary: ExecutionSummaryDTO;
   currentDeployment?: DeploymentDTO;
   currentDeploymentId?: string;
   devEventsWebsocketUrl?: string;
+}
+
+export interface ExecutionSummaryDTO {
+  count: number;
+  mostRecent: number;
 }
 
 export interface UserDTO {
