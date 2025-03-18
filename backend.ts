@@ -57,7 +57,8 @@ export async function backendRequest<T>(path: string, options: RequestInit = {})
   const res = await fetch(`${GLUE_API_SERVER}${path}`, {
     ...options,
     headers: {
-      Authorization: `Basic ${encodeBase64(userEmail + ":")}`,
+      "Authorization": `Basic ${encodeBase64(userEmail + ":")}`,
+      "User-Agent": "glue-cli",
     },
   });
   if (!res.ok) {
