@@ -1,83 +1,73 @@
 // TODO this will be moved into glue-runtime once things are a little more
 // stable.
+import { z } from "zod";
 import { Hono } from "hono";
-import { GmailEvent, RegisteredTrigger, TriggerEvent, WebhookEvent } from "./common.ts";
+import { RegisteredTrigger, TriggerEvent } from "./common.ts";
 import { Log, patchConsoleGlobal, runInLoggingContext } from "./logging.ts";
+import { onMessage } from "./integrations/eventSources/gmail/runtime.ts";
+import { onWebhook } from "./integrations/eventSources/webhook/runtime.ts";
 
 patchConsoleGlobal();
+
+const glue = {
+  gmail: {
+    onMessage,
+  },
+  webhook: {
+    onWebhook,
+  },
+};
+export default glue;
 
 interface TriggerEventResponse {
   logs: Log[];
 }
 
-const registeredWebhooks = new Map<string, (event: WebhookEvent) => void | Promise<void>>();
+interface RegisteredEvent {
+  fn: (event: unknown) => void | Promise<void>;
+  options: unknown;
+}
 
-const registeredGmailEvents = new Map<string, (event: GmailEvent) => void | Promise<void>>();
+const eventListenersByType = new Map<string, Map<string, RegisteredEvent>>();
 
-let nextAutomaticLabel = 0;
-
-interface CommonTriggerOptions {
+export interface CommonTriggerOptions {
   label?: string;
 }
 
-export function onGmailMessage(fn: (event: GmailEvent) => void | Promise<void>, options: CommonTriggerOptions = {}): void {
+let nextAutomaticLabel = 0;
+
+export function registerEvent<T>(eventName: string, callback: (event: T) => void, eventSchema: z.ZodType<T>, options: CommonTriggerOptions = {}) {
   scheduleInit();
 
-  const label = options.label ?? String(nextAutomaticLabel++);
-  if (registeredGmailEvents.has(label)) {
+  let specificEventListeners = eventListenersByType.get(eventName);
+  if (!specificEventListeners) {
+    specificEventListeners = new Map();
+    eventListenersByType.set(eventName, specificEventListeners);
+  }
+  const { label, ...restOptions } = options;
+  const resolvedLabel = label ?? String(nextAutomaticLabel++);
+  if (specificEventListeners.has(resolvedLabel)) {
     throw new Error(
-      `Gmail label ${JSON.stringify(label)} already registered`,
+      `Event listener with label ${JSON.stringify(label)} already registered`,
     );
   }
-  registeredGmailEvents.set(label, fn);
+  specificEventListeners.set(resolvedLabel, { fn: (event: unknown) => callback(eventSchema.parse(event)), options: restOptions });
 }
 
-export function onWebhook(fn: (event: WebhookEvent) => void | Promise<void>, options: CommonTriggerOptions = {}): void {
-  scheduleInit();
-
-  const label = options.label ?? String(nextAutomaticLabel++);
-  if (registeredWebhooks.has(label)) {
-    throw new Error(
-      `Webhook label ${JSON.stringify(label)} already registered`,
-    );
-  }
-  registeredWebhooks.set(label, fn);
-}
-
-function getRegisteredTriggers(): RegisteredTrigger[] {
-  return [
-    ...Array.from(registeredWebhooks.keys()).map((label) => ({
-      type: "webhook",
-      label,
-    })),
-    ...Array.from(registeredGmailEvents.keys()).map((label) => ({
-      type: "gmail",
-      label,
-    })),
-  ];
+export function getRegisteredTriggers(): RegisteredTrigger[] {
+  return Array.from(
+    eventListenersByType.entries()
+      .flatMap(([type, listeners]) => listeners.keys().map((label) => ({ type, label }))),
+  );
 }
 
 async function handleTrigger(event: TriggerEvent) {
-  switch (event.type) {
-    case "webhook": {
-      const callback = registeredWebhooks.get(event.label);
-      if (callback == null) {
-        throw new Error(`Unknown webhook label: ${event.label}`);
-      }
-      await callback(event.data);
-      break;
-    }
-    case "gmail": {
-      const callback = registeredGmailEvents.get(event.label);
-      if (callback == null) {
-        throw new Error(`Unknown gmail label: ${event.label}`);
-      }
-      await callback(event.data);
-      break;
-    }
-    default:
-      throw new Error(`Unknown event type: ${(event as TriggerEvent).type}`);
+  const specificEventListeners = eventListenersByType.get(event.type);
+  const eventListener = specificEventListeners?.get(event.label);
+  if (!eventListener) {
+    throw new Error(`Unknown trigger: ${event.type} ${event.label}`);
   }
+  await eventListener.fn(event.data);
 }
 
 let hasScheduledInit = false;

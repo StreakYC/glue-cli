@@ -1,18 +1,16 @@
-import { onWebhook } from "./runtime/glue.ts";
+import glue from "./runtime/glue.ts";
 
-onWebhook((_) => {
-  // console.log(`event details: ${JSON.stringify(event)}`);
-  console.log("1");
-  console.log("2");
+glue.webhook.onWebhook((event) => {
+  console.log(`event details: ${JSON.stringify(event)}`);
 });
 
-onWebhook((_) => {
+glue.webhook.onWebhook((_) => {
   // console.log(`event details: ${JSON.stringify(event)}`);
   console.log("3");
   console.log("4");
 });
 
-onWebhook((_) => {
+glue.webhook.onWebhook((_) => {
   // console.log(`event details: ${JSON.stringify(event)}`);
   console.log("4");
   console.log("5");
