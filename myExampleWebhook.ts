@@ -1,11 +1,19 @@
 import { onWebhook } from "./runtime/glue.ts";
 
-// onGmailMessage((event) => {
-//   console.log("got gmail event", event);
-// });
+onWebhook((_) => {
+  // console.log(`event details: ${JSON.stringify(event)}`);
+  console.log("1");
+  console.log("2");
+});
 
-onWebhook((event) => {
-  console.log(`event details: ${JSON.stringify(event)}`);
-  console.log("one log line");
-  console.log("another log line");
+onWebhook((_) => {
+  // console.log(`event details: ${JSON.stringify(event)}`);
+  console.log("3");
+  console.log("4");
+});
+
+onWebhook((_) => {
+  // console.log(`event details: ${JSON.stringify(event)}`);
+  console.log("4");
+  console.log("5");
 });

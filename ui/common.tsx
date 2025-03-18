@@ -33,7 +33,7 @@ export const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       <Text backgroundColor="red" color="white">Need authentication:</Text>
-      {triggers.filter((t) => !!t.accountSetupUrl).map((t) => (
+      {triggers.sort((a, b) => a.label.localeCompare(b.label)).filter((t) => !!t.accountSetupUrl).map((t) => (
         <Text key={t.id}>
           {t.type}: <Text bold>{t.accountSetupUrl}</Text>
         </Text>
@@ -45,7 +45,7 @@ export const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
 export const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      {triggers.filter((t) => !!t.routingId).map((t) => (
+      {triggers.sort((a, b) => a.label.localeCompare(b.label)).filter((t) => !!t.routingId).map((t) => (
         <Text key={t.id}>
           {t.type}({t.label}): <Text bold>{t.description}</Text>
         </Text>

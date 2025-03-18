@@ -21,5 +21,25 @@
   },
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  }
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#95d4d0",
+    "activityBar.background": "#95d4d0",
+    "activityBar.foreground": "#15202b",
+    "activityBar.inactiveForeground": "#15202b99",
+    "activityBarBadge.background": "#b960bf",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#15202b99",
+    "sash.hoverBorder": "#95d4d0",
+    "statusBar.background": "#71c5c0",
+    "statusBar.foreground": "#15202b",
+    "statusBarItem.hoverBackground": "#4db6b0",
+    "statusBarItem.remoteBackground": "#71c5c0",
+    "statusBarItem.remoteForeground": "#15202b",
+    "titleBar.activeBackground": "#71c5c0",
+    "titleBar.activeForeground": "#15202b",
+    "titleBar.inactiveBackground": "#71c5c099",
+    "titleBar.inactiveForeground": "#15202b99"
+  },
+  "peacock.color": "#71c5c0"
 }
