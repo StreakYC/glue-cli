@@ -7,7 +7,6 @@ import { GlueDTO } from "../backend.ts";
 import { DevUI, DevUIProps } from "../ui/dev.tsx";
 import React from "react";
 import { render } from "ink";
-import { delay } from "@std/async/delay";
 
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -190,12 +189,12 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
       console.warn("Unknown websocket message:", message);
     }
   });
-  ws.addEventListener("error", (event) => {
-    // console.error("Websocket error:", event);
-    // TODO reconnect or throw error?
-  });
-  ws.addEventListener("close", (event) => {
-    // console.log("Websocket closed:", event);
-    // TODO reconnect
-  });
+  // ws.addEventListener("error", (event) => {
+  //   // console.error("Websocket error:", event);
+  //   // TODO reconnect or throw error?
+  // });
+  // ws.addEventListener("close", (event) => {
+  //   // console.log("Websocket closed:", event);
+  //   // TODO reconnect
+  // });
 }
