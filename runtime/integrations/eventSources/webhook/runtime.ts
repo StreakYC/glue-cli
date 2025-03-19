@@ -13,7 +13,7 @@ export interface WebhookAPI {
 
 export function createAPI(): WebhookAPI {
   return {
-    onWebhook(fn: (event: WebhookEvent) => void, options?: CommonTriggerOptions): void {
+    onWebhook(fn, options?): void {
       registerEvent("webhook", fn, options);
     },
   };

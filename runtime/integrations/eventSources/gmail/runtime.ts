@@ -11,7 +11,7 @@ export interface GmailAPI {
 
 export function createAPI(): GmailAPI {
   return {
-    onMessage(fn: (event: GmailMessageEvent) => void, options?: CommonTriggerOptions): void {
+    onMessage(fn, options?): void {
       registerEvent("gmail", fn, options);
     },
   };
