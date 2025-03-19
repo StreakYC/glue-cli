@@ -1,23 +1,22 @@
 // TODO this will be moved into glue-runtime once things are a little more
 // stable.
-import { z } from "zod";
 import { Hono } from "hono";
-import { RegisteredTrigger, TriggerEvent } from "./common.ts";
-import { Log, patchConsoleGlobal, runInLoggingContext } from "./logging.ts";
-import { onMessage } from "./integrations/eventSources/gmail/runtime.ts";
-import { onWebhook } from "./integrations/eventSources/webhook/runtime.ts";
+import { type RegisteredTrigger, TriggerEvent } from "./common.ts";
+import { type Log, patchConsoleGlobal, runInLoggingContext } from "./logging.ts";
+import * as webhookEventSource from "./integrations/eventSources/webhook/runtime.ts";
+import * as gmailEventSource from "./integrations/eventSources/gmail/runtime.ts";
 
 patchConsoleGlobal();
 
-const glue = {
-  gmail: {
-    onMessage,
-  },
-  webhook: {
-    onWebhook,
-  },
+export interface Glue {
+  gmail: gmailEventSource.GmailAPI;
+  webhook: webhookEventSource.WebhookAPI;
+}
+
+export const glue: Glue = {
+  gmail: gmailEventSource.createAPI(),
+  webhook: webhookEventSource.createAPI(),
 };
-export default glue;
 
 interface TriggerEventResponse {
   logs: Log[];
@@ -36,7 +35,7 @@ export interface CommonTriggerOptions {
 
 let nextAutomaticLabel = 0;
 
-export function registerEvent<T>(eventName: string, callback: (event: T) => void, eventSchema: z.ZodType<T>, options: CommonTriggerOptions = {}) {
+export function registerEvent<T>(eventName: string, callback: (event: T) => void, options: CommonTriggerOptions = {}) {
   scheduleInit();
 
   let specificEventListeners = eventListenersByType.get(eventName);
@@ -51,7 +50,7 @@ export function registerEvent<T>(eventName: string, callback: (event: T) => void
       `Event listener with label ${JSON.stringify(label)} already registered`,
     );
   }
-  specificEventListeners.set(resolvedLabel, { fn: (event: unknown) => callback(eventSchema.parse(event)), options: restOptions });
+  specificEventListeners.set(resolvedLabel, { fn: callback as RegisteredEvent["fn"], options: restOptions });
 }
 
 export function getRegisteredTriggers(): RegisteredTrigger[] {

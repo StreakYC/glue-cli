@@ -1,14 +1,20 @@
-import { z } from "zod";
-import { CommonTriggerOptions, registerEvent } from "../runtimeSupport.ts";
+import { type CommonTriggerOptions, registerEvent } from "../runtimeSupport.ts";
 
-export const WebhookEvent = z.object({
-  method: z.string(),
-  urlParams: z.record(z.string(), z.string()),
-  headers: z.record(z.string(), z.string()),
-  bodyText: z.string().optional(),
-});
-export type WebhookEvent = z.infer<typeof WebhookEvent>;
+export interface WebhookEvent {
+  method: string;
+  urlParams: Record<string, string>;
+  headers: Record<string, string>;
+  bodyText?: string;
+}
 
-export function onWebhook(fn: (event: WebhookEvent) => void, options?: CommonTriggerOptions): void {
-  registerEvent("webhook", fn, WebhookEvent, options);
+export interface WebhookAPI {
+  onWebhook(fn: (event: WebhookEvent) => void, options?: CommonTriggerOptions): void;
+}
+
+export function createAPI(): WebhookAPI {
+  return {
+    onWebhook(fn: (event: WebhookEvent) => void, options?: CommonTriggerOptions): void {
+      registerEvent("webhook", fn, options);
+    },
+  };
 }

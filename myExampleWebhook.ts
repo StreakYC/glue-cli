@@ -1,4 +1,4 @@
-import glue from "./runtime/glue.ts";
+import { glue } from "./runtime/glue.ts";
 
 glue.webhook.onWebhook((event) => {
   console.log(`event details: ${JSON.stringify(event)}`);

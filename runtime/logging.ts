@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { Awaitable } from "./common.ts";
+import type { Awaitable } from "./common.ts";
 import { serializeConsoleArgumentsToString } from "./logging/serialization.ts";
 
 export interface Log {

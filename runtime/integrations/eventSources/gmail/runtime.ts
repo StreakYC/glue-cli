@@ -1,12 +1,18 @@
-import { z } from "zod";
-import { CommonTriggerOptions, registerEvent } from "../runtimeSupport.ts";
+import { type CommonTriggerOptions, registerEvent } from "../runtimeSupport.ts";
 
-export const GmailMessageEvent = z.object({
-  type: z.literal("messageAdded"),
-  subject: z.string(),
-});
-export type GmailMessageEvent = z.infer<typeof GmailMessageEvent>;
+export interface GmailMessageEvent {
+  type: "messageAdded";
+  subject: string;
+}
 
-export function onMessage(fn: (event: GmailMessageEvent) => void, options?: CommonTriggerOptions): void {
-  registerEvent("gmail", fn, GmailMessageEvent, options);
+export interface GmailAPI {
+  onMessage(fn: (event: GmailMessageEvent) => void, options?: CommonTriggerOptions): void;
+}
+
+export function createAPI(): GmailAPI {
+  return {
+    onMessage(fn: (event: GmailMessageEvent) => void, options?: CommonTriggerOptions): void {
+      registerEvent("gmail", fn, options);
+    },
+  };
 }
