@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { CommonTriggerOptions, registerEvent } from "../runtimeSupport.ts";
 
-export const GmailEvent = z.object({
+export const GmailMessageEvent = z.object({
   type: z.literal("messageAdded"),
   subject: z.string(),
 });
-export type GmailEvent = z.infer<typeof GmailEvent>;
+export type GmailMessageEvent = z.infer<typeof GmailMessageEvent>;
 
-export function onMessage(fn: (event: GmailEvent) => void, options?: CommonTriggerOptions): void {
-  registerEvent("gmail", fn, GmailEvent, options);
+export function onMessage(fn: (event: GmailMessageEvent) => void, options?: CommonTriggerOptions): void {
+  registerEvent("gmail", fn, GmailMessageEvent, options);
 }
