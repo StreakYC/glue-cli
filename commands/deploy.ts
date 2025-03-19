@@ -1,9 +1,9 @@
 import { basename, dirname, relative } from "@std/path";
 import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
-import { createDeployment, CreateDeploymentParams, createGlue, DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
+import { createDeployment, type CreateDeploymentParams, createGlue, type DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
 import { render } from "ink";
-import { DeployUI, DeployUIProps } from "../ui/deploy.tsx";
+import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
 interface DeployOptions {
   name?: string;

@@ -1,6 +1,6 @@
 import { Spinner } from "@std/cli/unstable-spinner";
 import * as mod from "@std/fmt/colors";
-import { BuildStepDTO, DeploymentStatus } from "../backend.ts";
+import type { BuildStepDTO, DeploymentStatus } from "../backend.ts";
 
 export async function runStep<T>(
   message: string,
