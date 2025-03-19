@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createDeployment, createGlue, getGlueById, getGlueByName, streamChangesToDeployment } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
-import { type RegisteredTrigger, TriggerEvent } from "../runtime/common.ts";
+import { type RegisteredTrigger, TriggerEvent } from "../runtimeCommon.ts";
 import type { GlueDTO } from "../backend.ts";
 import { DevUI, type DevUIProps } from "../ui/dev.tsx";
 import React from "react";

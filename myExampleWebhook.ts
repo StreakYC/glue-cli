@@ -1,4 +1,4 @@
-import { glue } from "./runtime/glue.ts";
+import { glue } from "@streak-glue/runtime";
 
 glue.webhook.onWebhook((event) => {
   console.log(`event details: ${JSON.stringify(event)}`);
