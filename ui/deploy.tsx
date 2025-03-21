@@ -1,4 +1,4 @@
-import { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
+import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
 import { AuthTriggerList, BuildStepStatusRow, ClientStepRow, SetupTriggerList } from "./common.tsx";
 

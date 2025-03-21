@@ -1,4 +1,4 @@
-import { getDeployments, getGlueByName, GlueDTO } from "../backend.ts";
+import { getDeployments, getGlueByName, type GlueDTO } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";

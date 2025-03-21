@@ -1,4 +1,4 @@
-import { ExecutionDTO, getExecutions, getGlueByName, GlueDTO } from "../backend.ts";
+import { type ExecutionDTO, getExecutions, getGlueByName, type GlueDTO } from "../backend.ts";
 import { cyan, dim, green, red } from "@std/fmt/colors";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";

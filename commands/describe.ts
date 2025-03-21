@@ -1,4 +1,4 @@
-import { DeploymentDTO, getDeploymentById, getDeployments, getGlueById, getGlueByName, GlueDTO } from "../backend.ts";
+import { type DeploymentDTO, getDeploymentById, getDeployments, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 

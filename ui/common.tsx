@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
-import { BuildStepDTO, StepStatus, TriggerDTO } from "../backend.ts";
+import type { BuildStepDTO, StepStatus, TriggerDTO } from "../backend.ts";
 
 export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
   if (step.status === "success") {
