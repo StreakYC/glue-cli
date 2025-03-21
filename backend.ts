@@ -52,14 +52,20 @@ export const UpdateGlueParams = z.object({
 });
 export type UpdateGlueParams = z.infer<typeof UpdateGlueParams>;
 
-export async function backendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function backendRequest<T>(path: string, options: RequestInit = {}, forceTrace = true): Promise<T> {
   const userEmail = await getLoggedInUser();
+  const headers: Record<string, string> = {
+    "Authorization": `Basic ${encodeBase64(userEmail + ":")}`,
+    "User-Agent": "glue-cli",
+  };
+
+  if (forceTrace) {
+    headers["X-Cloud-Trace-Context"] = `00000000000000000000000000000000/0;o=1`;
+  }
+
   const res = await fetch(`${GLUE_API_SERVER}${path}`, {
     ...options,
-    headers: {
-      "Authorization": `Basic ${encodeBase64(userEmail + ":")}`,
-      "User-Agent": "glue-cli",
-    },
+    headers,
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch ${path}: ${res.statusText}`);
