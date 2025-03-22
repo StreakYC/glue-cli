@@ -1,7 +1,7 @@
 {
   "name": "@streak-glue/cli",
   "tasks": {
-    "cli": "GLUE_API_SERVER=https://api.glue.wtf deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
+    "cli": "deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
     "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
     "check": "deno check main.ts",
     "test": "deno test --permit-no-files"
@@ -22,7 +22,7 @@
     "@std/fs": "jsr:@std/fs@^1.0.6",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.1.0",
-    "hono": "jsr:@hono/hono@^4.6.11",
+    "hono": "npm:hono@^4.7.5",
     "ink": "npm:ink@^5.1.1",
     "ink-spinner": "npm:ink-spinner@^5.0.0",
     "react": "npm:react@^18.3.1",

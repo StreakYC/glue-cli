@@ -7,6 +7,7 @@ import type { GlueDTO } from "../backend.ts";
 import { DevUI, type DevUIProps } from "../ui/dev.tsx";
 import React from "react";
 import { render } from "ink";
+import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -21,6 +22,7 @@ interface DevOptions {
 }
 
 export async function dev(options: DevOptions, file: string) {
+  await checkForAuthCredsOtherwiseExit();
   Deno.addSignalListener("SIGINT", () => {
     Deno.exit();
   });

@@ -3,13 +3,15 @@ import { Table } from "@cliffy/table";
 import { green, red } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
-
+import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 interface ListOptions {
   nameFilter?: string;
   json?: boolean;
 }
 
 export const list = async (options: ListOptions) => {
+  await checkForAuthCredsOtherwiseExit();
+
   if (options.json) {
     const glues = await getGlues("deploy", options.nameFilter);
     console.log(JSON.stringify(glues, null, 2));

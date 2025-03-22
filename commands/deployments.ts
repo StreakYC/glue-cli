@@ -3,12 +3,13 @@ import { Table } from "@cliffy/table";
 import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
-
+import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 interface DeploymentsOptions {
   json?: boolean;
 }
 
 export const deployments = async (options: DeploymentsOptions, name?: string) => {
+  await checkForAuthCredsOtherwiseExit();
   let glue: GlueDTO | undefined;
 
   if (name) {

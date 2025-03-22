@@ -5,11 +5,15 @@ import { createDeployment, type CreateDeploymentParams, createGlue, type Deploym
 import { render } from "ink";
 import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
+import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+
 interface DeployOptions {
   name?: string;
 }
 
 export async function deploy(options: DeployOptions, file: string) {
+  await checkForAuthCredsOtherwiseExit();
+
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
     codeAnalysisState: "not_started",

@@ -1,12 +1,13 @@
 import { type DeploymentDTO, getDeploymentById, getDeployments, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
-
+import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 interface DescribeOptions {
   json?: boolean;
 }
 
 export const describe = async (options: DescribeOptions, query?: string) => {
+  await checkForAuthCredsOtherwiseExit();
   let glue: GlueDTO | undefined;
   let deployment: DeploymentDTO | undefined;
 

@@ -1,5 +1,6 @@
-import { kv } from "../db.ts";
+import { clearAuthToken } from "../auth.ts";
+
 export const logout = async () => {
-  await kv.delete(["userEmail"]);
+  await clearAuthToken();
   console.log("Logged out");
 };

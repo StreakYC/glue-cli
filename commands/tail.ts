@@ -4,7 +4,7 @@ import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
-
+import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 interface TailOptions {
   json?: boolean;
   number: number;
@@ -14,6 +14,7 @@ interface TailOptions {
 }
 
 export const tail = async (options: TailOptions, name?: string) => {
+  await checkForAuthCredsOtherwiseExit();
   let glue: GlueDTO | undefined;
 
   if (name) {

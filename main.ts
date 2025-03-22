@@ -9,6 +9,7 @@ import { deployments } from "./commands/deployments.ts";
 import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
 import { tail } from "./commands/tail.ts";
+
 const cmd = new Command()
   .name("glue")
   .version(denoJson.version)

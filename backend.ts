@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { getLoggedInUser } from "./auth.ts";
+import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken, setAuthToken } from "./auth.ts";
 import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
-import { encodeBase64 } from "@std/encoding";
 import { GLUE_API_SERVER } from "./common.ts";
 
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
@@ -53,9 +52,9 @@ export const UpdateGlueParams = z.object({
 export type UpdateGlueParams = z.infer<typeof UpdateGlueParams>;
 
 export async function backendRequest<T>(path: string, options: RequestInit = {}, forceTrace = true): Promise<T> {
-  const userEmail = await getLoggedInUser();
+  const authToken = await getAuthToken();
   const headers: Record<string, string> = {
-    "Authorization": `Basic ${encodeBase64(userEmail + ":")}`,
+    "Authorization": `Bearer ${authToken}`,
     "User-Agent": "glue-cli",
   };
 
@@ -67,10 +66,18 @@ export async function backendRequest<T>(path: string, options: RequestInit = {},
     ...options,
     headers,
   });
+  if (res.status === 401) {
+    await clearAuthToken();
+    exitBecauseNotLoggedIn();
+  }
   if (!res.ok) {
     throw new Error(`Failed to fetch ${path}: ${res.statusText}`);
   }
   return res.json() as Promise<T>;
+}
+
+export async function getLoggedInUser(): Promise<UserDTO> {
+  return await backendRequest<UserDTO>("/users/me");
 }
 
 export async function getGlueByName(name: string, environment: GlueEnvironment): Promise<GlueDTO | undefined> {
