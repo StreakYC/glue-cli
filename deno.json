@@ -1,5 +1,10 @@
 {
   "name": "@streak-glue/cli",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./main.ts"
+  },
   "tasks": {
     "cli": "deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
     "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
@@ -7,10 +12,6 @@
     "test": "deno test --permit-no-files"
   },
   "unstable": ["kv"],
-  "license": "MIT",
-  "exports": {
-    ".": "./main.ts"
-  },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
     "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.7",
@@ -37,6 +38,5 @@
   },
   "fmt": {
     "lineWidth": 160
-  },
-  "version": "0.1.0"
+  }
 }
