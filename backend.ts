@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken, setAuthToken } from "./auth.ts";
+import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken } from "./auth.ts";
 import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
