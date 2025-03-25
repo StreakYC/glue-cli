@@ -23,7 +23,7 @@ const cmd = new Command()
     "upgrade",
     new UpgradeCommand({
       provider: [
-        new JsrProvider({ scope: "@streak-glue/cli" }),
+        new JsrProvider({ scope: "streak-glue", name: "cli" }),
       ],
       main: "glue.ts",
       args: ["--unstable-kv"],
