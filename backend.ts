@@ -112,6 +112,26 @@ export async function createGlue(name: string, deployment: CreateDeploymentParam
   return res;
 }
 
+export async function pauseGlue(glueId: string) {
+  const payload: UpdateGlueParams = {
+    running: false,
+  };
+  await backendRequest<void>(`/glues/${glueId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resumeGlue(glueId: string) {
+  const payload: UpdateGlueParams = {
+    running: true,
+  };
+  await backendRequest<void>(`/glues/${glueId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function createDeployment(glueId: string, deployment: CreateDeploymentParams): Promise<DeploymentDTO> {
   const res = await backendRequest<DeploymentDTO>(
     `/glues/${glueId}/deployments`,

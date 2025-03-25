@@ -11,6 +11,8 @@ import denoJson from "./deno.json" with { type: "json" };
 import { tail } from "./commands/tail.ts";
 import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
+import { pause } from "./commands/pause.ts";
+import { resume } from "./commands/resume.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -55,16 +57,12 @@ const cmd = new Command()
   .action(list)
   // PAUSE ----------------------------
   .command("pause", "Pause a deployed glue")
-  .arguments("<name:string>")
-  .action(() => {
-    throw new Error("Not implemented");
-  })
+  .arguments("[name:string]")
+  .action(pause)
   // RESUME ----------------------------
   .command("resume", "Resume a paused glue")
-  .arguments("<name:string>")
-  .action(() => {
-    throw new Error("Not implemented");
-  })
+  .arguments("[name:string]")
+  .action(resume)
   // DEPLOYMENTS ----------------------------
   .command(
     "deployments",
