@@ -6,9 +6,9 @@
     ".": "./glue.ts"
   },
   "tasks": {
-    "cli": "deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
-    "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal main.ts",
-    "check": "deno check main.ts",
+    "cli": "deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts",
+    "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts",
+    "check": "deno check glue.ts",
     "test": "deno test --permit-no-files"
   },
   "unstable": ["kv"],
