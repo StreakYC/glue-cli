@@ -1,9 +1,9 @@
 {
   "name": "@streak-glue/cli",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "license": "MIT",
   "exports": {
-    "./glue": "./glue.ts"
+    ".": "./glue.ts"
   },
   "tasks": {
     "cli": "deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts",
