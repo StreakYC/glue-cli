@@ -9,7 +9,6 @@ export const login = async () => {
   openUrl(loginUrl);
 
   const app = new Hono();
-  let server: ReturnType<typeof Deno.serve>;
 
   app.get("*", (c) => {
     const dataStr = c.req.query("data");
@@ -31,7 +30,7 @@ export const login = async () => {
     return c.text(`Logged in as ${email}. You can close this window and return to the CLI.`);
   });
 
-  server = Deno.serve({
+  const server = Deno.serve({
     onListen() {
       console.log(`Waiting for login...`);
     },
