@@ -8,18 +8,8 @@ export const login = async () => {
   console.log(`Opening login page: ${loginUrl}`);
   openUrl(loginUrl);
 
-  const server = Deno.serve({
-    onListen() {
-      console.log(`Waiting for login...`);
-    },
-    port: 8123,
-  }, createHonoAppToWaitForLogin(() => server.shutdown()).fetch);
-
-  await server.finished;
-};
-
-function createHonoAppToWaitForLogin(shutdown: () => void): Hono {
   const app = new Hono();
+  let server: ReturnType<typeof Deno.serve>;
 
   app.get("*", (c) => {
     const dataStr = c.req.query("data");
@@ -36,10 +26,17 @@ function createHonoAppToWaitForLogin(shutdown: () => void): Hono {
     console.log(`Successfully logged in as ${email}`);
 
     // Shutdown the server after sending the response
-    queueMicrotask(shutdown);
+    queueMicrotask(() => server.shutdown());
 
     return c.text(`Logged in as ${email}. You can close this window and return to the CLI.`);
   });
 
-  return app;
-}
+  server = Deno.serve({
+    onListen() {
+      console.log(`Waiting for login...`);
+    },
+    port: 8123,
+  }, app.fetch);
+
+  await server.finished;
+};
