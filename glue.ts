@@ -9,6 +9,8 @@ import { deployments } from "./commands/deployments.ts";
 import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
 import { tail } from "./commands/tail.ts";
+import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
+import { UpgradeCommand } from "@cliffy/command/upgrade";
 
 const cmd = new Command()
   .name("glue")
@@ -17,6 +19,16 @@ const cmd = new Command()
   .action(() => {
     cmd.showHelp();
   })
+  .command(
+    "upgrade",
+    new UpgradeCommand({
+      provider: [
+        new JsrProvider({ scope: "@streak-glue/cli" }),
+      ],
+      main: "glue.ts",
+      args: ["--unstable-kv"],
+    }),
+  )
   // DEV ----------------------------
   .command("dev", "Run a glue locally for development")
   .option("-n, --name <name:string>", "Set glue name")
