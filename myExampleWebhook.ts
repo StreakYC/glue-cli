@@ -15,3 +15,7 @@ glue.webhook.onWebhook((_) => {
   console.log("4");
   console.log("5");
 });
+
+glue.gmail.onMessage((event) => {
+  console.log(`subject: ${event.subject}`);
+});

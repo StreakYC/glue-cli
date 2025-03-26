@@ -1,7 +1,8 @@
-import { type DeploymentDTO, getDeploymentById, getDeployments, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
+import { type DeploymentDTO, getDeploymentById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { bold, dim, green, red } from "@std/fmt/colors";
 interface DescribeOptions {
   json?: boolean;
 }
@@ -32,8 +33,7 @@ export const describe = async (options: DescribeOptions, query?: string) => {
   if (deployment) {
     renderDeployment(deployment, options);
   } else if (glue) {
-    const deployments = await runStep(`Loading deployments for ${glue.name}...`, () => getDeployments(glue.id));
-    renderGlueAndDeployments(glue, deployments, options);
+    renderGlue(glue, options);
   }
 };
 
@@ -45,12 +45,24 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
   // render it nicely with build steps
 }
 
-function renderGlueAndDeployments(glue: GlueDTO, deployments: DeploymentDTO[], options: DescribeOptions) {
+function renderGlue(glue: GlueDTO, options: DescribeOptions) {
   if (options.json) {
-    console.log(JSON.stringify({ ...glue, deployments: deployments }, null, 2));
+    console.log(JSON.stringify(glue, null, 2));
     return;
   }
-  console.log(glue.name);
+
+  console.log(`${bold(glue.name)} ${dim(`(${glue.id})`)}`);
+  console.log(`Status: ${glue.running ? green("RUNNING") : red("NOT RUNNING")}`);
+  console.log(`Created: ${new Date(glue.createdAt).toLocaleString()}`);
+  console.log(`Number of runs: ${glue.executionSummary.count}`);
+  console.log(`Last run: ${new Date(glue.executionSummary.mostRecent).toLocaleString()}`);
+  if (glue.currentDeployment) {
+    console.log(`Last Deployed: ${new Date(glue.currentDeployment.createdAt).toLocaleString()}`);
+    console.log("Triggers:");
+    for (const t of glue.currentDeployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label))) {
+      console.log(`\t${t.type} (${t.label}): ${dim(t.description ?? "")}`);
+    }
+  }
 }
 
 function isPrefixId(query: string, prefix: string) {
