@@ -43,7 +43,7 @@ export const tail = async (options: TailOptions, name?: string) => {
     if (executions.length > 0) {
       pollingSpinner.stop();
       renderExecutions(executions, options.logLines, !!options.fullLogLines, options.json);
-      startingPoint = new Date(executions[executions.length - 1].startedAt);
+      startingPoint = new Date(executions[executions.length - 1].endedAt!);
       pollingSpinner.start();
     }
     await delay(1000);
@@ -53,7 +53,10 @@ export const tail = async (options: TailOptions, name?: string) => {
 function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogLines: boolean, json?: boolean) {
   if (!json) {
     executions.forEach((e) => {
-      console.log(`[${new Date(e.startedAt).toISOString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
+      if (!e.endedAt) {
+        return;
+      }
+      console.log(`[${new Date(e.endedAt).toISOString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
       e.logs.slice(0, logLines).forEach((l) => {
         let toConsole = dim(`[${new Date(l.timestamp).toISOString()}] ${l.text.trim()}`);
         if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
