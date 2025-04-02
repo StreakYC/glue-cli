@@ -26,7 +26,7 @@
     "jsr:@std/path@^1.0.8": "1.0.8",
     "jsr:@std/path@~1.0.6": "1.0.8",
     "jsr:@std/text@~1.0.7": "1.0.7",
-    "jsr:@streak-glue/runtime@0.1": "0.1.0",
+    "jsr:@streak-glue/runtime@*": "0.1.7",
     "npm:@slack/web-api@*": "7.8.0",
     "npm:@slack/webhook@*": "7.0.4",
     "npm:@types/node@*": "22.5.4",
@@ -136,6 +136,13 @@
     },
     "@streak-glue/runtime@0.1.0": {
       "integrity": "164b70857aa49b5dc519a9f0a944f59121d612a7f994253694d199164fb5098f",
+      "dependencies": [
+        "jsr:@hono/hono",
+        "npm:zod@^3.24.2"
+      ]
+    },
+    "@streak-glue/runtime@0.1.7": {
+      "integrity": "de34df35629d1228f6f9886dde450054dbe7ec401af44d06101a89ea5999d7d5",
       "dependencies": [
         "jsr:@hono/hono",
         "npm:zod@^3.24.2"
@@ -566,7 +573,6 @@
       "jsr:@std/fmt@^1.0.3",
       "jsr:@std/fs@^1.0.6",
       "jsr:@std/path@^1.0.8",
-      "jsr:@streak-glue/runtime@0.1",
       "npm:@types/react@18",
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",

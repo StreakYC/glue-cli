@@ -1,19 +1,11 @@
-import { glue } from "@streak-glue/runtime";
+import { glue } from "jsr:@streak-glue/runtime";
 
 glue.webhook.onWebhook((event) => {
   console.log(`event details: ${JSON.stringify(event)}`);
 });
 
-glue.webhook.onWebhook((_) => {
-  // console.log(`event details: ${JSON.stringify(event)}`);
-  console.log("3");
-  console.log("4");
-});
-
-glue.webhook.onWebhook((_) => {
-  // console.log(`event details: ${JSON.stringify(event)}`);
-  console.log("4");
-  console.log("5");
+glue.github.onRepoEvent("StreakYC", "glue-backend", ["issues"], (event) => {
+  console.log(`issue event: ${JSON.stringify(event)}`);
 });
 
 glue.gmail.onMessage((event) => {
