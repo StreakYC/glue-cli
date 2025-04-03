@@ -3,6 +3,7 @@ import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken } from "./auth.ts"
 import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
+import { retry } from "@std/async/retry";
 
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
 export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
@@ -168,7 +169,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
 export async function* streamChangesToDeployment(deploymentId: string): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
-    const deployment = await getDeploymentById(deploymentId);
+    const deployment = await retry(() => getDeploymentById(deploymentId));
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }
