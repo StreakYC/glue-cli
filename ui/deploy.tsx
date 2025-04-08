@@ -20,7 +20,9 @@ export const DeployUI = (
       {deployment && deployment.buildSteps.map((step: BuildStepDTO) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
-          {step.name === "triggerAuth" && deployment.triggers.some((t) => !!t.accountSetupUrl) && <AuthTriggerList triggers={deployment.triggers} />}
+          {step.name === "triggerAuth" && step.status === "in_progress" && deployment.triggers.some((t) => !!t.accountSetupUrl) && (
+            <AuthTriggerList triggers={deployment.triggers} />
+          )}
           {step.name === "triggerSetup" && step.status === "success" && deployment.triggers.some((t) => !!t.routingId) && (
             <SetupTriggerList triggers={deployment.triggers} />
           )}
