@@ -25,10 +25,10 @@ interface DevOptions {
 export async function dev(options: DevOptions, file: string) {
   await checkForAuthCredsOtherwiseExit();
   let glueId: string;
-  Deno.addSignalListener("SIGINT", () => {
+  Deno.addSignalListener("SIGINT", async () => {
     if (glueId) {
       console.log("Stopping glue...");
-      stopGlue(glueId);
+      await stopGlue(glueId);
     }
     Deno.exit();
   });
