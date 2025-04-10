@@ -22,6 +22,12 @@
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
   "workbench.colorCustomizations": {
     "activityBar.activeBackground": "#95d4d0",
     "activityBar.background": "#95d4d0",
