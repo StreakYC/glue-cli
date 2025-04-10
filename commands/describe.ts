@@ -59,7 +59,7 @@ function renderGlue(glue: GlueDTO, options: DescribeOptions) {
   if (glue.currentDeployment) {
     console.log(`Last Deployed: ${new Date(glue.currentDeployment.createdAt).toLocaleString()}`);
     console.log("Triggers:");
-    for (const t of glue.currentDeployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label))) {
+    for (const t of glue.currentDeployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))) {
       console.log(`\t${t.type} (${t.label}): ${dim(t.description ?? "")}`);
     }
   }
