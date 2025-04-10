@@ -37,9 +37,7 @@ export const DevUI = (
           {step.name === "triggerAuth" && props.deployment?.triggers.some((t) => !!t.accountSetupUrl) && (
             <AuthTriggerList triggers={props.deployment?.triggers} />
           )}
-          {step.name === "triggerSetup" && step.status === "success" && props.deployment?.triggers.some((t) => !!t.routingId) && (
-            <SetupTriggerList triggers={props.deployment?.triggers} />
-          )}
+          {step.name === "triggerSetup" && step.status === "success" && props.deployment && <SetupTriggerList triggers={props.deployment.triggers} />}
         </React.Fragment>
       ))}
       {props.deployment && (

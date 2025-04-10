@@ -45,7 +45,7 @@ export const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
 export const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      {triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })).filter((t) => !!t.routingId).map((t) => (
+      {triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })).map((t) => (
         <Text key={t.id}>
           {t.type}({t.label}): <Text bold>{t.description}</Text>
         </Text>
