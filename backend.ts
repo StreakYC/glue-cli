@@ -99,6 +99,12 @@ export async function getGlueById(id: string): Promise<GlueDTO | undefined> {
   return await backendRequest<GlueDTO>(`/glues/${id}`);
 }
 
+export async function stopGlue(id: string) {
+  await backendRequest<void>(`/glues/${id}/stop`, {
+    method: "POST",
+  });
+}
+
 export async function createGlue(name: string, deployment: CreateDeploymentParams, environment: GlueEnvironment): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues`, {
     method: "POST",

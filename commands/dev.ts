@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createDeployment, createGlue, getGlueById, getGlueByName, streamChangesToDeployment } from "../backend.ts";
+import { createDeployment, createGlue, getGlueById, getGlueByName, stopGlue, streamChangesToDeployment } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { type RegisteredTrigger, TriggerEvent } from "../runtimeCommon.ts";
@@ -8,6 +8,7 @@ import { DevUI, type DevUIProps } from "../ui/dev.tsx";
 import React from "react";
 import { render } from "ink";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { cyan } from "@std/fmt/colors";
 
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -23,7 +24,12 @@ interface DevOptions {
 
 export async function dev(options: DevOptions, file: string) {
   await checkForAuthCredsOtherwiseExit();
+  let glueId: string;
   Deno.addSignalListener("SIGINT", () => {
+    if (glueId) {
+      console.log("Stopping glue...");
+      stopGlue(glueId);
+    }
     Deno.exit();
   });
 
@@ -41,9 +47,18 @@ export async function dev(options: DevOptions, file: string) {
     deployment: undefined,
   };
 
+  let inkInstance: { unmount: () => void } | undefined;
+
   const updateUI = (patch: Partial<DevUIProps>) => {
     devProgressProps = { ...devProgressProps, ...patch };
-    render(React.createElement(DevUI, devProgressProps));
+    inkInstance = render(React.createElement(DevUI, devProgressProps));
+  };
+
+  const unmountUI = () => {
+    if (inkInstance) {
+      inkInstance.unmount();
+      inkInstance = undefined;
+    }
   };
 
   let start = performance.now();
@@ -84,7 +99,6 @@ export async function dev(options: DevOptions, file: string) {
   updateUI({ registeringGlueState: "in_progress", registeringGlueDuration: 0 });
   const existingGlue = await getGlueByName(glueName, "dev");
   let newDeploymentId: string;
-  let glueId: string;
   if (!existingGlue) {
     const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
     if (!newGlue.currentDeploymentId) {
@@ -112,7 +126,7 @@ export async function dev(options: DevOptions, file: string) {
 
   await runWebsocket(glue, glueDevPort);
   updateUI({ connectingToTunnelState: "success", connectingToTunnelDuration: performance.now() - start });
-
+  unmountUI();
   await localRunnerEndPromise;
 }
 
@@ -143,7 +157,7 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
     args: [
       "run",
       "--quiet",
-      // "--watch", // TODO commented out for now because when the user code changes, we need to potentially resetup the triggers
+      // "--watch", // TODO implement our own watch so we can either fast restart if the triggers are the same or rerun dev command if not
       "--env-file",
       "--no-prompt",
       "--allow-env",
@@ -182,6 +196,8 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
     }
     const message = ServerWebsocketMessage.parse(JSON.parse(event.data));
     if (message.type === "trigger") {
+      const trigger = glue.currentDeployment!.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
+      console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
       await fetch(`http://127.0.0.1:${glueDevPort}/__glue__/triggerEvent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
