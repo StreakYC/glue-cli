@@ -10,6 +10,7 @@ import { render } from "ink";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 
+const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
   event: TriggerEvent,
@@ -64,11 +65,10 @@ export async function dev(options: DevOptions, file: string) {
   let start = performance.now();
   updateUI({ codeAnalysisState: "in_progress", codeAnalysisDuration: 0 });
   const glueName = options.name ?? basename(file).replace(/\.[^.]+$/, "");
-  const glueDevPort = 8567; // TODO pick a random unused port or maybe use a unix socket
 
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
-    GLUE_DEV_PORT: String(glueDevPort),
+    GLUE_DEV_PORT: String(GLUE_DEV_PORT),
   };
 
   if (!options.keepFullEnv) {
@@ -87,12 +87,12 @@ export async function dev(options: DevOptions, file: string) {
 
   start = performance.now();
   updateUI({ bootingCodeState: "in_progress", bootingCodeDuration: 0 });
-  await waitForLocalRunnerToBeReady(glueDevPort);
+  await waitForLocalRunnerToBeReady();
   updateUI({ bootingCodeState: "success", bootingCodeDuration: performance.now() - start });
 
   start = performance.now();
   updateUI({ creatingTriggersState: "in_progress", creatingTriggersDuration: 0 });
-  const registeredTriggers = await getRegisteredTriggers(glueDevPort);
+  const registeredTriggers = await getRegisteredTriggers();
   updateUI({ creatingTriggersState: "success", creatingTriggersDuration: performance.now() - start });
 
   start = performance.now();
@@ -124,16 +124,16 @@ export async function dev(options: DevOptions, file: string) {
     throw new Error("Glue not found");
   }
 
-  await runWebsocket(glue, glueDevPort);
+  await runWebsocket(glue);
   updateUI({ connectingToTunnelState: "success", connectingToTunnelDuration: performance.now() - start });
   unmountUI();
   await localRunnerEndPromise;
 }
 
-async function waitForLocalRunnerToBeReady(glueDevPort: number) {
+async function waitForLocalRunnerToBeReady() {
   await retry(async () => {
     const res = await fetch(
-      `http://127.0.0.1:${glueDevPort}/__glue__/getRegisteredTriggers`,
+      `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
     );
     if (!res.ok) {
       throw new Error(`Failed health check: ${res.statusText}`);
@@ -141,9 +141,9 @@ async function waitForLocalRunnerToBeReady(glueDevPort: number) {
   });
 }
 
-async function getRegisteredTriggers(glueDevPort: number): Promise<RegisteredTrigger[]> {
+async function getRegisteredTriggers(): Promise<RegisteredTrigger[]> {
   const res = await fetch(
-    `http://127.0.0.1:${glueDevPort}/__glue__/getRegisteredTriggers`,
+    `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
   );
   if (!res.ok) {
     throw new Error(`Failed to get registered triggers: ${res.statusText}`);
@@ -178,7 +178,7 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
   return { endPromise };
 }
 
-function runWebsocket(glue: GlueDTO, glueDevPort: number) {
+function runWebsocket(glue: GlueDTO) {
   if (glue.devEventsWebsocketUrl == null) {
     throw new Error("No dev events websocket URL found");
   }
@@ -198,7 +198,7 @@ function runWebsocket(glue: GlueDTO, glueDevPort: number) {
     if (message.type === "trigger") {
       const trigger = glue.currentDeployment!.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
       console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
-      await fetch(`http://127.0.0.1:${glueDevPort}/__glue__/triggerEvent`, {
+      await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(message.event satisfies TriggerEvent),
