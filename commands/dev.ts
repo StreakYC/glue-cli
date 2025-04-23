@@ -28,11 +28,11 @@ let inkInstance: { unmount: () => void } | undefined;
 
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
-  
+
   let glueId: string | undefined;
   let localRunner: { endPromise: Promise<void>; child: Deno.ChildProcess } | undefined;
   let previousTriggers: RegisteredTrigger[] | undefined;
-  
+
   Deno.addSignalListener("SIGINT", async () => {
     if (glueId) {
       console.log("Stopping glue...");
@@ -52,14 +52,14 @@ export async function dev(options: DevOptions, filename: string) {
 
   try {
     for await (const event of watcher) {
-      if (event.kind === "modify" && event.paths.some(path => path === filename)) {
+      if (event.kind === "modify" && event.paths.some((path) => path === filename)) {
         console.log(cyan(`\n[${new Date().toISOString()}] File changed, restarting...`));
-        
+
         if (localRunner) {
           localRunner.child.kill("SIGTERM");
           await localRunner.endPromise.catch(() => {}); // Ignore errors from the killed process
         }
-        
+
         const newResult = await runGlueFile(filename, options, glueId, previousTriggers);
         localRunner = newResult.localRunner;
         previousTriggers = newResult.registeredTriggers;
@@ -177,10 +177,10 @@ interface GlueRunResult {
 }
 
 async function runGlueFile(
-  filename: string, 
-  options: DevOptions, 
+  filename: string,
+  options: DevOptions,
   existingGlueId?: string,
-  previousTriggers?: RegisteredTrigger[]
+  previousTriggers?: RegisteredTrigger[],
 ): Promise<GlueRunResult> {
   const result = await runUIStep("codeAnalysis", () => analyzeCode(filename, options));
   const { glueName, env } = result;
@@ -195,16 +195,16 @@ async function runGlueFile(
 
   if (existingGlueId && previousTriggers && areTriggersEqual(previousTriggers, registeredTriggers)) {
     console.log(cyan(`\n[${new Date().toISOString()}] No changes in triggers, skipping deployment`));
-    
+
     const glue = await getGlueById(existingGlueId);
     if (!glue) {
       throw new Error("Glue not found");
     }
-    
+
     await runUIStep("connectingToTunnel", () => {
       runWebsocket(glue);
     });
-    
+
     return { glueId: existingGlueId, localRunner, registeredTriggers };
   }
 
