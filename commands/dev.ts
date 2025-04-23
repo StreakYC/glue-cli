@@ -32,7 +32,7 @@ export async function dev(options: DevOptions, filename: string) {
   let glueId: string | undefined;
   let localRunner: { endPromise: Promise<void>; child: Deno.ChildProcess } | undefined;
   let previousTriggers: RegisteredTrigger[] | undefined;
-
+  
   Deno.addSignalListener("SIGINT", async () => {
     if (glueId) {
       console.log("Stopping glue...");
