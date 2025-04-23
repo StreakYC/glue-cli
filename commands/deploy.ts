@@ -40,10 +40,10 @@ export async function deploy(options: DeployOptions, file: string) {
   let newDeploymentId: string;
   if (!existingGlue) {
     const newGlue = await createGlue(glueName, deploymentParams, "deploy");
-    if (!newGlue.currentDeploymentId) {
+    if (!newGlue.pendingDeployment) {
       throw new Error("Failed to create glue");
     }
-    newDeploymentId = newGlue.currentDeploymentId;
+    newDeploymentId = newGlue.pendingDeployment.id;
   } else {
     const newDeployment = await createDeployment(existingGlue.id, deploymentParams);
     newDeploymentId = newDeployment.id;
