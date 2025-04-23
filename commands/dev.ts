@@ -28,6 +28,11 @@ let inkInstance: { unmount: () => void } | undefined;
 
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
+  
+  let glueId: string | undefined;
+  let localRunner: { endPromise: Promise<void>; child: Deno.ChildProcess } | undefined;
+  let previousTriggers: RegisteredTrigger[] | undefined;
+  
   Deno.addSignalListener("SIGINT", async () => {
     if (glueId) {
       console.log("Stopping glue...");
@@ -38,47 +43,37 @@ export async function dev(options: DevOptions, filename: string) {
     Deno.exit();
   });
 
-  const result = await runUIStep("codeAnalysis", () => analyzeCode(filename, options));
-  const { glueName, env } = result;
+  const result = await runGlueFile(filename, options);
+  glueId = result.glueId;
+  localRunner = result.localRunner;
+  previousTriggers = result.registeredTriggers;
 
-  const localRunner = await runUIStep("bootingCode", async () => { // TODO combine both of the below
-    const r = spawnLocalDenoRunner(filename, options, env);
-    await waitForLocalRunnerToBeReady();
-    return r;
-  });
+  const watcher = Deno.watchFs(filename);
 
-  const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
-
-  const { glueId, deployment } = await runUIStep("registeringGlue", async () => {
-    const existingGlue = await getGlueByName(glueName, "dev");
-    if (!existingGlue) {
-      const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
-      if (!newGlue.pendingDeployment) {
-        throw new Error("No pending deployment");
+  try {
+    for await (const event of watcher) {
+      if (event.kind === "modify" && event.paths.some(path => path === filename)) {
+        console.log(cyan(`\n[${new Date().toISOString()}] File changed, restarting...`));
+        
+        if (localRunner) {
+          localRunner.child.kill("SIGTERM");
+          await localRunner.endPromise.catch(() => {}); // Ignore errors from the killed process
+        }
+        
+        const newResult = await runGlueFile(filename, options, glueId, previousTriggers);
+        localRunner = newResult.localRunner;
+        previousTriggers = newResult.registeredTriggers;
       }
-      return { glueId: newGlue.id, deployment: newGlue.pendingDeployment };
-    } else {
-      const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
-      return { glueId: existingGlue.id, deployment: newDeployment };
     }
-  });
-
-  for await (const d of streamChangesToDeployment(deployment.id)) {
-    devProgressProps.deployment = d;
-    renderUI(devProgressProps);
+  } catch (error) {
+    console.error("File watching error:", error);
+  } finally {
+    watcher.close();
   }
 
-  await runUIStep("connectingToTunnel", async () => {
-    const glue = await getGlueById(glueId); // TODO maybe move throw into here
-    if (!glue) {
-      throw new Error("Glue not found");
-    }
-    runWebsocket(glue);
-  });
-
-  unmountUI();
-
-  await localRunner.endPromise;
+  if (localRunner) {
+    await localRunner.endPromise;
+  }
 }
 
 interface AnalysisResult {
@@ -128,6 +123,26 @@ async function discoverTriggers(): Promise<RegisteredTrigger[]> {
   return registeredTriggers;
 }
 
+function areTriggersEqual(a: RegisteredTrigger[], b: RegisteredTrigger[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  const triggerMap = new Map<string, RegisteredTrigger>();
+  for (const trigger of a) {
+    triggerMap.set(`${trigger.type}:${trigger.label}`, trigger);
+  }
+
+  for (const trigger of b) {
+    const key = `${trigger.type}:${trigger.label}`;
+    if (!triggerMap.has(key)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<string, string>) {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
@@ -148,9 +163,84 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
 
   const child = command.spawn();
   const endPromise = child.status.then((status) => {
-    Deno.exit(status.code);
+    if (status.code !== 0 && status.signal !== "SIGTERM") {
+      Deno.exit(status.code);
+    }
   });
   return { endPromise, child };
+}
+
+interface GlueRunResult {
+  glueId: string;
+  localRunner: { endPromise: Promise<void>; child: Deno.ChildProcess };
+  registeredTriggers: RegisteredTrigger[];
+}
+
+async function runGlueFile(
+  filename: string, 
+  options: DevOptions, 
+  existingGlueId?: string,
+  previousTriggers?: RegisteredTrigger[]
+): Promise<GlueRunResult> {
+  const result = await runUIStep("codeAnalysis", () => analyzeCode(filename, options));
+  const { glueName, env } = result;
+
+  const localRunner = await runUIStep("bootingCode", async () => {
+    const r = spawnLocalDenoRunner(filename, options, env);
+    await waitForLocalRunnerToBeReady();
+    return r;
+  });
+
+  const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
+
+  if (existingGlueId && previousTriggers && areTriggersEqual(previousTriggers, registeredTriggers)) {
+    console.log(cyan(`\n[${new Date().toISOString()}] No changes in triggers, skipping deployment`));
+    
+    const glue = await getGlueById(existingGlueId);
+    if (!glue) {
+      throw new Error("Glue not found");
+    }
+    
+    await runUIStep("connectingToTunnel", () => {
+      runWebsocket(glue);
+    });
+    
+    return { glueId: existingGlueId, localRunner, registeredTriggers };
+  }
+
+  const { glueId, deployment } = await runUIStep("registeringGlue", async () => {
+    if (existingGlueId) {
+      const newDeployment = await createDeployment(existingGlueId, { optimisticTriggers: registeredTriggers });
+      return { glueId: existingGlueId, deployment: newDeployment };
+    } else {
+      const existingGlue = await getGlueByName(glueName, "dev");
+      if (!existingGlue) {
+        const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
+        if (!newGlue.pendingDeployment) {
+          throw new Error("No pending deployment");
+        }
+        return { glueId: newGlue.id, deployment: newGlue.pendingDeployment };
+      } else {
+        const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
+        return { glueId: existingGlue.id, deployment: newDeployment };
+      }
+    }
+  });
+
+  for await (const d of streamChangesToDeployment(deployment.id)) {
+    devProgressProps.deployment = d;
+    renderUI(devProgressProps);
+  }
+
+  await runUIStep("connectingToTunnel", async () => {
+    const glue = await getGlueById(glueId);
+    if (!glue) {
+      throw new Error("Glue not found");
+    }
+    return runWebsocket(glue);
+  });
+
+  return { glueId, localRunner, registeredTriggers };
 }
 
 function runWebsocket(glue: GlueDTO) {
@@ -223,7 +313,7 @@ function defaultDevUIProps(): DevUIProps {
 function renderUI(props: DevUIProps) { // TODO no need to take in props, just use the state
   inkInstance = render(React.createElement(DevUI, props));
 }
-const unmountUI = () => {
+const _unmountUI = () => {
   if (inkInstance) {
     inkInstance.unmount();
     inkInstance = undefined;
