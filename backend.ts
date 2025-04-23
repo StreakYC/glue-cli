@@ -171,7 +171,6 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   return true;
 }
 
-// TODO rename this
 export async function* streamChangesToDeployment(deploymentId: string): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
@@ -269,7 +268,7 @@ export interface GlueDTO {
   running: boolean;
   executionSummary: ExecutionSummaryDTO;
   currentDeployment?: DeploymentDTO;
-  currentDeploymentId?: string;
+  pendingDeployment?: DeploymentDTO;
   devEventsWebsocketUrl?: string;
 }
 
