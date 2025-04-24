@@ -28,29 +28,13 @@ export const accounts = async (options: AccountsOptions) => {
       return;
     }
 
-    const accountsWithGlueCount = await Promise.all(
-      accounts.map(async (account) => {
-        try {
-          const _result = await deleteAccount(account.id);
-          return { ...account, liveGluesCount: 0 };
-        } catch (error) {
-          if (error && typeof error === "object" && "gluesNeedingStopping" in error) {
-            const errorResponse = error as DeleteAccountErrorResponse;
-            return { ...account, liveGluesCount: errorResponse.gluesNeedingStopping.length };
-          }
-          return { ...account, liveGluesCount: "Unknown" };
-        }
-      }),
-    );
-
     new Table()
-      .header(["ID", "Name", "Type", "Live Glues", "Created At"])
+      .header(["ID", "Name", "Type", "Created At"])
       .body(
-        accountsWithGlueCount.map((account) => [
+        accounts.map((account) => [
           account.id,
           account.name,
           account.type,
-          account.liveGluesCount,
           formatEpochMillis(account.createdAt),
         ]),
       )
