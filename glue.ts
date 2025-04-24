@@ -100,6 +100,6 @@ const cmd = new Command()
   .action(accounts)
   .command("accounts delete", "Delete an account")
   .arguments("[id:string]")
-  .action(deleteAccountCmd)
+  .action(deleteAccountCmd);
 
 await cmd.parse(Deno.args);

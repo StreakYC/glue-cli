@@ -1,4 +1,4 @@
-import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccounts, getAccountById, stopGlue } from "../backend.ts";
+import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccountById, getAccounts, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
@@ -40,7 +40,7 @@ export const accounts = async (options: AccountsOptions) => {
           }
           return { ...account, liveGluesCount: "Unknown" };
         }
-      })
+      }),
     );
 
     new Table()
