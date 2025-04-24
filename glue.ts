@@ -98,7 +98,7 @@ const cmd = new Command()
   .command("accounts", "List all accounts")
   .option("-j, --json", "Output in JSON format")
   .action(accounts)
-  .command("delete", "Delete an account")
+  .command("accounts delete", "Delete an account")
   .arguments("[id:string]")
   .action(deleteAccountCmd);
 

@@ -1,4 +1,4 @@
-import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccounts, stopGlue } from "../backend.ts";
+import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccountById, getAccounts, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
@@ -49,8 +49,9 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
   let accountToDelete: AccountDTO | undefined;
 
   if (id) {
-    const accounts = await getAccounts();
-    accountToDelete = accounts.find((account) => account.id === id);
+    accountToDelete = await runStep(`Loading account ${id}...`, async () => {
+      return await getAccountById(id);
+    });
     if (!accountToDelete) {
       throw new Error(`Account with id ${id} not found`);
     }
@@ -77,45 +78,39 @@ async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
       console.log(green(`Successfully deleted account ${account.name}`));
       return;
     } catch (error) {
-      if (error instanceof Error) {
+      if (error && typeof error === "object" && "gluesNeedingStopping" in error) {
+        const errorResponse = error as DeleteAccountErrorResponse;
+        console.log(yellow(`Cannot delete account because it is being used by ${errorResponse.gluesNeedingStopping.length} glue(s).`));
+
+        if (!Deno.stdout.isTerminal()) {
+          throw new Error("Cannot delete account with live glues in non-interactive mode");
+        }
+
+        const shouldStop = await Confirm.prompt({
+          message: "Would you like to stop these glues and try again?",
+          default: false,
+        });
+
+        if (!shouldStop) {
+          console.log("Account deletion cancelled.");
+          return;
+        }
+
+        for (const glue of errorResponse.gluesNeedingStopping) {
+          await runStep(`Stopping glue ${glue.name} (${glue.id})...`, async () => {
+            await stopGlue(glue.id);
+          });
+          console.log(green(`Stopped glue ${glue.name}`));
+        }
+
+        console.log("All glues stopped. Retrying account deletion...");
+      } else if (error instanceof Error) {
         console.error(red(`Error deleting account: ${error.message}`));
         return;
-      }
-    }
-
-    const result = await runStep(`Checking account ${account.name}...`, async () => {
-      return await deleteAccount(account.id);
-    });
-
-    if (result && "gluesNeedingStopping" in result) {
-      const errorResponse = result as DeleteAccountErrorResponse;
-      console.log(yellow(`Cannot delete account because it is being used by ${errorResponse.gluesNeedingStopping.length} glue(s).`));
-
-      if (!Deno.stdout.isTerminal()) {
-        throw new Error("Cannot delete account with live glues in non-interactive mode");
-      }
-
-      const shouldStop = await Confirm.prompt({
-        message: "Would you like to stop these glues and try again?",
-        default: false,
-      });
-
-      if (!shouldStop) {
-        console.log("Account deletion cancelled.");
+      } else {
+        console.error(red("Unknown error occurred while deleting account"));
         return;
       }
-
-      for (const glue of errorResponse.gluesNeedingStopping) {
-        await runStep(`Stopping glue ${glue.name} (${glue.id})...`, async () => {
-          await stopGlue(glue.id);
-        });
-        console.log(green(`Stopped glue ${glue.name}`));
-      }
-
-      console.log("All glues stopped. Retrying account deletion...");
-    } else {
-      console.log(green(`Successfully deleted account ${account.name}`));
-      return;
     }
   }
 }
