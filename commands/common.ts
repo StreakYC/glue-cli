@@ -1,4 +1,4 @@
-import { getGlues, getAccounts } from "../backend.ts";
+import { getAccounts, getGlues } from "../backend.ts";
 import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui/utils.ts";
 
