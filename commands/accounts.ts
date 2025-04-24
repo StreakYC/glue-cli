@@ -1,9 +1,9 @@
-import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccountById, getAccounts, stopGlue } from "../backend.ts";
+import { AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccountById, getAccounts, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
-import { askUserForAccount } from "./common.ts";
+import { askUserForAccount, displayNameForAccount } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { Confirm } from "@cliffy/prompt/confirm";
 
@@ -29,12 +29,14 @@ export const accounts = async (options: AccountsOptions) => {
     }
 
     new Table()
-      .header(["ID", "Name", "Type", "Created At"])
+      .header(["Account ID", "Type", "Name", "Scopes", "Source ID", "Created At"])
       .body(
         accounts.map((account) => [
           account.id,
-          account.name,
           account.type,
+          displayNameForAccount(account),
+          account.scopes?.join(", "),
+          account.externalId,
           formatEpochMillis(account.createdAt),
         ]),
       )
@@ -48,69 +50,44 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
 
   let accountToDelete: AccountDTO | undefined;
 
-  if (id) {
-    accountToDelete = await runStep(`Loading account ${id}...`, async () => {
+  if (!id && Deno.stdout.isTerminal()) {
+    accountToDelete = await askUserForAccount();
+  } else if (id) {
+    accountToDelete = await runStep("Loading account...", async () => {
       return await getAccountById(id);
     });
-    if (!accountToDelete) {
-      throw new Error(`Account with id ${id} not found`);
-    }
-  } else if (Deno.stdout.isTerminal()) {
-    accountToDelete = await askUserForAccount();
-  } else {
-    throw new Error("You must provide an account ID when not running in a terminal");
   }
 
   if (!accountToDelete) {
-    throw new Error("No account selected for deletion");
+    throw new Error("You must provide an account ID or select one in an interactive terminal");
   }
 
-  await deleteAccountWithRetry(accountToDelete);
-};
-
-async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
-  while (true) {
-    try {
-      const _result = await runStep(`Deleting account ${account.name}...`, async () => {
-        return await deleteAccount(account.id);
-      });
-
-      console.log(green(`Successfully deleted account ${account.name}`));
+  if (accountToDelete.liveGlues.length > 0) {
+    console.log("This account is being used by the following glues that need to be stopped first:");
+    const glueNames = accountToDelete.liveGlues.map((glue) => `${green(glue.name)} (${glue.id})`).join(",");
+    console.log(glueNames);
+    const confirm = await Confirm.prompt({
+      message: `Stop these glues`,
+      default: false,
+    });
+    if (!confirm) {
       return;
-    } catch (error) {
-      if (error && typeof error === "object" && "gluesNeedingStopping" in error) {
-        const errorResponse = error as DeleteAccountErrorResponse;
-        console.log(yellow(`Cannot delete account because it is being used by ${errorResponse.gluesNeedingStopping.length} glue(s).`));
-
-        if (!Deno.stdout.isTerminal()) {
-          throw new Error("Cannot delete account with live glues in non-interactive mode");
-        }
-
-        const shouldStop = await Confirm.prompt({
-          message: "Would you like to stop these glues and try again?",
-          default: false,
-        });
-
-        if (!shouldStop) {
-          console.log("Account deletion cancelled.");
-          return;
-        }
-
-        for (const glue of errorResponse.gluesNeedingStopping) {
-          await runStep(`Stopping glue ${glue.name} (${glue.id})...`, async () => {
-            await stopGlue(glue.id);
-          });
-          console.log(green(`Stopped glue ${glue.name}`));
-        }
-
-        console.log("All glues stopped. Retrying account deletion...");
-      } else if (error instanceof Error) {
-        console.error(red(`Error deleting account: ${error.message}`));
-        return;
-      } else {
-        console.error(red("Unknown error occurred while deleting account"));
-        return;
-      }
     }
+    for (const glue of accountToDelete.liveGlues) {
+      await runStep(`Stopping glue ${glue.name} (${glue.id})...`, async () => {
+        await stopGlue(glue.id);
+      });
+    }
+    console.log(`\n`);
   }
-}
+  const confirm = await Confirm.prompt({
+    message: `Are you sure you want to delete the ${displayNameForAccount(accountToDelete)} account`,
+    default: false,
+  });
+
+  if (confirm) {
+    await runStep(`Deleting ${displayNameForAccount(accountToDelete)} account...`, async () => {
+      await deleteAccount(accountToDelete.id);
+    });
+  }
+};

@@ -95,11 +95,14 @@ const cmd = new Command()
   .command("whoami", "Get the current user")
   .action(whoami)
   // ACCOUNTS ----------------------------
-  .command("accounts", "List all accounts")
-  .option("-j, --json", "Output in JSON format")
-  .action(accounts)
-  .command("accounts delete", "Delete an account")
-  .arguments("[id:string]")
-  .action(deleteAccountCmd);
-
+  .command(
+    "accounts",
+    new Command()
+      .description("List all accounts")
+      .option("-j, --json", "Output in JSON format")
+      .action(accounts)
+      .command("delete", "Delete an account")
+      .arguments("[id:string]")
+      .action(deleteAccountCmd),
+  );
 await cmd.parse(Deno.args);

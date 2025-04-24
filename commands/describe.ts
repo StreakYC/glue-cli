@@ -1,4 +1,4 @@
-import { type DeploymentDTO, getDeploymentById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
+import { AccountDTO, type DeploymentDTO, getAccountById, getDeploymentById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
@@ -11,12 +11,15 @@ export const describe = async (options: DescribeOptions, query?: string) => {
   await checkForAuthCredsOtherwiseExit();
   let glue: GlueDTO | undefined;
   let deployment: DeploymentDTO | undefined;
+  let account: AccountDTO | undefined;
 
   if (query) {
     if (isPrefixId(query, "d")) {
       deployment = await runStep("Loading deployment...", () => getDeploymentById(query));
     } else if (isPrefixId(query, "g")) {
       glue = await runStep("Loading glue...", () => getGlueById(query));
+    } else if (isPrefixId(query, "a")) {
+      account = await runStep("Loading account...", () => getAccountById(query));
     } else {
       glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"));
     }
@@ -26,14 +29,16 @@ export const describe = async (options: DescribeOptions, query?: string) => {
     throw new Error("You must provide a glue name or query when not running in a terminal");
   }
 
-  if (!deployment && !glue) {
-    throw new Error("Couldn't find a glue or deployment with that id nor a glue with that name");
+  if (!deployment && !glue && !account) {
+    throw new Error("Couldn't find a glue or deployment or account with that id nor a glue with that name");
   }
 
   if (deployment) {
     renderDeployment(deployment, options);
   } else if (glue) {
     renderGlue(glue, options);
+  } else if (account) {
+    renderAccount(account, options);
   }
 };
 
@@ -42,7 +47,7 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
     console.log(JSON.stringify(deployment, null, 2));
     return;
   }
-  // render it nicely with build steps
+  // TODO render it nicely with build steps
 }
 
 function renderGlue(glue: GlueDTO, options: DescribeOptions) {
@@ -61,6 +66,26 @@ function renderGlue(glue: GlueDTO, options: DescribeOptions) {
     console.log("Triggers:");
     for (const t of glue.currentDeployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))) {
       console.log(`\t${t.type} (${t.label}): ${dim(t.description ?? "")}`);
+    }
+  }
+}
+
+function renderAccount(account: AccountDTO, options: DescribeOptions) {
+  if (options.json) {
+    console.log(JSON.stringify(account, null, 2));
+    return;
+  }
+  console.log(`${bold(account.type)} ${dim(account.id)}`);
+  console.log(`${dim("Name: " + account.name)}`);
+  console.log(`${dim("Email: " + account.emailAddress)}`);
+  console.log(`${dim("Username: " + account.username)}`);
+  console.log(`${dim("Scopes: " + account.scopes?.join(", "))}`);
+  console.log(`${dim("Source ID: " + account.externalId)}`);
+  console.log(`Created: ${new Date(account.createdAt).toLocaleString()}`);
+  if (account.liveGlues.length > 0) {
+    console.log("Live Glues:");
+    for (const glue of account.liveGlues) {
+      console.log(`\t${green(glue.name) + (glue.environment === "dev" ? "[DEV]" : "")} (${dim(glue.id)})`);
     }
   }
 }

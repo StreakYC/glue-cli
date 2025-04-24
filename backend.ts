@@ -289,10 +289,19 @@ export interface UserDTO {
 
 export interface AccountDTO {
   id: string;
-  name: string;
   type: string;
+  externalId: string;
+  emailAddress?: string;
+  username?: string;
+  name?: string;
+  scopes?: string[];
+  userId: string;
+  /** milliseconds since epoch */
   createdAt: number;
+  /** milliseconds since epoch */
   updatedAt: number;
+  /** Live glues that use this account */
+  liveGlues: GlueDTO[];
 }
 
 export async function getAccounts(): Promise<AccountDTO[]> {
@@ -300,8 +309,7 @@ export async function getAccounts(): Promise<AccountDTO[]> {
 }
 
 export async function getAccountById(id: string): Promise<AccountDTO | undefined> {
-  const accounts = await getAccounts();
-  return accounts.find((account) => account.id === id);
+  return await backendRequest<AccountDTO>(`/accounts/${id}`);
 }
 
 export interface DeleteAccountErrorResponse {
@@ -311,17 +319,7 @@ export interface DeleteAccountErrorResponse {
 }
 
 export async function deleteAccount(id: string): Promise<void | DeleteAccountErrorResponse> {
-  try {
-    await backendRequest<void>(`/accounts/${id}`, {
-      method: "DELETE",
-    });
-  } catch (error) {
-    if (error instanceof Response && error.status === 400) {
-      const errorResponse = await error.json();
-      if (errorResponse.gluesNeedingStopping) {
-        return errorResponse as DeleteAccountErrorResponse;
-      }
-    }
-    throw error;
-  }
+  await backendRequest<void>(`/accounts/${id}`, {
+    method: "DELETE",
+  });
 }
