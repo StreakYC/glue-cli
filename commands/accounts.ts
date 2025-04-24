@@ -87,7 +87,7 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
 async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
   while (true) {
     try {
-      const result = await runStep(`Deleting account ${account.name}...`, async () => {
+      const _result = await runStep(`Deleting account ${account.name}...`, async () => {
         return await deleteAccount(account.id);
       });
 
