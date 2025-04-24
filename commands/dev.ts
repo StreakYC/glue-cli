@@ -10,6 +10,11 @@ import { render } from "ink";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 
+interface LocalGlueRunner {
+  endPromise: Promise<void>;
+  child: Deno.ChildProcess;
+}
+
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 const ServerWebsocketMessage = z.object({
   type: z.literal("trigger"),
@@ -30,7 +35,7 @@ export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
 
   let glueId: string | undefined;
-  let localRunner: { endPromise: Promise<void>; child: Deno.ChildProcess } | undefined;
+  let localRunner: LocalGlueRunner | undefined;
   let previousTriggers: RegisteredTrigger[] | undefined;
 
   Deno.addSignalListener("SIGINT", async () => {
@@ -143,7 +148,7 @@ function areTriggersEqual(a: RegisteredTrigger[], b: RegisteredTrigger[]): boole
   return true;
 }
 
-function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<string, string>) {
+function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<string, string>): LocalGlueRunner {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -172,7 +177,7 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
 
 interface GlueRunResult {
   glueId: string;
-  localRunner: { endPromise: Promise<void>; child: Deno.ChildProcess };
+  localRunner: LocalGlueRunner;
   registeredTriggers: RegisteredTrigger[];
 }
 
