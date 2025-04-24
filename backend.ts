@@ -286,3 +286,21 @@ export interface UserDTO {
   createdAt: number; // milliseconds since epoch
   updatedAt: number; // milliseconds since epoch
 }
+
+export interface AccountDTO {
+  id: string;
+  name: string;
+  type: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function getAccounts(): Promise<AccountDTO[]> {
+  return await backendRequest<AccountDTO[]>(`/accounts`);
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  await backendRequest<void>(`/accounts/${id}`, {
+    method: "DELETE",
+  });
+}

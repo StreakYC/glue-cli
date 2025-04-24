@@ -1,4 +1,4 @@
-import { getGlues } from "../backend.ts";
+import { getGlues, getAccounts } from "../backend.ts";
 import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui/utils.ts";
 
@@ -11,5 +11,17 @@ export async function askUserForGlue() {
     message: "Choose a glue",
     search: true,
     options: glues.map((glue) => ({ name: glue.name, value: glue })),
+  });
+}
+
+export async function askUserForAccount() {
+  const accounts = await runStep("Loading accounts...", () => getAccounts());
+  if (!accounts || accounts.length === 0) {
+    return undefined;
+  }
+  return await Select.prompt({
+    message: "Choose an account to delete",
+    search: true,
+    options: accounts.map((account) => ({ name: `${account.name} (${account.type})`, value: account })),
   });
 }
