@@ -299,6 +299,10 @@ export async function getAccounts(): Promise<AccountDTO[]> {
   return await backendRequest<AccountDTO[]>(`/accounts`);
 }
 
+export async function getAccountById(id: string): Promise<AccountDTO | undefined> {
+  return await backendRequest<AccountDTO>(`/accounts/${id}`);
+}
+
 export interface DeleteAccountErrorResponse {
   success: boolean;
   error: string;
