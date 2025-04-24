@@ -1,10 +1,11 @@
-import { getAccounts, deleteAccount, type AccountDTO } from "../backend.ts";
+import { getAccounts, deleteAccount, type AccountDTO, type DeleteAccountErrorResponse, getGlueById, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
-import { green } from "@std/fmt/colors";
+import { green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForAccount } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { Confirm } from "@cliffy/prompt/confirm";
 
 interface AccountsOptions {
   json?: boolean;
@@ -63,9 +64,64 @@ export const deleteCmd = async (_options: unknown, id?: string) => {
     throw new Error("No account selected for deletion");
   }
   
-  await runStep(`Deleting account ${accountToDelete.name}...`, async () => {
-    await deleteAccount(accountToDelete!.id);
-  });
-  
-  console.log(green(`Successfully deleted account ${accountToDelete.name}`));
+  await deleteAccountWithRetry(accountToDelete);
 };
+
+async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
+  while (true) {
+    try {
+      const result = await runStep(`Deleting account ${account.name}...`, async () => {
+        return await deleteAccount(account.id);
+      });
+      
+      console.log(green(`Successfully deleted account ${account.name}`));
+      return;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(red(`Error deleting account: ${error.message}`));
+        return;
+      }
+    }
+    
+    const result = await runStep(`Checking account ${account.name}...`, async () => {
+      return await deleteAccount(account.id);
+    });
+    
+    if (result && 'glueIds' in result) {
+      const errorResponse = result as DeleteAccountErrorResponse;
+      console.log(yellow(`Cannot delete account because it is being used by ${errorResponse.glueIds.length} glue(s).`));
+      
+      if (!Deno.stdout.isTerminal()) {
+        throw new Error("Cannot delete account with live glues in non-interactive mode");
+      }
+      
+      const shouldStop = await Confirm.prompt({
+        message: "Would you like to stop these glues and try again?",
+        default: false,
+      });
+      
+      if (!shouldStop) {
+        console.log("Account deletion cancelled.");
+        return;
+      }
+      
+      for (const glueId of errorResponse.glueIds) {
+        const glue = await runStep(`Loading glue ${glueId}...`, () => getGlueById(glueId));
+        if (!glue) {
+          console.log(yellow(`Could not find glue with ID ${glueId}`));
+          continue;
+        }
+        
+        await runStep(`Stopping glue ${glue.name} (${glueId})...`, async () => {
+          await stopGlue(glueId);
+        });
+        console.log(green(`Stopped glue ${glue.name}`));
+      }
+      
+      console.log("All glues stopped. Retrying account deletion...");
+    } else {
+      console.log(green(`Successfully deleted account ${account.name}`));
+      return;
+    }
+  }
+}

@@ -299,8 +299,29 @@ export async function getAccounts(): Promise<AccountDTO[]> {
   return await backendRequest<AccountDTO[]>(`/accounts`);
 }
 
-export async function deleteAccount(id: string): Promise<void> {
-  await backendRequest<void>(`/accounts/${id}`, {
-    method: "DELETE",
-  });
+export interface DeleteAccountErrorResponse {
+  error: string;
+  glueIds: string[];
+}
+
+export async function deleteAccount(id: string): Promise<void | DeleteAccountErrorResponse> {
+  try {
+    await backendRequest<void>(`/accounts/${id}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Failed to fetch /accounts/")) {
+      try {
+        const match = error.message.match(/Failed to fetch \/accounts\/.*: (.*)/);
+        if (match && match[1]) {
+          const errorResponse = JSON.parse(match[1]);
+          if (errorResponse.glueIds && Array.isArray(errorResponse.glueIds)) {
+            return errorResponse as DeleteAccountErrorResponse;
+          }
+        }
+      } catch (parseError) {
+      }
+    }
+    throw error;
+  }
 }
