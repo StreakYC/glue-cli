@@ -310,31 +310,17 @@ export interface DeleteAccountErrorResponse {
 }
 
 export async function deleteAccount(id: string): Promise<void | DeleteAccountErrorResponse> {
-  const authToken = await getAuthToken();
-  const headers: Record<string, string> = {
-    "Authorization": `Bearer ${authToken}`,
-    "User-Agent": "glue-cli",
-    "X-Cloud-Trace-Context": `00000000000000000000000000000000/0;o=1`,
-  };
-
-  const res = await fetch(`${GLUE_API_SERVER}/accounts/${id}`, {
-    method: "DELETE",
-    headers,
-  });
-
-  if (res.status === 401) {
-    await clearAuthToken();
-    exitBecauseNotLoggedIn();
-  }
-
-  if (res.status === 400) {
-    const errorResponse = await res.json();
-    if (errorResponse.gluesNeedingStopping) {
-      return errorResponse as DeleteAccountErrorResponse;
+  try {
+    await backendRequest<void>(`/accounts/${id}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    if (error instanceof Response && error.status === 400) {
+      const errorResponse = await error.json();
+      if (errorResponse.gluesNeedingStopping) {
+        return errorResponse as DeleteAccountErrorResponse;
+      }
     }
-  }
-
-  if (!res.ok) {
-    throw new Error(`Failed to delete account: ${res.statusText}`);
+    throw error;
   }
 }
