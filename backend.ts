@@ -300,8 +300,9 @@ export async function getAccounts(): Promise<AccountDTO[]> {
 }
 
 export interface DeleteAccountErrorResponse {
+  success: boolean;
   error: string;
-  glueIds: string[];
+  gluesNeedingStopping: GlueDTO[];
 }
 
 export async function deleteAccount(id: string): Promise<void | DeleteAccountErrorResponse> {
@@ -310,12 +311,15 @@ export async function deleteAccount(id: string): Promise<void | DeleteAccountErr
       method: "DELETE",
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Failed to fetch /accounts/")) {
+    if (error instanceof Error) {
       try {
         const match = error.message.match(/Failed to fetch \/accounts\/.*: (.*)/);
         if (match && match[1]) {
           const errorResponse = JSON.parse(match[1]);
-          if (errorResponse.glueIds && Array.isArray(errorResponse.glueIds)) {
+          if (errorResponse.success === false && 
+              errorResponse.error === "Account used in live glues, you must stop them first" && 
+              errorResponse.gluesNeedingStopping && 
+              Array.isArray(errorResponse.gluesNeedingStopping)) {
             return errorResponse as DeleteAccountErrorResponse;
           }
         }

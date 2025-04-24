@@ -87,9 +87,9 @@ async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
       return await deleteAccount(account.id);
     });
 
-    if (result && "glueIds" in result) {
+    if (result && "gluesNeedingStopping" in result) {
       const errorResponse = result as DeleteAccountErrorResponse;
-      console.log(yellow(`Cannot delete account because it is being used by ${errorResponse.glueIds.length} glue(s).`));
+      console.log(yellow(`Cannot delete account because it is being used by ${errorResponse.gluesNeedingStopping.length} glue(s).`));
 
       if (!Deno.stdout.isTerminal()) {
         throw new Error("Cannot delete account with live glues in non-interactive mode");
@@ -105,13 +105,8 @@ async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
         return;
       }
 
-      for (const glueId of errorResponse.glueIds) {
-        const glue = await runStep(`Loading glue ${glueId}...`, () => getGlueById(glueId));
-        if (!glue) {
-          console.log(yellow(`Could not find glue with ID ${glueId}`));
-          continue;
-        }
-
+      for (const glue of errorResponse.gluesNeedingStopping) {
+        const glueId = glue.id;
         await runStep(`Stopping glue ${glue.name} (${glueId})...`, async () => {
           await stopGlue(glueId);
         });
