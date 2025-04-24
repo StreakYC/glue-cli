@@ -300,7 +300,8 @@ export async function getAccounts(): Promise<AccountDTO[]> {
 }
 
 export async function getAccountById(id: string): Promise<AccountDTO | undefined> {
-  return await backendRequest<AccountDTO>(`/accounts/${id}`);
+  const accounts = await getAccounts();
+  return accounts.find(account => account.id === id);
 }
 
 export interface DeleteAccountErrorResponse {
