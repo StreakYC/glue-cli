@@ -13,6 +13,7 @@ import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
 import { pause } from "./commands/pause.ts";
 import { resume } from "./commands/resume.ts";
+import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -92,6 +93,16 @@ const cmd = new Command()
   .action(logout)
   // WHOAMI ----------------------------
   .command("whoami", "Get the current user")
-  .action(whoami);
-
+  .action(whoami)
+  // ACCOUNTS ----------------------------
+  .command(
+    "accounts",
+    new Command()
+      .description("List all accounts")
+      .option("-j, --json", "Output in JSON format")
+      .action(accounts)
+      .command("delete", "Delete an account")
+      .arguments("[id:string]")
+      .action(deleteAccountCmd),
+  );
 await cmd.parse(Deno.args);

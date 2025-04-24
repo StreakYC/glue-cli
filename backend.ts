@@ -286,3 +286,34 @@ export interface UserDTO {
   createdAt: number; // milliseconds since epoch
   updatedAt: number; // milliseconds since epoch
 }
+
+export interface AccountDTO {
+  id: string;
+  type: string;
+  externalId: string;
+  emailAddress?: string;
+  username?: string;
+  name?: string;
+  scopes?: string[];
+  userId: string;
+  /** milliseconds since epoch */
+  createdAt: number;
+  /** milliseconds since epoch */
+  updatedAt: number;
+  /** Live glues that use this account */
+  liveGlues: GlueDTO[];
+}
+
+export async function getAccounts(): Promise<AccountDTO[]> {
+  return await backendRequest<AccountDTO[]>(`/accounts`);
+}
+
+export async function getAccountById(id: string): Promise<AccountDTO | undefined> {
+  return await backendRequest<AccountDTO>(`/accounts/${id}`);
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  await backendRequest<void>(`/accounts/${id}`, {
+    method: "DELETE",
+  });
+}
