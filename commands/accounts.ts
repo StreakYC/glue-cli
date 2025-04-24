@@ -1,4 +1,4 @@
-import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccounts, getGlueById, stopGlue } from "../backend.ts";
+import { type AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccounts, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
@@ -106,9 +106,8 @@ async function deleteAccountWithRetry(account: AccountDTO): Promise<void> {
       }
 
       for (const glue of errorResponse.gluesNeedingStopping) {
-        const glueId = glue.id;
-        await runStep(`Stopping glue ${glue.name} (${glueId})...`, async () => {
-          await stopGlue(glueId);
+        await runStep(`Stopping glue ${glue.name} (${glue.id})...`, async () => {
+          await stopGlue(glue.id);
         });
         console.log(green(`Stopped glue ${glue.name}`));
       }
