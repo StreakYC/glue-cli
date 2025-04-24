@@ -316,10 +316,12 @@ export async function deleteAccount(id: string): Promise<void | DeleteAccountErr
         const match = error.message.match(/Failed to fetch \/accounts\/.*: (.*)/);
         if (match && match[1]) {
           const errorResponse = JSON.parse(match[1]);
-          if (errorResponse.success === false && 
-              errorResponse.error === "Account used in live glues, you must stop them first" && 
-              errorResponse.gluesNeedingStopping && 
-              Array.isArray(errorResponse.gluesNeedingStopping)) {
+          if (
+            errorResponse.success === false &&
+            errorResponse.error === "Account used in live glues, you must stop them first" &&
+            errorResponse.gluesNeedingStopping &&
+            Array.isArray(errorResponse.gluesNeedingStopping)
+          ) {
             return errorResponse as DeleteAccountErrorResponse;
           }
         }
