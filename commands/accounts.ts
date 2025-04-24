@@ -28,13 +28,29 @@ export const accounts = async (options: AccountsOptions) => {
       return;
     }
 
+    const accountsWithGlueCount = await Promise.all(
+      accounts.map(async (account) => {
+        try {
+          const result = await deleteAccount(account.id);
+          return { ...account, liveGluesCount: 0 };
+        } catch (error) {
+          if (error && typeof error === "object" && "gluesNeedingStopping" in error) {
+            const errorResponse = error as DeleteAccountErrorResponse;
+            return { ...account, liveGluesCount: errorResponse.gluesNeedingStopping.length };
+          }
+          return { ...account, liveGluesCount: "Unknown" };
+        }
+      })
+    );
+
     new Table()
-      .header(["ID", "Name", "Type", "Created At"])
+      .header(["ID", "Name", "Type", "Live Glues", "Created At"])
       .body(
-        accounts.map((account) => [
+        accountsWithGlueCount.map((account) => [
           account.id,
           account.name,
           account.type,
+          account.liveGluesCount,
           formatEpochMillis(account.createdAt),
         ]),
       )
@@ -49,7 +65,9 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
   let accountToDelete: AccountDTO | undefined;
 
   if (id) {
-    const accounts = await getAccounts();
+    const accounts = await runStep("Loading accounts...", async () => {
+      return await getAccounts();
+    });
     accountToDelete = accounts.find((account) => account.id === id);
     if (!accountToDelete) {
       throw new Error(`Account with id ${id} not found`);
