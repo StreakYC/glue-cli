@@ -1,4 +1,4 @@
-import { AccountDTO, type DeploymentDTO, getAccountById, getDeploymentById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
+import { type AccountDTO, type DeploymentDTO, getAccountById, getDeploymentById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";

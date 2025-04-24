@@ -1,6 +1,6 @@
-import { AccountDTO, deleteAccount, type DeleteAccountErrorResponse, getAccountById, getAccounts, stopGlue } from "../backend.ts";
+import { AccountDTO, deleteAccount, getAccountById, getAccounts, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
-import { green, red, yellow } from "@std/fmt/colors";
+import { green } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForAccount, displayNameForAccount } from "./common.ts";
