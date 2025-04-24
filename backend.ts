@@ -312,13 +312,7 @@ export async function getAccountById(id: string): Promise<AccountDTO | undefined
   return await backendRequest<AccountDTO>(`/accounts/${id}`);
 }
 
-export interface DeleteAccountErrorResponse {
-  success: boolean;
-  error: string;
-  gluesNeedingStopping: GlueDTO[];
-}
-
-export async function deleteAccount(id: string): Promise<void | DeleteAccountErrorResponse> {
+export async function deleteAccount(id: string): Promise<void> {
   await backendRequest<void>(`/accounts/${id}`, {
     method: "DELETE",
   });
