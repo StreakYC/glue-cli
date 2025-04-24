@@ -320,6 +320,7 @@ export async function deleteAccount(id: string): Promise<void | DeleteAccountErr
           }
         }
       } catch (_parseError) {
+        // Ignore JSON parsing errors and continue with original error
       }
     }
     throw error;
