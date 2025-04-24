@@ -319,7 +319,7 @@ export async function deleteAccount(id: string): Promise<void | DeleteAccountErr
             return errorResponse as DeleteAccountErrorResponse;
           }
         }
-      } catch (parseError) {
+      } catch (_parseError) {
       }
     }
     throw error;
