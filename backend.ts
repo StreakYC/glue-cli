@@ -324,17 +324,9 @@ export async function deleteAccount(id: string): Promise<void | DeleteAccountErr
   }
 
   if (res.status === 400) {
-    try {
-      const errorResponse = await res.json();
-      if (
-        errorResponse.success === false &&
-        errorResponse.gluesNeedingStopping &&
-        Array.isArray(errorResponse.gluesNeedingStopping)
-      ) {
-        return errorResponse as DeleteAccountErrorResponse;
-      }
-    } catch (_parseError) {
-      // Ignore JSON parsing errors and continue with original error
+    const errorResponse = await res.json();
+    if (errorResponse.gluesNeedingStopping) {
+      return errorResponse as DeleteAccountErrorResponse;
     }
   }
 

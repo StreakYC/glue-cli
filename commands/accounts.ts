@@ -43,7 +43,7 @@ export const accounts = async (options: AccountsOptions) => {
   }
 };
 
-export const deleteCmd = async (_options: unknown, id?: string) => {
+export const deleteAccountCmd = async (_options: unknown, id?: string) => {
   await checkForAuthCredsOtherwiseExit();
 
   let accountToDelete: AccountDTO | undefined;
