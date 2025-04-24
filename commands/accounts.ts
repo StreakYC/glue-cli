@@ -1,4 +1,4 @@
-import { AccountDTO, deleteAccount, getAccountById, getAccounts, stopGlue } from "../backend.ts";
+import { type AccountDTO, deleteAccount, getAccountById, getAccounts, stopGlue } from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
