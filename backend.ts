@@ -301,7 +301,7 @@ export async function getAccounts(): Promise<AccountDTO[]> {
 
 export async function getAccountById(id: string): Promise<AccountDTO | undefined> {
   const accounts = await getAccounts();
-  return accounts.find(account => account.id === id);
+  return accounts.find((account) => account.id === id);
 }
 
 export interface DeleteAccountErrorResponse {
