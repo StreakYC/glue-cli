@@ -1,4 +1,5 @@
 import * as path from "@std/path";
+import { load as dotenvLoad } from "@std/dotenv";
 import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
 import { createDeployment, type CreateDeploymentParams, createGlue, type DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
@@ -65,6 +66,8 @@ async function getCreateDeploymentParams(file: string): Promise<CreateDeployment
   const fileDir = path.dirname(file);
   const entryPointUrl = path.relative(fileDir, file);
 
+  const envVars = await dotenvLoad({ envPath: path.join(fileDir, ".env") });
+
   /** Contains filenames relative to fileDir. */
   const filesToUpload = new Set<string>([entryPointUrl]);
 
@@ -97,6 +100,7 @@ async function getCreateDeploymentParams(file: string): Promise<CreateDeployment
             ]),
         ),
       ),
+      envVars,
     },
   };
 }

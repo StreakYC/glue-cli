@@ -26,6 +26,7 @@ export type DeploymentAsset = z.infer<typeof DeploymentAsset>;
 const DeploymentContent = z.object({
   entryPointUrl: z.string(),
   assets: z.record(z.string(), DeploymentAsset),
+  envVars: z.record(z.string(), z.string()).optional(),
 });
 export type DeploymentContent = z.infer<typeof DeploymentContent>;
 
