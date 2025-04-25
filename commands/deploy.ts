@@ -1,4 +1,4 @@
-import { basename, dirname, relative } from "@std/path";
+import * as path from "@std/path";
 import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
 import { createDeployment, type CreateDeploymentParams, createGlue, type DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
@@ -30,7 +30,7 @@ export async function deploy(options: DeployOptions, file: string) {
   updateUI({ codeAnalysisState: "in_progress", codeAnalysisDuration: 0 });
 
   let duration = performance.now();
-  const glueName = options.name ?? basename(file);
+  const glueName = options.name ?? path.basename(file);
   const deploymentParams = await getCreateDeploymentParams(file);
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
 
@@ -62,15 +62,16 @@ async function getCreateDeploymentParams(file: string): Promise<CreateDeployment
   // For now, we're just uploading all .js/.ts files in the same directory as
   // the entry point. TODO follow imports and only upload necessary files.
 
-  const fileDir = dirname(file);
-  const entryPointUrl = relative(fileDir, file);
+  const fileDir = path.dirname(file);
+  const entryPointUrl = path.relative(fileDir, file);
 
-  const filesToUpload: string[] = [entryPointUrl];
+  /** Contains filenames relative to fileDir. */
+  const filesToUpload = new Set<string>([entryPointUrl]);
 
   const uploadIfExists = ["deno.json", "deno.jsonc", "deno.lock"];
   for (const file of uploadIfExists) {
-    if (await exists(file)) {
-      filesToUpload.push(file);
+    if (await exists(path.join(fileDir, file))) {
+      filesToUpload.add(file);
     }
   }
 
@@ -80,19 +81,21 @@ async function getCreateDeploymentParams(file: string): Promise<CreateDeployment
       includeDirs: false,
     })
   ) {
-    const relativePath = relative(fileDir, dirEntry.path);
-    filesToUpload.push(relativePath);
+    const relativePath = path.relative(fileDir, dirEntry.path);
+    filesToUpload.add(relativePath);
   }
 
   return {
     deploymentContent: {
       entryPointUrl,
       assets: Object.fromEntries(
-        await Promise.all(filesToUpload
-          .map(async (file): Promise<[string, DeploymentAsset]> => [
-            file,
-            { kind: "file", content: await Deno.readTextFile(file) },
-          ])),
+        await Promise.all(
+          filesToUpload.values()
+            .map(async (file): Promise<[string, DeploymentAsset]> => [
+              file,
+              { kind: "file", content: await Deno.readTextFile(path.join(fileDir, file)) },
+            ]),
+        ),
       ),
     },
   };
