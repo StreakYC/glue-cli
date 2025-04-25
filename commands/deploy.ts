@@ -67,7 +67,7 @@ async function getCreateDeploymentParams(file: string): Promise<CreateDeployment
 
   const filesToUpload: string[] = [entryPointUrl];
 
-  const uploadIfExists = ["deno.json"];
+  const uploadIfExists = ["deno.json", "deno.jsonc", "deno.lock"];
   for (const file of uploadIfExists) {
     if (await exists(file)) {
       filesToUpload.push(file);
