@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { createDeployment, createGlue, getGlueById, getGlueByName, stopGlue, streamChangesToDeployment } from "../backend.ts";
+import {
+  createDeployment,
+  createGlue,
+  getGlueById,
+  getGlueByName,
+  stopGlue,
+  streamChangesToDeployment as streamChangesTillDeploymentReady,
+} from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
 import { type Awaitable, type RegisteredTrigger, TriggerEvent } from "../runtimeCommon.ts";
@@ -11,110 +18,98 @@ import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
-const ServerWebsocketMessage = z.object({
-  type: z.literal("trigger"),
-  event: TriggerEvent,
-});
-type ServerWebsocketMessage = z.infer<typeof ServerWebsocketMessage>;
-
-interface DevOptions {
-  name?: string;
-  allowStdin?: true;
-  keepFullEnv?: true;
-}
-
 const devProgressProps: DevUIProps = defaultDevUIProps();
 let inkInstance: { unmount: () => void } | undefined;
 
+// ------------------------------------------------------------------------------------------------
+// Dev command
+// ------------------------------------------------------------------------------------------------
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
-  Deno.addSignalListener("SIGINT", async () => {
-    if (glueId) {
-      console.log("Stopping glue...");
-      await stopGlue(glueId);
-    } else {
-      console.log("No glue to stop");
-    }
-    Deno.exit();
-  });
 
-  const result = await runUIStep("codeAnalysis", () => analyzeCode(filename, options));
-  const { glueName, env } = result;
+  const glueName = options.name ?? glueNameFromFilename(filename);
+  const env = getEnv(glueName);
 
-  const localRunner = await runUIStep("bootingCode", async () => { // TODO combine both of the below
-    const r = spawnLocalDenoRunner(filename, options, env);
-    await waitForLocalRunnerToBeReady();
-    return r;
-  });
+  Deno.addSignalListener("SIGINT", async () => await shutdown(glueId));
 
+  const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
+  if (codeAnalysisResult.errors.length > 0) {
+    throw new Error("Code analysis failed");
+  }
+
+  const localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env));
   const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
+  const { glueId, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
-  const { glueId, deployment } = await runUIStep("registeringGlue", async () => {
-    const existingGlue = await getGlueByName(glueName, "dev");
-    if (!existingGlue) {
-      const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
-      if (!newGlue.pendingDeployment) {
-        throw new Error("No pending deployment");
-      }
-      return { glueId: newGlue.id, deployment: newGlue.pendingDeployment };
-    } else {
-      const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
-      return { glueId: existingGlue.id, deployment: newDeployment };
-    }
-  });
-
-  for await (const d of streamChangesToDeployment(deployment.id)) {
+  for await (const d of streamChangesTillDeploymentReady(deployment.id)) {
     devProgressProps.deployment = d;
     renderUI(devProgressProps);
   }
 
-  await runUIStep("connectingToTunnel", async () => {
-    const glue = await getGlueById(glueId); // TODO maybe move throw into here
-    if (!glue) {
-      throw new Error("Glue not found");
-    }
-    runWebsocket(glue);
-  });
+  await runUIStep("connectingToTunnel", async () => connectToDevEventsWebsocketAndHandleTriggerEvents(await getGlueOrThrow(glueId)));
 
   unmountUI();
 
   await localRunner.endPromise;
 }
 
-interface AnalysisResult {
-  glueName: string;
-  env: Record<string, string>;
+// ------------------------------------------------------------------------------------------------
+// Helper functions
+// ------------------------------------------------------------------------------------------------
+async function shutdown(glueId: string) {
+  if (glueId) {
+    console.log("Stopping glue...");
+    await stopGlue(glueId);
+  } else {
+    console.log("No glue to stop");
+  }
+  Deno.exit();
 }
 
-function analyzeCode(filename: string, options: DevOptions): AnalysisResult {
-  const glueName = options.name ?? basename(filename).replace(/\.[^.]+$/, "");
+async function getGlueOrThrow(glueId: string) {
+  const glue = await getGlueById(glueId);
+  if (!glue) {
+    throw new Error(`Glue not found: ${glueId}`);
+  }
+  return glue;
+}
 
+async function createDeploymentAndMaybeGlue(glueName: string, registeredTriggers: RegisteredTrigger[]) {
+  const existingGlue = await getGlueByName(glueName, "dev");
+  if (!existingGlue) {
+    const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
+    if (!newGlue.pendingDeployment) {
+      throw new Error("No pending deployment");
+    }
+    return { glueId: newGlue.id, deployment: newGlue.pendingDeployment };
+  } else {
+    const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
+    return { glueId: existingGlue.id, deployment: newDeployment };
+  }
+}
+
+function glueNameFromFilename(filename: string) {
+  return basename(filename).replace(/\.[^.]+$/, "");
+}
+
+function getEnv(glueName: string) {
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
     GLUE_DEV_PORT: String(GLUE_DEV_PORT),
   };
 
-  if (!options.keepFullEnv) {
-    const envKeysToKeep = ["LANG", "TZ", "TERM"];
-    for (const envKeyToKeep of envKeysToKeep) {
-      const value = Deno.env.get(envKeyToKeep);
-      if (value) {
-        env[envKeyToKeep] = value;
-      }
+  const envKeysToKeep = ["LANG", "TZ", "TERM"];
+  for (const envKeyToKeep of envKeysToKeep) {
+    const value = Deno.env.get(envKeyToKeep);
+    if (value) {
+      env[envKeyToKeep] = value;
     }
   }
-  return { glueName, env };
+  return env;
 }
 
-async function waitForLocalRunnerToBeReady() {
-  await retry(async () => {
-    const res = await fetch(
-      `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
-    );
-    if (!res.ok) {
-      throw new Error(`Failed health check: ${res.statusText}`);
-    }
-  });
+function analyzeCode(_filename: string): AnalysisResult {
+  return { errors: [] };
 }
 
 async function discoverTriggers(): Promise<RegisteredTrigger[]> {
@@ -128,7 +123,7 @@ async function discoverTriggers(): Promise<RegisteredTrigger[]> {
   return registeredTriggers;
 }
 
-function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<string, string>) {
+async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<string, string>) {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -140,20 +135,28 @@ function spawnLocalDenoRunner(file: string, options: DevOptions, env: Record<str
       "--allow-sys", // TODO check if this is supported in deno subhosting
       file,
     ],
-    stdin: options.allowStdin ? "inherit" : "null",
+    stdin: "null",
     stdout: "inherit",
-    clearEnv: !options.keepFullEnv,
+    clearEnv: true,
     env,
   });
 
   const child = command.spawn();
-  const endPromise = child.status.then((status) => {
-    Deno.exit(status.code);
+  const endPromise = child.status;
+
+  await retry(async () => {
+    const res = await fetch(
+      `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
+    );
+    if (!res.ok) {
+      throw new Error(`Failed health check: ${res.statusText}`);
+    }
   });
+
   return { endPromise, child };
 }
 
-function runWebsocket(glue: GlueDTO) {
+function connectToDevEventsWebsocketAndHandleTriggerEvents(glue: GlueDTO) {
   if (glue.devEventsWebsocketUrl == null) {
     throw new Error("No dev events websocket URL found");
   }
@@ -190,6 +193,20 @@ function runWebsocket(glue: GlueDTO) {
     // console.log("Websocket closed:", event);
     // TODO reconnect
   });
+}
+
+const ServerWebsocketMessage = z.object({
+  type: z.literal("trigger"),
+  event: TriggerEvent,
+});
+type ServerWebsocketMessage = z.infer<typeof ServerWebsocketMessage>;
+
+interface DevOptions {
+  name?: string;
+}
+
+interface AnalysisResult {
+  errors: string[];
 }
 
 function defaultDevUIProps(): DevUIProps {
