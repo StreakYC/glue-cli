@@ -63,7 +63,7 @@ async function shutdown(glueId: string) {
   } else {
     console.log("No glue to stop");
   }
-  Deno.exit();
+  Deno.exit(0);
 }
 
 async function getGlueOrThrow(glueId: string) {
