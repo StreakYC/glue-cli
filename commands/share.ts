@@ -46,7 +46,7 @@ export async function share(options: ShareOptions, file: string) {
       const decoder = new TextDecoder();
       gistUrl = decoder.decode(output.stdout).trim();
     } catch (_e) {
-      throw new Error(`Failed to create gist: ${_e.message}`);
+      throw new Error(`Failed to create gist: ${_e instanceof Error ? _e.message : String(_e)}`);
     }
   });
 
