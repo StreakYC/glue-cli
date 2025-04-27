@@ -13,29 +13,27 @@ export async function share(options: ShareOptions, file: string) {
     throw new Error(`File '${file}' does not exist`);
   }
 
-  await runStep("Checking gh CLI installation", async () => {
-    try {
-      const command = new Deno.Command("gh", {
-        args: ["--version"],
-        stdout: "null",
-        stderr: "null",
-      });
-      const status = await command.output();
-      if (!status.success) {
-        throw new Error("GitHub CLI tool is not working properly");
-      }
-    } catch (_e) {
-      throw new Error(
-        "GitHub CLI tool (gh) is not installed. Please install it from https://cli.github.com/",
-      );
+  try {
+    const command = new Deno.Command("gh", {
+      args: ["--version"],
+      stdout: "null",
+      stderr: "null",
+    });
+    const status = await command.output();
+    if (!status.success) {
+      throw new Error("GitHub CLI tool is not working properly");
     }
-  });
+  } catch (_e) {
+    throw new Error(
+      "GitHub CLI tool (gh) is not installed. Please install it from https://cli.github.com/",
+    );
+  }
 
   let gistUrl = "";
   await runStep("Creating secret gist", async () => {
     try {
       const command = new Deno.Command("gh", {
-        args: ["gist", "create", "--secret", file],
+        args: ["gist", "create", file],
         stdout: "piped",
       });
       const output = await command.output();
@@ -44,7 +42,9 @@ export async function share(options: ShareOptions, file: string) {
       }
 
       const decoder = new TextDecoder();
-      gistUrl = decoder.decode(output.stdout).trim();
+      const outputText = decoder.decode(output.stdout).trim();
+      const lines = outputText.split("\n");
+      gistUrl = lines[lines.length - 1].trim();
     } catch (_e) {
       throw new Error(`Failed to create gist: ${_e instanceof Error ? _e.message : String(_e)}`);
     }
