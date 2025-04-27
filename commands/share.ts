@@ -53,8 +53,7 @@ export async function share(options: ShareOptions, file: string) {
   if (options.json) {
     console.log(JSON.stringify({ url: gistUrl }));
   } else {
-    console.log(`Glue file shared successfully!`);
-    console.log(`Gist URL: ${gistUrl}`);
+    console.log(`Shared via GitHub Gist: ${gistUrl}`);
   }
 
   return gistUrl;
