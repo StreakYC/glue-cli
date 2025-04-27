@@ -13,6 +13,7 @@ import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
 import { pause } from "./commands/pause.ts";
 import { resume } from "./commands/resume.ts";
+import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 
 const cmd = new Command()
@@ -94,6 +95,11 @@ const cmd = new Command()
   // WHOAMI ----------------------------
   .command("whoami", "Get the current user")
   .action(whoami)
+  // SHARE ----------------------------
+  .command("share", "Share a glue file by creating a GitHub secret gist")
+  .arguments("<file:string>")
+  .option("-j, --json", "Output in JSON format")
+  .action(share)
   // ACCOUNTS ----------------------------
   .command(
     "accounts",
