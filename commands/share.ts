@@ -42,7 +42,7 @@ export async function share(options: ShareOptions, file: string) {
       if (!output.success) {
         throw new Error("Failed to create gist");
       }
-      
+
       const decoder = new TextDecoder();
       gistUrl = decoder.decode(output.stdout).trim();
     } catch (_e) {
