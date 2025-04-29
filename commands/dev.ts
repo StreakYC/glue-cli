@@ -45,13 +45,12 @@ export async function dev(options: DevOptions, filename: string) {
 
   await monitorDeploymentAndRenderChangesTillReady(deployment.id);
 
-  await runUIStep(
+  const ws = await runUIStep(
     "connectingToTunnel",
     () => connectToDevEventsWebsocketAndHandleTriggerEvents(glue.devEventsWebsocketUrl!, async (message) => await deliverTriggerEvent(deployment, message)),
   );
 
   await unmountUI();
-
   for await (const events of debounceAsyncIterable(fileChangeWatcher, 200)) {
     if (events.every((e) => e.kind !== "modify")) {
       continue;
@@ -77,9 +76,14 @@ export async function dev(options: DevOptions, filename: string) {
     await unmountUI();
   }
 
+  ws.close();
+  try {
+    localRunner.child.kill();
+  } catch {
+    // ignore
+  }
   await shutdownGlue(glue.id);
-  localRunner.child.kill();
-  await localRunner.endPromise;
+  Deno.exit(0);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -187,7 +191,10 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
   return { endPromise, child };
 }
 
-function connectToDevEventsWebsocketAndHandleTriggerEvents(devEventsWebsocketUrl: string, triggerFn: (message: ServerWebsocketMessage) => Promise<void>) {
+function connectToDevEventsWebsocketAndHandleTriggerEvents(
+  devEventsWebsocketUrl: string,
+  triggerFn: (message: ServerWebsocketMessage) => Promise<void>,
+): WebSocket {
   const ws = new WebSocket(devEventsWebsocketUrl);
   ws.addEventListener("open", () => {
     // console.log("Websocket connected.");
@@ -214,6 +221,7 @@ function connectToDevEventsWebsocketAndHandleTriggerEvents(devEventsWebsocketUrl
     // console.log("Websocket closed:", event);
     // TODO reconnect
   });
+  return ws;
 }
 
 const ServerWebsocketMessage = z.object({
