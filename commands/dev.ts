@@ -54,7 +54,6 @@ export async function dev(options: DevOptions, filename: string) {
   await unmountUI();
 
   const buffer = new Uint8Array(1);
-  console.log("Waiting for events (or press 'r' to replay last event)...");
 
   const keyPressDetectionLoop = async () => {
     while (true) {
