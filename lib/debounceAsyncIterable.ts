@@ -10,6 +10,7 @@ export async function* debounceAsyncIterable<T>(
   iterable: AsyncIterable<T, unknown, void>,
   wait: number,
 ): AsyncIterable<T[], void, void> {
+  let iteratorIsDone = false;
   const sourceIterator = iterable[Symbol.asyncIterator]();
 
   try {
@@ -37,6 +38,7 @@ export async function* debounceAsyncIterable<T>(
           buffer = [];
         }
       } else if (result.done) {
+        iteratorIsDone = true;
         if (buffer.length > 0) {
           yield buffer;
         }
@@ -47,6 +49,8 @@ export async function* debounceAsyncIterable<T>(
       }
     }
   } finally {
-    await sourceIterator.return?.();
+    if (!iteratorIsDone) {
+      await sourceIterator.return?.();
+    }
   }
 }

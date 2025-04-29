@@ -68,3 +68,49 @@ Deno.test("wait time passes before first value", async () => {
   const results = await Array.fromAsync(debounceAsyncIterable(testIterable, 100));
   assertEquals(results, [[1, 2]]);
 });
+
+Deno.test("don't call return on done iterator", async () => {
+  // The iterator returned by Deno.watchFs will throw if you call return on it
+  // after the FsWatcher is closed (and the iterator has emitted a {done:true}
+  // value). This test ensures that we don't do that.
+
+  // Make an iterable like Deno.FsWatcher which throws if its return method is
+  // called after it has emitted a {done:true} value.
+  function makePickyIterable<T, TReturn, TNext>(iterable: AsyncIterable<T, TReturn, TNext>): AsyncIterable<T, TReturn, TNext> {
+    return {
+      [Symbol.asyncIterator]() {
+        const iterator = iterable[Symbol.asyncIterator]();
+        let lastResult: Promise<IteratorResult<T, TReturn>> | undefined;
+        return {
+          next(...args) {
+            lastResult = iterator.next(...args);
+            return lastResult;
+          },
+          async return(...args) {
+            if (lastResult) {
+              const lastResultValue = await lastResult;
+              if (lastResultValue.done) {
+                throw new Error("return called on completed picky iterator");
+              }
+            }
+            lastResult = iterator.return ? iterator.return(...args) : Promise.resolve({ done: true } as IteratorResult<T, TReturn>);
+            return lastResult;
+          },
+          throw(...args) {
+            lastResult = iterator.throw ? iterator.throw(...args) : Promise.resolve({ done: true } as IteratorResult<T, TReturn>);
+            return lastResult;
+          },
+        };
+      },
+    };
+  }
+
+  async function* testIterable() {
+    yield 1;
+    yield 2;
+    yield 3;
+  }
+
+  const results = await Array.fromAsync(debounceAsyncIterable(makePickyIterable(testIterable()), 100));
+  assertEquals(results, [[1, 2, 3]]);
+});
