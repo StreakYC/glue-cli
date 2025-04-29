@@ -18,7 +18,7 @@ import { delay } from "@std/async/delay";
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 let devProgressProps: DevUIProps = defaultDevUIProps();
 let inkInstance: Instance | undefined;
-let lastTriggerEvent: TriggerEvent | undefined;
+let lastMessage: ServerWebsocketMessage | undefined;
 
 // ------------------------------------------------------------------------------------------------
 // Dev command
@@ -114,10 +114,14 @@ export async function dev(options: DevOptions, filename: string) {
 // Helper functions
 // ------------------------------------------------------------------------------------------------
 
-async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage) {
+async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage, isReplay = false) {
   const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
-  console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
-  lastTriggerEvent = message.event;
+  const prefix = isReplay ? "REPLAYING " : "";
+  console.log(cyan(`\n[${new Date().toISOString()}] ${prefix}${trigger?.type.toUpperCase()} ${trigger?.description}`));
+
+  if (!isReplay) {
+    lastMessage = message;
+  }
   await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -126,16 +130,10 @@ async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWeb
 }
 
 async function replayLastEvent(deployment: DeploymentDTO) {
-  if (!lastTriggerEvent) {
+  if (!lastMessage) {
     return; // No event to replay
   }
-  const trigger = deployment.triggers.find((t) => t.label === lastTriggerEvent.label && t.type === lastTriggerEvent.type);
-  console.log(cyan(`\n[${new Date().toISOString()}] REPLAYING ${trigger?.type.toUpperCase()} ${trigger?.description}`));
-  await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(lastTriggerEvent satisfies TriggerEvent),
-  });
+  await deliverTriggerEvent(deployment, lastMessage, true);
 }
 
 async function shutdownGlue(glueId: string) {
