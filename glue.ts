@@ -47,7 +47,6 @@ const cmd = new Command()
   .action(deploy)
   // CREATE ----------------------------
   .command("create", "Create a new glue from a template")
-  .option("-j, --json", "Output in JSON format")
   .arguments("[filename:string]")
   .action(create)
   // LIST ----------------------------
