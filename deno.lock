@@ -8,13 +8,15 @@
     "jsr:@cliffy/keycode@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/prompt@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/table@1.0.0-rc.7": "1.0.0-rc.7",
-    "jsr:@hono/hono@^4.7.4": "4.7.7",
+    "jsr:@hono/hono@^4.7.4": "4.7.8",
     "jsr:@std/assert@1": "1.0.13",
     "jsr:@std/assert@~1.0.6": "1.0.13",
+    "jsr:@std/async@*": "1.0.12",
     "jsr:@std/async@^1.0.9": "1.0.12",
     "jsr:@std/cli@^1.0.6": "1.0.17",
     "jsr:@std/collections@^1.0.10": "1.0.11",
     "jsr:@std/dotenv@~0.225.3": "0.225.3",
+    "jsr:@std/encoding@^1.0.5": "1.0.10",
     "jsr:@std/encoding@~1.0.5": "1.0.10",
     "jsr:@std/fmt@^1.0.3": "1.0.7",
     "jsr:@std/fmt@~1.0.2": "1.0.7",
@@ -24,8 +26,9 @@
     "jsr:@std/path@^1.0.8": "1.0.9",
     "jsr:@std/path@^1.0.9": "1.0.9",
     "jsr:@std/path@~1.0.6": "1.0.9",
-    "jsr:@std/text@~1.0.7": "1.0.12",
-    "jsr:@streak-glue/runtime@*": "0.1.8",
+    "jsr:@std/text@~1.0.7": "1.0.13",
+    "jsr:@streak-glue/runtime@*": "0.1.10",
+    "jsr:@streak-glue/runtime@~0.1.10": "0.1.10",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
     "npm:@types/node@*": "22.12.0",
     "npm:@types/react@18": "18.3.20",
@@ -41,7 +44,7 @@
       "integrity": "f71c921cce224c13d322e5cedba4f38e8f7354c7d855c9cb22729362a53f25aa",
       "dependencies": [
         "jsr:@cliffy/internal",
-        "jsr:@std/encoding",
+        "jsr:@std/encoding@~1.0.5",
         "jsr:@std/io"
       ]
     },
@@ -89,6 +92,9 @@
     "@hono/hono@4.7.7": {
       "integrity": "74ea9985cb405fada079a922538f6baa06fa1ee150ce409c5bdae2c89ac05cba"
     },
+    "@hono/hono@4.7.8": {
+      "integrity": "620b1eaab065196d4ebe02cff31f8d3a78c94f736ce2ca86ee14f5f26fe48ecd"
+    },
     "@std/assert@1.0.13": {
       "integrity": "ae0d31e41919b12c656c742b22522c32fb26ed0cba32975cb0de2a273cb68b29",
       "dependencies": [
@@ -131,8 +137,19 @@
     "@std/text@1.0.12": {
       "integrity": "921132a41e03a2363f76ee5afe83c90a6271596aa95c137494edcb3404a564a5"
     },
+    "@std/text@1.0.13": {
+      "integrity": "2191c90e6e667b0c3b7dea1cd082137580a93b3c136bad597c0212d5fe006eb1"
+    },
     "@streak-glue/runtime@0.1.8": {
       "integrity": "2976a5fb20f0c1ab97dff70bbc0aba16b1bf597ec35f48cfcd171b8cf87e1d8e",
+      "dependencies": [
+        "jsr:@hono/hono",
+        "npm:@octokit/webhooks-types",
+        "npm:zod@^3.24.2"
+      ]
+    },
+    "@streak-glue/runtime@0.1.10": {
+      "integrity": "9ac4b76036e1e7348917fc35163b874dd7f383298cd938e46707d0891c32fb25",
       "dependencies": [
         "jsr:@hono/hono",
         "npm:@octokit/webhooks-types",
@@ -417,6 +434,7 @@
       "jsr:@std/fmt@^1.0.3",
       "jsr:@std/fs@^1.0.6",
       "jsr:@std/path@^1.0.8",
+      "jsr:@streak-glue/runtime@~0.1.10",
       "npm:@types/react@18",
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",

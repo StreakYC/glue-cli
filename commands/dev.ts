@@ -1,25 +1,23 @@
 import { z } from "zod";
-import {
-  createDeployment,
-  createGlue,
-  getGlueById,
-  getGlueByName,
-  stopGlue,
-  streamChangesToDeployment as streamChangesTillDeploymentReady,
-} from "../backend.ts";
+import { createDeployment, createGlue, getGlueByName, stopGlue, streamChangesToDeployment as streamChangesTillDeploymentReady } from "../backend.ts";
 import { retry } from "@std/async/retry";
 import { basename } from "@std/path";
-import { type Awaitable, type RegisteredTrigger, TriggerEvent } from "../runtimeCommon.ts";
-import type { GlueDTO } from "../backend.ts";
-import { DevUI, type DevUIProps } from "../ui/dev.tsx";
+import type { DeploymentDTO, GlueDTO } from "../backend.ts";
+import type { DevUIProps } from "../ui/dev.tsx";
+import { DevUI } from "../ui/dev.tsx";
 import React from "react";
-import { render } from "ink";
+import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
+import { debounceAsyncIterable } from "../lib/debounceAsyncIterable.ts";
+import { type RegisteredTrigger, TriggerEvent } from "@streak-glue/runtime/internalTypes";
+import type { Awaitable } from "../common.ts";
+import { equal } from "@std/assert/equal";
+import { delay } from "@std/async/delay";
 
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
-const devProgressProps: DevUIProps = defaultDevUIProps();
-let inkInstance: { unmount: () => void } | undefined;
+let devProgressProps: DevUIProps = defaultDevUIProps();
+let inkInstance: Instance | undefined;
 
 // ------------------------------------------------------------------------------------------------
 // Dev command
@@ -30,61 +28,102 @@ export async function dev(options: DevOptions, filename: string) {
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = getEnv(glueName);
 
-  Deno.addSignalListener("SIGINT", async () => await shutdown(glueId));
+  let fileChangeWatcher: Deno.FsWatcher | undefined = Deno.watchFs(filename);
+  Deno.addSignalListener("SIGINT", () => {
+    fileChangeWatcher?.close();
+    fileChangeWatcher = undefined; // TODO why is the sigint handler called twice?
+  });
 
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
   if (codeAnalysisResult.errors.length > 0) {
-    throw new Error("Code analysis failed");
+    throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
   }
 
-  const localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env));
+  let localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env));
   const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
-  const { glueId, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
+  let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
   for await (const d of streamChangesTillDeploymentReady(deployment.id)) {
     devProgressProps.deployment = d;
-    renderUI(devProgressProps);
+    renderUI();
   }
 
-  await runUIStep("connectingToTunnel", async () => connectToDevEventsWebsocketAndHandleTriggerEvents(await getGlueOrThrow(glueId)));
+  await runUIStep(
+    "connectingToTunnel",
+    () => connectToDevEventsWebsocketAndHandleTriggerEvents(glue.devEventsWebsocketUrl!, async (message) => await deliverTriggerEvent(deployment, message)),
+  );
 
+  await delay(1); // TODO why is this needed?
   unmountUI();
 
+  for await (const events of debounceAsyncIterable(fileChangeWatcher, 200)) {
+    if (events.every((e) => e.kind !== "modify")) {
+      continue;
+    }
+
+    devProgressProps = defaultRestartingUIProps();
+    renderUI();
+    localRunner.child.kill();
+
+    localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env));
+    const newTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
+
+    if (!equal(registeredTriggers, newTriggers)) {
+      devProgressProps.steps.registeringGlue = {
+        state: "in_progress",
+        duration: 0,
+      };
+      renderUI();
+      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticTriggers: newTriggers }));
+      devProgressProps.deployment = deployment;
+      for await (const d of streamChangesTillDeploymentReady(deployment.id)) {
+        devProgressProps.deployment = d;
+        renderUI();
+      }
+    }
+    await delay(1); // TODO why is this needed?
+    unmountUI();
+  }
+
+  await shutdownGlue(glue.id);
+  localRunner.child.kill();
   await localRunner.endPromise;
 }
 
 // ------------------------------------------------------------------------------------------------
 // Helper functions
 // ------------------------------------------------------------------------------------------------
-async function shutdown(glueId: string) {
+
+async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage) {
+  const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
+  console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
+  await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message.event satisfies TriggerEvent),
+  });
+}
+
+async function shutdownGlue(glueId: string) {
   if (glueId) {
     console.log("Stopping glue...");
     await stopGlue(glueId);
   } else {
     console.log("No glue to stop");
   }
-  Deno.exit(0);
 }
 
-async function getGlueOrThrow(glueId: string) {
-  const glue = await getGlueById(glueId);
-  if (!glue) {
-    throw new Error(`Glue not found: ${glueId}`);
-  }
-  return glue;
-}
-
-async function createDeploymentAndMaybeGlue(glueName: string, registeredTriggers: RegisteredTrigger[]) {
+async function createDeploymentAndMaybeGlue(glueName: string, registeredTriggers: RegisteredTrigger[]): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
   const existingGlue = await getGlueByName(glueName, "dev");
   if (!existingGlue) {
     const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
     if (!newGlue.pendingDeployment) {
       throw new Error("No pending deployment");
     }
-    return { glueId: newGlue.id, deployment: newGlue.pendingDeployment };
+    return { glue: newGlue, deployment: newGlue.pendingDeployment };
   } else {
     const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
-    return { glueId: existingGlue.id, deployment: newDeployment };
+    return { glue: existingGlue, deployment: newDeployment };
   }
 }
 
@@ -156,12 +195,8 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
   return { endPromise, child };
 }
 
-function connectToDevEventsWebsocketAndHandleTriggerEvents(glue: GlueDTO) {
-  if (glue.devEventsWebsocketUrl == null) {
-    throw new Error("No dev events websocket URL found");
-  }
-
-  const ws = new WebSocket(glue.devEventsWebsocketUrl);
+function connectToDevEventsWebsocketAndHandleTriggerEvents(devEventsWebsocketUrl: string, triggerFn: (message: ServerWebsocketMessage) => Promise<void>) {
+  const ws = new WebSocket(devEventsWebsocketUrl);
   ws.addEventListener("open", () => {
     // console.log("Websocket connected.");
   });
@@ -174,13 +209,7 @@ function connectToDevEventsWebsocketAndHandleTriggerEvents(glue: GlueDTO) {
     }
     const message = ServerWebsocketMessage.parse(JSON.parse(event.data));
     if (message.type === "trigger") {
-      const trigger = glue.currentDeployment!.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
-      console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
-      await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(message.event satisfies TriggerEvent),
-      });
+      await triggerFn(message);
     } else {
       console.warn("Unknown websocket message:", message);
     }
@@ -233,34 +262,64 @@ function defaultDevUIProps(): DevUIProps {
         duration: 0,
       },
     },
+    restarting: false,
     deployment: undefined,
   };
 }
 
-function renderUI(props: DevUIProps) { // TODO no need to take in props, just use the state
-  inkInstance = render(React.createElement(DevUI, props));
+function defaultRestartingUIProps(): DevUIProps {
+  return {
+    steps: {
+      bootingCode: {
+        state: "not_started",
+        duration: 0,
+      },
+      discoveringTriggers: {
+        state: "not_started",
+        duration: 0,
+      },
+      registeringGlue: undefined,
+    },
+    restarting: true,
+    deployment: undefined,
+  };
 }
-const unmountUI = () => {
+
+function renderUI() {
+  if (inkInstance) {
+    inkInstance.rerender(React.createElement(DevUI, devProgressProps));
+  } else {
+    inkInstance = render(React.createElement(DevUI, devProgressProps));
+  }
+}
+
+function unmountUI() {
   if (inkInstance) {
     inkInstance.unmount();
     inkInstance = undefined;
   }
-};
+}
+
 async function runUIStep<R>(stepName: keyof DevUIProps["steps"], fn: () => Awaitable<R>): Promise<R> {
+  const step = devProgressProps.steps[stepName];
+  if (!step) {
+    return await fn();
+  }
+
   const start = performance.now();
-  devProgressProps.steps[stepName].duration = 0;
-  devProgressProps.steps[stepName].state = "in_progress";
-  renderUI(devProgressProps);
+  step.duration = 0;
+  step.state = "in_progress";
+  renderUI();
   let retVal;
   try {
     retVal = await fn();
-    devProgressProps.steps[stepName].state = "success";
+    step.state = "success";
   } catch (e) {
-    devProgressProps.steps[stepName].state = "failure";
+    step.state = "failure";
     throw e;
   } finally {
-    devProgressProps.steps[stepName].duration = performance.now() - start;
-    renderUI(devProgressProps);
+    step.duration = performance.now() - start;
+    renderUI();
   }
   return retVal;
 }

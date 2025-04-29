@@ -4,17 +4,10 @@ import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
 import { retry } from "@std/async/retry";
+import { RegisteredTrigger } from "@streak-glue/runtime/internalTypes";
 
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
 export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
-
-// based on type from glue-backend
-export const TriggerCreateParams = z.object({
-  type: z.string(),
-  label: z.string(),
-  config: z.object({}).optional(),
-});
-export type TriggerCreateParams = z.infer<typeof TriggerCreateParams>;
 
 export const DeploymentAsset = z.object({
   kind: z.literal("file"),
@@ -32,7 +25,7 @@ export type DeploymentContent = z.infer<typeof DeploymentContent>;
 
 const CreateDeploymentParams = z.object({
   deploymentContent: DeploymentContent.optional(),
-  optimisticTriggers: z.array(TriggerCreateParams).optional(),
+  optimisticTriggers: z.array(RegisteredTrigger).optional(),
 });
 export type CreateDeploymentParams = z.infer<typeof CreateDeploymentParams>;
 

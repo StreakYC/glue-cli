@@ -24,6 +24,7 @@
     "@std/encoding": "jsr:@std/encoding@^1.0.5",
     "@std/fs": "jsr:@std/fs@^1.0.6",
     "@std/path": "jsr:@std/path@^1.0.8",
+    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.1.10",
     "hono": "npm:hono@^4.7.5",
     "ink": "npm:ink@^5.1.1",
     "ink-spinner": "npm:ink-spinner@^5.0.0",

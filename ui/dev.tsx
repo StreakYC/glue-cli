@@ -11,12 +11,13 @@ export type Step = {
 
 export type DevUIProps = {
   steps: {
-    codeAnalysis: Step;
+    codeAnalysis?: Step;
     bootingCode: Step;
     discoveringTriggers: Step;
-    registeringGlue: Step;
-    connectingToTunnel: Step;
+    registeringGlue?: Step;
+    connectingToTunnel?: Step;
   };
+  restarting: boolean;
   deployment?: DeploymentDTO;
 };
 
@@ -24,16 +25,33 @@ export const DevUI = (
   props: DevUIProps,
 ) => {
   const steps = props.steps;
-  const done = props.deployment && props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success") &&
-    steps.codeAnalysis.state === "success" && steps.bootingCode.state === "success" && steps.discoveringTriggers.state === "success" &&
-    steps.registeringGlue.state === "success";
+  const uiStepsDone = Object
+    .keys(steps)
+    .map((k) => k as keyof DevUIProps["steps"])
+    .filter((k) => steps[k] !== undefined)
+    .every((k) => steps[k]!.state === "success");
+
+  let done = false;
+  if (props.restarting) {
+    done = uiStepsDone && (props.deployment ? props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success") : true);
+  } else {
+    done = uiStepsDone && props.deployment !== undefined && props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success");
+  }
 
   return (
     <>
-      <ClientStepRow stepState={steps.codeAnalysis.state} stepDuration={steps.codeAnalysis.duration} stepTitle="Analyzing code" />
+      {props.restarting && (
+        <>
+          <Newline />
+          <Text>File changes detected, restarting glue...</Text>
+        </>
+      )}
+      {steps.codeAnalysis && <ClientStepRow stepState={steps.codeAnalysis.state} stepDuration={steps.codeAnalysis.duration} stepTitle="Analyzing code" />}
       <ClientStepRow stepState={steps.bootingCode.state} stepDuration={steps.bootingCode.duration} stepTitle="Booting code" />
       <ClientStepRow stepState={steps.discoveringTriggers.state} stepDuration={steps.discoveringTriggers.duration} stepTitle="Discovering triggers" />
-      <ClientStepRow stepState={steps.registeringGlue.state} stepDuration={steps.registeringGlue.duration} stepTitle="Registering glue" />
+      {steps.registeringGlue && (
+        <ClientStepRow stepState={steps.registeringGlue.state} stepDuration={steps.registeringGlue.duration} stepTitle="Registering glue" />
+      )}
       {props.deployment && props.deployment.buildSteps.map((step: BuildStepDTO) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
@@ -43,7 +61,7 @@ export const DevUI = (
           {step.name === "triggerSetup" && step.status === "success" && props.deployment && <SetupTriggerList triggers={props.deployment.triggers} />}
         </React.Fragment>
       ))}
-      {props.deployment && (
+      {props.deployment && steps.connectingToTunnel && (
         <ClientStepRow
           stepState={steps.connectingToTunnel.state}
           stepDuration={steps.connectingToTunnel.duration}
