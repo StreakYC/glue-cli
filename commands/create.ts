@@ -1,5 +1,5 @@
 import { exists } from "@std/fs/exists";
-import { bold, green } from "@std/fmt/colors";
+import { bold, green, red } from "@std/fmt/colors";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
@@ -16,7 +16,8 @@ export async function create(_options: void, filename?: string) {
   const targetFilename = filename || DEFAULT_FILENAME;
 
   if (await exists(targetFilename)) {
-    throw new Error(`File '${targetFilename}' already exists. Please specify a different filename.`);
+    console.log(`${red("✗")} File '${targetFilename}' already exists. Please specify a different filename.`);
+    Deno.exit(1);
   }
 
   await Deno.writeTextFile(targetFilename, TEMPLATE_CONTENT);
