@@ -1,8 +1,6 @@
 import { exists } from "@std/fs/exists";
 import { bold, green } from "@std/fmt/colors";
 
-interface CreateOptions {}
-
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
 
@@ -14,7 +12,7 @@ glue.webhook.onGet((_event) => {
 /**
  * Create a new glue file with a template
  */
-export async function create(_options: CreateOptions, filename?: string) {
+export async function create(_options: Record<string, unknown>, filename?: string) {
   const targetFilename = filename || DEFAULT_FILENAME;
 
   if (await exists(targetFilename)) {
