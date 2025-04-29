@@ -33,7 +33,6 @@ export async function dev(options: DevOptions, filename: string) {
   Deno.addSignalListener("SIGINT", () => {
     fileChangeWatcher?.close();
     fileChangeWatcher = undefined; // TODO why is the sigint handler called twice?
-    Deno.exit(0);
   });
 
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
@@ -53,19 +52,20 @@ export async function dev(options: DevOptions, filename: string) {
   );
 
   await unmountUI();
-  
+
   const buffer = new Uint8Array(1);
   console.log("Waiting for events (or press 'r' to replay last event)...");
-  
+
   const keyPressDetectionLoop = async () => {
     while (true) {
       try {
         const n = await Deno.stdin.read(buffer);
         if (n === null) {
-          break; // EOF
+          console.log("EOF detected, continuing to listen for events...");
+          continue; // Continue listening instead of breaking
         }
         const key = String.fromCharCode(buffer[0]);
-        if (key === 'r') {
+        if (key === "r") {
           await replayLastEvent(deployment);
         }
       } catch (e) {
@@ -75,7 +75,7 @@ export async function dev(options: DevOptions, filename: string) {
       }
     }
   };
-  
+
   keyPressDetectionLoop().catch((e) => {
     console.error("Error in key press detection loop:", e);
   });
