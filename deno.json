@@ -10,7 +10,8 @@
     "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts dev myExampleWebhook.ts",
     "check": "deno check **/*.ts*",
     "lint": "deno lint --watch",
-    "test": "deno test --permit-no-files"
+    "test": "deno test --permit-no-files",
+    "test-w": "deno test --watch --permit-no-files"
   },
   "unstable": ["kv"],
   "imports": {
