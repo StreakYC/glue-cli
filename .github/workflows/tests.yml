@@ -11,5 +11,5 @@ jobs:
       - run: deno fmt --check
       - run: deno lint
       - run: deno task check
-      - run: deno task test
+      - run: deno test
       - run: deno publish --dry-run
