@@ -30,7 +30,7 @@ const cmd = new Command()
       provider: [
         new JsrProvider({ scope: "streak-glue", name: "cli" }),
       ],
-      args: ["--unstable-kv", "--unstable-temporal"],
+      args: ["--unstable-kv", "--unstable-temporal", "--allow-all"],
     }),
   )
   // DEV ----------------------------
