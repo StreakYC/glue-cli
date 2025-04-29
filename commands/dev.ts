@@ -65,7 +65,9 @@ export async function dev(options: DevOptions, filename: string) {
         }
         const key = String.fromCharCode(buffer[0]);
         if (key === "r") {
-          await replayLastEvent(deployment);
+          if (lastMessage) {
+            await deliverTriggerEvent(deployment, lastMessage, true);
+          }
         }
       } catch (e) {
         if (!(e instanceof Deno.errors.Interrupted)) {
@@ -128,12 +130,6 @@ async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWeb
   });
 }
 
-async function replayLastEvent(deployment: DeploymentDTO) {
-  if (!lastMessage) {
-    return; // No event to replay
-  }
-  await deliverTriggerEvent(deployment, lastMessage, true);
-}
 
 async function shutdownGlue(glueId: string) {
   if (glueId) {
