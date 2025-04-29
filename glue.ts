@@ -15,6 +15,7 @@ import { pause } from "./commands/pause.ts";
 import { resume } from "./commands/resume.ts";
 import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
+import { create } from "./commands/create.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -46,11 +47,9 @@ const cmd = new Command()
   .action(deploy)
   // CREATE ----------------------------
   .command("create", "Create a new glue from a template")
-  .action(() => {
-    throw new Error(
-      "Not implemented but eventually this will prompt the user for a filename or ask them what they are trying to build and autogen filename and code using AI",
-    );
-  })
+  .option("-j, --json", "Output in JSON format")
+  .arguments("[filename:string]")
+  .action(create)
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
   .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
