@@ -43,18 +43,14 @@ export async function dev(options: DevOptions, filename: string) {
   const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
   let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
-  for await (const d of streamChangesTillDeploymentReady(deployment.id)) {
-    devProgressProps.deployment = d;
-    renderUI();
-  }
+  await monitorDeploymentAndRenderChangesTillReady(deployment.id);
 
   await runUIStep(
     "connectingToTunnel",
     () => connectToDevEventsWebsocketAndHandleTriggerEvents(glue.devEventsWebsocketUrl!, async (message) => await deliverTriggerEvent(deployment, message)),
   );
 
-  await delay(1); // TODO why is this needed?
-  unmountUI();
+  await unmountUI();
 
   for await (const events of debounceAsyncIterable(fileChangeWatcher, 200)) {
     if (events.every((e) => e.kind !== "modify")) {
@@ -76,13 +72,9 @@ export async function dev(options: DevOptions, filename: string) {
       renderUI();
       deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticTriggers: newTriggers }));
       devProgressProps.deployment = deployment;
-      for await (const d of streamChangesTillDeploymentReady(deployment.id)) {
-        devProgressProps.deployment = d;
-        renderUI();
-      }
+      await monitorDeploymentAndRenderChangesTillReady(deployment.id);
     }
-    await delay(1); // TODO why is this needed?
-    unmountUI();
+    await unmountUI();
   }
 
   await shutdownGlue(glue.id);
@@ -293,8 +285,9 @@ function renderUI() {
   }
 }
 
-function unmountUI() {
+async function unmountUI() {
   if (inkInstance) {
+    await delay(1);
     inkInstance.unmount();
     inkInstance = undefined;
   }
@@ -322,4 +315,11 @@ async function runUIStep<R>(stepName: keyof DevUIProps["steps"], fn: () => Await
     renderUI();
   }
   return retVal;
+}
+
+async function monitorDeploymentAndRenderChangesTillReady(deploymentId: string) {
+  for await (const d of streamChangesTillDeploymentReady(deploymentId)) {
+    devProgressProps.deployment = d;
+    renderUI();
+  }
 }
