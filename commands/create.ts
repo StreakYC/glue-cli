@@ -12,7 +12,7 @@ glue.webhook.onGet((_event) => {
 /**
  * Create a new glue file with a template
  */
-export async function create(_options: Record<string, unknown>, filename?: string) {
+export async function create(_options: void, filename?: string) {
   const targetFilename = filename || DEFAULT_FILENAME;
 
   if (await exists(targetFilename)) {
