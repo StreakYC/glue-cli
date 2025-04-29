@@ -72,7 +72,7 @@ export const DevUI = (
         <>
           <Newline />
           <Text>
-            Waiting for events...
+            Waiting for events (or press 'r' to replay last event)...
           </Text>
         </>
       )}

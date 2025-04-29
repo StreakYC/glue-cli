@@ -18,6 +18,7 @@ import { delay } from "@std/async/delay";
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 let devProgressProps: DevUIProps = defaultDevUIProps();
 let inkInstance: Instance | undefined;
+let lastTriggerEvent: TriggerEvent | undefined;
 
 // ------------------------------------------------------------------------------------------------
 // Dev command
@@ -32,6 +33,7 @@ export async function dev(options: DevOptions, filename: string) {
   Deno.addSignalListener("SIGINT", () => {
     fileChangeWatcher?.close();
     fileChangeWatcher = undefined; // TODO why is the sigint handler called twice?
+    Deno.exit(0);
   });
 
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
@@ -51,6 +53,32 @@ export async function dev(options: DevOptions, filename: string) {
   );
 
   await unmountUI();
+  
+  const buffer = new Uint8Array(1);
+  console.log("Waiting for events (or press 'r' to replay last event)...");
+  
+  const keyPressDetectionLoop = async () => {
+    while (true) {
+      try {
+        const n = await Deno.stdin.read(buffer);
+        if (n === null) {
+          break; // EOF
+        }
+        const key = String.fromCharCode(buffer[0]);
+        if (key === 'r') {
+          await replayLastEvent(deployment);
+        }
+      } catch (e) {
+        if (!(e instanceof Deno.errors.Interrupted)) {
+          throw e;
+        }
+      }
+    }
+  };
+  
+  keyPressDetectionLoop().catch((e) => {
+    console.error("Error in key press detection loop:", e);
+  });
 
   for await (const events of debounceAsyncIterable(fileChangeWatcher, 200)) {
     if (events.every((e) => e.kind !== "modify")) {
@@ -89,10 +117,24 @@ export async function dev(options: DevOptions, filename: string) {
 async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage) {
   const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
   console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
+  lastTriggerEvent = message.event;
   await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.event satisfies TriggerEvent),
+  });
+}
+
+async function replayLastEvent(deployment: DeploymentDTO) {
+  if (!lastTriggerEvent) {
+    return; // No event to replay
+  }
+  const trigger = deployment.triggers.find((t) => t.label === lastTriggerEvent.label && t.type === lastTriggerEvent.type);
+  console.log(cyan(`\n[${new Date().toISOString()}] REPLAYING ${trigger?.type.toUpperCase()} ${trigger?.description}`));
+  await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lastTriggerEvent satisfies TriggerEvent),
   });
 }
 
