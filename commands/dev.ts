@@ -1,3 +1,4 @@
+import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { z } from "zod";
 import { createDeployment, createGlue, getGlueByName, stopGlue, streamChangesToDeployment as streamChangesTillDeploymentReady } from "../backend.ts";
 import { retry } from "@std/async/retry";
@@ -14,10 +15,12 @@ import { type RegisteredTrigger, TriggerEvent } from "@streak-glue/runtime/inter
 import type { Awaitable } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
+import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 let devProgressProps: DevUIProps = defaultDevUIProps();
 let inkInstance: Instance | undefined;
+let lastMessage: ServerWebsocketMessage | undefined;
 
 // ------------------------------------------------------------------------------------------------
 // Dev command
@@ -28,10 +31,17 @@ export async function dev(options: DevOptions, filename: string) {
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = getEnv(glueName);
 
-  let fileChangeWatcher: Deno.FsWatcher | undefined = Deno.watchFs(filename);
+  const fileChangeWatcher = Deno.watchFs(filename);
+  const keypressWatcher = keypress();
+
+  let disposed = false;
   Deno.addSignalListener("SIGINT", () => {
-    fileChangeWatcher?.close();
-    fileChangeWatcher = undefined; // TODO why is the sigint handler called twice?
+    if (disposed) {
+      return;
+    }
+    disposed = true;
+    fileChangeWatcher.close();
+    keypressWatcher.dispose();
   });
 
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
@@ -51,8 +61,27 @@ export async function dev(options: DevOptions, filename: string) {
   );
 
   await unmountUI();
-  for await (const events of debounceAsyncIterable(fileChangeWatcher, 200)) {
-    if (events.every((e) => e.kind !== "modify")) {
+
+  const mux = new MuxAsyncIterator<Deno.FsEvent[] | KeyPressEvent>();
+  mux.add(debounceAsyncIterable(fileChangeWatcher, 200));
+  mux.add(keypressWatcher);
+  for await (const event of mux) {
+    // handle keypress events
+    if (!Array.isArray(event)) {
+      const keyPressEvent = event as KeyPressEvent;
+      if (keyPressEvent.key === "q" || keyPressEvent.key === "Q") {
+        break;
+      } else if (keyPressEvent.ctrlKey && keyPressEvent.key === "c") {
+        break;
+      } else if (keyPressEvent.key === "r" && lastMessage) {
+        await deliverTriggerEvent(deployment, lastMessage, true);
+      }
+      continue;
+    }
+
+    // handle file change events
+    const fileChangeEvents = event as Deno.FsEvent[];
+    if (fileChangeEvents.every((e) => e.kind !== "modify")) {
       continue;
     }
 
@@ -90,14 +119,18 @@ export async function dev(options: DevOptions, filename: string) {
 // Helper functions
 // ------------------------------------------------------------------------------------------------
 
-async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage) {
+async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage, isReplay: boolean = false) {
   const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
-  console.log(cyan(`\n[${new Date().toISOString()}] ${trigger?.type.toUpperCase()} ${trigger?.description}`));
+  const prefix = isReplay ? "REPLAYING " : "";
+  console.log(cyan(`\n[${new Date().toISOString()}] ${prefix}: ${trigger?.type.toUpperCase()} ${trigger?.description}`));
   await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.event satisfies TriggerEvent),
   });
+  if (!isReplay) {
+    lastMessage = message;
+  }
 }
 
 async function shutdownGlue(glueId: string) {
