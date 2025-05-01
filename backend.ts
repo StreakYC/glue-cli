@@ -208,7 +208,7 @@ export interface Log {
   text: string;
 }
 
-export type DeploymentStatus = "pending" | "success" | "failure";
+export type DeploymentStatus = "pending" | "success" | "failure" | "cancelled";
 
 /** taken from glue-backend */
 export interface DeploymentDTO {

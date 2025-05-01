@@ -70,6 +70,8 @@ export function formatDeploymentStatus(status: DeploymentStatus, isRunning: bool
       return mod.cyan("success");
     case "failure":
       return mod.red("failure");
+    case "cancelled":
+      return mod.gray("cancelled");
   }
 }
 
