@@ -29,7 +29,7 @@ export const DevUI = (
     .keys(steps)
     .map((k) => k as keyof DevUIProps["steps"])
     .filter((k) => steps[k] !== undefined)
-    .every((k) => steps[k]!.state === "success");
+    .every((k) => steps[k]!.state === "success" || steps[k]!.state === "failure");
 
   let done = false;
   if (props.restarting) {

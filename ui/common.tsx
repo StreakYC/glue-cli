@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
 import type { BuildStepDTO, StepStatus, TriggerDTO } from "../backend.ts";
 
@@ -14,6 +14,8 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
     return (
       <Text>
         <Text color="red">✗</Text> {step.title}
+        <Newline />
+        {step.text && <Text color="red">{step.text}</Text>}
       </Text>
     );
   } else if (step.status === "in_progress") {

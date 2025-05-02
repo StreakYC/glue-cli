@@ -54,6 +54,12 @@ export async function dev(options: DevOptions, filename: string) {
   let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
   await monitorDeploymentAndRenderChangesTillReady(deployment.id);
+  if (deployment.status !== "success") {
+    // we've already rendered the failed deployment UI, so we just need to exit here
+    renderUI();
+    localRunner.child.kill();
+    Deno.exit(1);
+  }
 
   const ws = await runUIStep(
     "connectingToTunnel",
@@ -101,6 +107,12 @@ export async function dev(options: DevOptions, filename: string) {
       deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticTriggers: newTriggers }));
       devProgressProps.deployment = deployment;
       await monitorDeploymentAndRenderChangesTillReady(deployment.id);
+      if (deployment.status !== "success") {
+        // we've already rendered the failed deployment UI, so we just need to exit here
+        renderUI();
+        localRunner.child.kill();
+        Deno.exit(1);
+      }
     }
     await unmountUI();
   }
@@ -362,8 +374,5 @@ async function monitorDeploymentAndRenderChangesTillReady(deploymentId: string) 
   for await (const d of streamChangesTillDeploymentReady(deploymentId)) {
     devProgressProps.deployment = d;
     renderUI();
-  }
-  if (devProgressProps.deployment?.status !== "success") {
-    throw new Error(`Deployment failed, try \`glue deployments\` for more info`);
   }
 }
