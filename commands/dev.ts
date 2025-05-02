@@ -363,4 +363,7 @@ async function monitorDeploymentAndRenderChangesTillReady(deploymentId: string) 
     devProgressProps.deployment = d;
     renderUI();
   }
+  if (devProgressProps.deployment?.status !== "success") {
+    throw new Error(`Deployment failed, try \`glue deployments\` for more info`);
+  }
 }
