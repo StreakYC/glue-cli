@@ -31,6 +31,14 @@ export async function dev(options: DevOptions, filename: string) {
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = getEnv(glueName);
 
+  // TODO instead of watching the glue file ourselves and restarting the
+  // subprocess on changes, we could lean on deno's built-in `--watch` flag to
+  // restart the subprocess on changes. This would also fix the issue where we
+  // don't restart on changes of imported files. We would need to make the
+  // subprocess initiate a connection to the glue-cli process on startup. If we
+  // then made the subprocess exit itself when its connection to glue-cli ended,
+  // then this would also fully prevent any possibility of orphaned
+  // subprocesses.
   const fileChangeWatcher = Deno.watchFs(filename);
   const keypressWatcher = keypress();
 
