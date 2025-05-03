@@ -62,7 +62,7 @@ export async function dev(options: DevOptions, filename: string) {
   let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
   await monitorDeploymentAndRenderChangesTillReady(deployment.id);
-  if (deployment.status !== "success") {
+  if (devProgressProps.deployment?.status !== "success") {
     // we've already rendered the failed deployment UI, so we just need to exit here
     renderUI();
     localRunner.child.kill();
@@ -115,7 +115,7 @@ export async function dev(options: DevOptions, filename: string) {
       deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticTriggers: newTriggers }));
       devProgressProps.deployment = deployment;
       await monitorDeploymentAndRenderChangesTillReady(deployment.id);
-      if (deployment.status !== "success") {
+      if (devProgressProps.deployment?.status !== "success") {
         // we've already rendered the failed deployment UI, so we just need to exit here
         renderUI();
         localRunner.child.kill();
