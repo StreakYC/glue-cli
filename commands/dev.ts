@@ -16,6 +16,7 @@ import type { Awaitable } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
+import { toLines } from "@std/streams/unstable-to-lines";
 
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 let devProgressProps: DevUIProps = defaultDevUIProps();
@@ -224,13 +225,26 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
       file,
     ],
     stdin: "null",
-    stdout: "inherit",
+    stdout: "piped",
+    stderr: "piped",
     clearEnv: true,
     env,
   });
 
   const child = command.spawn();
   const endPromise = child.status;
+
+  (async () => {
+    for await (const line of toLines(child.stdout)) {
+      console.log(line);
+    }
+  })();
+
+  (async () => {
+    for await (const line of toLines(child.stderr)) {
+      console.error(line);
+    }
+  })();
 
   await retry(async () => {
     const res = await fetch(
