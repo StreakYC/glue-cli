@@ -1,1 +1,7 @@
-export const kv = await Deno.openKv(`${Deno.env.get("HOME")}/.glue/cli.sqlite3`);
+const home = Deno.env.get("HOME");
+if (home) {
+  const dir = `${home}/.glue`;
+  await Deno.mkdir(dir, { recursive: true });
+}
+
+export const kv = await Deno.openKv(`${home}/.glue/cli.sqlite3`);
