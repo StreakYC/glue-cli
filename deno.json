@@ -1,13 +1,13 @@
 {
   "name": "@streak-glue/cli",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
   },
   "tasks": {
     "cli": "deno run --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts",
-    "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts dev myExampleWebhook.ts",
+    "cli-debug": "deno run --inspect-brk --allow-env --allow-read --allow-net --allow-run --unstable-temporal glue.ts list",
     "check": "deno check **/*.ts*",
     "lint": "deno lint --watch",
     "test": "deno test --permit-no-files --watch"

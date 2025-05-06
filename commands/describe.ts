@@ -1,8 +1,19 @@
-import { type AccountDTO, type DeploymentDTO, getAccountById, getDeploymentById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
+import {
+  type AccountDTO,
+  type DeploymentDTO,
+  type ExecutionDTO,
+  getAccountById,
+  getDeploymentById,
+  getExecutionById,
+  getGlueById,
+  getGlueByName,
+  type GlueDTO,
+} from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { bold, dim, green, red } from "@std/fmt/colors";
+import { colorState } from "./tail.ts";
 interface DescribeOptions {
   json?: boolean;
 }
@@ -12,6 +23,7 @@ export const describe = async (options: DescribeOptions, query?: string) => {
   let glue: GlueDTO | undefined;
   let deployment: DeploymentDTO | undefined;
   let account: AccountDTO | undefined;
+  let execution: ExecutionDTO | undefined;
 
   if (query) {
     if (isPrefixId(query, "d")) {
@@ -20,6 +32,8 @@ export const describe = async (options: DescribeOptions, query?: string) => {
       glue = await runStep("Loading glue...", () => getGlueById(query));
     } else if (isPrefixId(query, "a")) {
       account = await runStep("Loading account...", () => getAccountById(query));
+    } else if (isPrefixId(query, "e")) {
+      execution = await runStep("Loading execution...", () => getExecutionById(query));
     } else {
       glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"));
     }
@@ -29,8 +43,8 @@ export const describe = async (options: DescribeOptions, query?: string) => {
     throw new Error("You must provide a glue name or query when not running in a terminal");
   }
 
-  if (!deployment && !glue && !account) {
-    throw new Error("Couldn't find a glue or deployment or account with that id nor a glue with that name");
+  if (!deployment && !glue && !account && !execution) {
+    throw new Error("Couldn't find a glue or deployment or account or execution with that id nor a glue with that name");
   }
 
   if (deployment) {
@@ -39,6 +53,8 @@ export const describe = async (options: DescribeOptions, query?: string) => {
     renderGlue(glue, options);
   } else if (account) {
     renderAccount(account, options);
+  } else if (execution) {
+    renderExecution(execution, options);
   }
 };
 
@@ -88,6 +104,29 @@ function renderAccount(account: AccountDTO, options: DescribeOptions) {
       console.log(`\t${green(glue.name) + (glue.environment === "dev" ? "[DEV]" : "")} (${dim(glue.id)})`);
     }
   }
+}
+
+function renderExecution(execution: ExecutionDTO, options: DescribeOptions) {
+  if (options.json) {
+    console.log(JSON.stringify(execution, null, 2));
+    return;
+  }
+  console.log(`${bold(execution.id)}`);
+  console.log(`Trigger: ${execution.trigger.description}`);
+  console.log(`Status: ${colorState(execution.state)}`);
+  console.log(`Started: ${new Date(execution.startedAt).toLocaleString()}`);
+  console.log(`Completed: ${execution.endedAt ? new Date(execution.endedAt).toLocaleString() : "Not completed"}`);
+  console.log(`Duration: ${execution.endedAt ? execution.endedAt - execution.startedAt : "Not completed"}ms`);
+  if (execution.logs.length > 0) {
+    console.log(`--------------------------------`);
+    console.log("Logs:");
+    for (const log of execution.logs) {
+      console.log(`${log.type === "stdout" ? green(new Date(log.timestamp).toLocaleString()) : red(new Date(log.timestamp).toLocaleString())} ${log.text}`);
+    }
+  }
+  console.log(`--------------------------------`);
+  console.log("Input Data:");
+  console.log(JSON.stringify(execution.inputData, null, 2));
 }
 
 function isPrefixId(query: string, prefix: string) {

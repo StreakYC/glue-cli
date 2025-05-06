@@ -75,7 +75,7 @@ function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogL
   }
 }
 
-function colorState(state: string): string {
+export function colorState(state: string): string {
   switch (state) {
     case "success":
       return green(state.toUpperCase());

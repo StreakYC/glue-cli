@@ -192,11 +192,16 @@ export async function getExecutions(glueId: string, limit: number, startingPoint
   return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
 }
 
+export async function getExecutionById(id: string): Promise<ExecutionDTO | undefined> {
+  return await backendRequest<ExecutionDTO>(`/executions/${id}`);
+}
+
 export interface ExecutionDTO {
   id: string;
   deploymentId: string;
   trigger: TriggerDTO;
   logs: Log[];
+  inputData: unknown;
   startedAt: number;
   endedAt?: number;
   state: string;

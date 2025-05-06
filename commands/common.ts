@@ -3,7 +3,7 @@ import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui/utils.ts";
 
 export async function askUserForGlue(): Promise<GlueDTO | undefined> {
-  const glues = await runStep("Loading glues...", () => getGlues("dev"));
+  const glues = await runStep("Loading glues...", () => getGlues("deploy"));
   if (!glues) {
     return undefined;
   }
