@@ -14,6 +14,7 @@ import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { bold, dim, green, red } from "@std/fmt/colors";
 import { colorState } from "./tail.ts";
+import { getRunningStringForDeploymentStatus } from "./list.ts";
 interface DescribeOptions {
   json?: boolean;
 }
@@ -73,7 +74,7 @@ function renderGlue(glue: GlueDTO, options: DescribeOptions) {
   }
 
   console.log(`${bold(glue.name)} ${dim(`(${glue.id})`)}`);
-  console.log(`Status: ${glue.running ? green("RUNNING") : red("NOT RUNNING")}`);
+  console.log(`Status: ${getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled")}`);
   console.log(`Created: ${new Date(glue.createdAt).toLocaleString()}`);
   console.log(`Number of runs: ${glue.executionSummary.count}`);
   console.log(`Last run: ${new Date(glue.executionSummary.mostRecent).toLocaleString()}`);

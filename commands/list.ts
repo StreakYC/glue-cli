@@ -1,6 +1,6 @@
-import { getGlues } from "../backend.ts";
+import { type DeploymentStatus, getGlues } from "../backend.ts";
 import { Table } from "@cliffy/table";
-import { green, red } from "@std/fmt/colors";
+import { dim, green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
@@ -27,7 +27,7 @@ export const list = async (options: ListOptions) => {
           glue,
         ) => [
           glue.name,
-          glue.running ? green("RUNNING") : red("NOT RUNNING"),
+          getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled"),
           glue.executionSummary.count,
           glue.executionSummary.mostRecent === 0 ? "-" : formatEpochMillis(glue.executionSummary.mostRecent),
           glue.currentDeployment ? formatEpochMillis(glue.currentDeployment.createdAt) : "-",
@@ -37,3 +37,16 @@ export const list = async (options: ListOptions) => {
       .render();
   }
 };
+
+export function getRunningStringForDeploymentStatus(status: DeploymentStatus): string {
+  switch (status) {
+    case "pending":
+      return yellow("BOOTING");
+    case "success":
+      return green("RUNNING");
+    case "failure":
+      return red("FAILED");
+    case "cancelled":
+      return dim("SHUT DOWN");
+  }
+}
