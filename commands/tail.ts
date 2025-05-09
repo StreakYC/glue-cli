@@ -15,6 +15,11 @@ interface TailOptions {
 
 export const tail = async (options: TailOptions, name?: string) => {
   await checkForAuthCredsOtherwiseExit();
+  // look for sigint
+  Deno.addSignalListener("SIGINT", () => {
+    Deno.exit(0);
+  });
+
   let glue: GlueDTO | undefined;
 
   if (name) {
@@ -56,9 +61,9 @@ function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogL
       if (!e.endedAt) {
         return;
       }
-      console.log(`[${new Date(e.endedAt).toISOString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
+      console.log(`[${new Date(e.endedAt).toLocaleString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
       e.logs.slice(0, logLines).forEach((l) => {
-        let toConsole = dim(`[${new Date(l.timestamp).toISOString()}] ${l.text.trim()}`);
+        let toConsole = dim(`[${new Date(l.timestamp).toLocaleString()}] ${l.text.trim()}`);
         if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
           toConsole = toConsole.slice(0, Deno.consoleSize().columns - 3) + "...";
         }
