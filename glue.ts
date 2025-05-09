@@ -16,6 +16,7 @@ import { resume } from "./commands/resume.ts";
 import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 import { create } from "./commands/create.ts";
+import { replay } from "./commands/replay.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -75,6 +76,10 @@ const cmd = new Command()
   .arguments("[query:string]")
   .option("-j, --json", "Output in JSON format")
   .action(describe)
+  // REPLAY ----------------------------
+  .command("replay", "Replay an execution of a glue")
+  .arguments("<executionId:string>")
+  .action(replay)
   // TAIL ----------------------------
   .command("tail", "View a live stream of the executions of a glue. Provide a glue name or id.")
   .arguments("[name:string]")

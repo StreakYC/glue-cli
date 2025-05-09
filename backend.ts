@@ -196,6 +196,12 @@ export async function getExecutionById(id: string): Promise<ExecutionDTO | undef
   return await backendRequest<ExecutionDTO>(`/executions/${id}`);
 }
 
+export async function replayExecution(executionId: string) {
+  await backendRequest<void>(`/executions/${executionId}/replay`, {
+    method: "POST",
+  });
+}
+
 export interface ExecutionDTO {
   id: string;
   deploymentId: string;
