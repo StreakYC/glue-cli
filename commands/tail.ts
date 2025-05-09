@@ -72,9 +72,6 @@ function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogL
     });
   } else {
     executions.forEach((e) => {
-      if (e.logs) {
-        e.logs = e.logs.slice(0, logLines);
-      }
       console.log(JSON.stringify(e));
     });
   }
