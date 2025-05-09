@@ -66,7 +66,8 @@ export async function backendRequest<T>(path: string, options: RequestInit = {},
     exitBecauseNotLoggedIn();
   }
   if (!res.ok) {
-    throw new Error(`Failed to fetch ${path}: ${res.statusText}`);
+    const body = await res.text();
+    throw new Error(`Failed to fetch ${path}: ${res.statusText} ${body}`);
   }
   return res.json() as Promise<T>;
 }
@@ -183,11 +184,18 @@ export async function* streamChangesToDeployment(deploymentId: string): AsyncIte
   }
 }
 
-export async function getExecutions(glueId: string, limit: number, startingPoint: Date, direction: "asc" | "desc"): Promise<ExecutionDTO[]> {
+export async function getExecutions(
+  glueId: string,
+  limit: number,
+  startingPoint: Date,
+  direction: "asc" | "desc",
+  includeInputData: boolean = false,
+): Promise<ExecutionDTO[]> {
   const params = new URLSearchParams({
     limit: limit.toString(),
     startingPoint: startingPoint.getTime().toString(),
     direction,
+    includeInputData: includeInputData.toString(),
   });
   return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
 }

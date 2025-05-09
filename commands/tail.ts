@@ -23,11 +23,11 @@ export const tail = async (options: TailOptions, name?: string) => {
   let glue: GlueDTO | undefined;
 
   if (name) {
-    glue = await runStep("Loading glue...", () => getGlueByName(name, "deploy"));
-  } else if (Deno.stdout.isTerminal()) {
+    glue = await runStep("Loading glue...", () => getGlueByName(name, "deploy"), true, !!options.json);
+  } else if (Deno.stdout.isTerminal() && !options.json) {
     glue = await askUserForGlue();
   } else {
-    throw new Error("You must provide a glue name when not running in a terminal");
+    throw new Error("You must provide a glue name when not running in a terminal or when in json mode");
   }
 
   if (!glue) {
@@ -36,18 +36,31 @@ export const tail = async (options: TailOptions, name?: string) => {
   }
 
   const now = new Date();
-  const historicalExecutions = await runStep(`Loading historical executions for ${glue.name}...`, () => getExecutions(glue.id, options.number, now, "desc"));
+  const historicalExecutions = await runStep(
+    `Loading historical executions for ${glue.name}...`,
+    () => getExecutions(glue.id, options.number, now, "desc", !!options.json),
+    true,
+    !!options.json,
+  );
   historicalExecutions.reverse();
-  renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines, options.json);
+
+  if (options.json) {
+    historicalExecutions.forEach((e) => {
+      console.log(JSON.stringify(e));
+    });
+    return;
+  }
+
+  renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
   let startingPoint = now;
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (!options.noFollow) {
     pollingSpinner.start();
-    const executions = await getExecutions(glue.id, 10, startingPoint, "asc");
+    const executions = await getExecutions(glue.id, 10, startingPoint, "asc", false);
     if (executions.length > 0) {
       pollingSpinner.stop();
-      renderExecutions(executions, options.logLines, !!options.fullLogLines, options.json);
+      renderExecutions(executions, options.logLines, !!options.fullLogLines);
       startingPoint = new Date(executions[executions.length - 1].endedAt!);
       pollingSpinner.start();
     }
@@ -55,26 +68,20 @@ export const tail = async (options: TailOptions, name?: string) => {
   }
 };
 
-function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogLines: boolean, json?: boolean) {
-  if (!json) {
-    executions.forEach((e) => {
-      if (!e.endedAt) {
-        return;
+function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogLines: boolean) {
+  executions.forEach((e) => {
+    if (!e.endedAt) {
+      return;
+    }
+    console.log(`[${new Date(e.endedAt).toLocaleString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
+    e.logs.slice(0, logLines).forEach((l) => {
+      let toConsole = dim(`[${new Date(l.timestamp).toLocaleString()}] ${l.text.trim()}`);
+      if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
+        toConsole = toConsole.slice(0, Deno.consoleSize().columns - 3) + "...";
       }
-      console.log(`[${new Date(e.endedAt).toLocaleString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
-      e.logs.slice(0, logLines).forEach((l) => {
-        let toConsole = dim(`[${new Date(l.timestamp).toLocaleString()}] ${l.text.trim()}`);
-        if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
-          toConsole = toConsole.slice(0, Deno.consoleSize().columns - 3) + "...";
-        }
-        console.log(toConsole);
-      });
+      console.log(toConsole);
     });
-  } else {
-    executions.forEach((e) => {
-      console.log(JSON.stringify(e));
-    });
-  }
+  });
 }
 
 export function colorState(state: string): string {

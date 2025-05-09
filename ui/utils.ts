@@ -6,7 +6,11 @@ export async function runStep<T>(
   message: string,
   fn: () => T,
   logError = true,
+  quiet = false,
 ): Promise<T> {
+  if (quiet) {
+    return await fn();
+  }
   const spinner = Deno.env.get("TERM")?.includes("xterm") ? new Spinner({ message }) : new DummySpinner(message);
   spinner.start();
   let result: T;
