@@ -221,7 +221,8 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
       "--no-prompt",
       "--allow-env",
       "--allow-net",
-      "--allow-sys", // TODO check if this is supported in deno subhosting
+      "--allow-sys",
+      "--inspect",
       file,
     ],
     stdin: "null",
