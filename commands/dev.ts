@@ -2,7 +2,14 @@ import * as path from "@std/path";
 import { load as dotenvLoad } from "@std/dotenv";
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { z } from "zod";
-import { createDeployment, createGlue, getGlueByName, stopGlue, streamChangesToDeployment as streamChangesTillDeploymentReady } from "../backend.ts";
+import {
+  createDeployment,
+  createGlue,
+  getExecutionById,
+  getGlueByName,
+  stopGlue,
+  streamChangesToDeployment as streamChangesTillDeploymentReady,
+} from "../backend.ts";
 import { retry, type RetryOptions } from "@std/async/retry";
 import { basename } from "@std/path";
 import type { DeploymentDTO, GlueDTO } from "../backend.ts";
@@ -19,6 +26,8 @@ import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
+import { gray } from "@std/fmt/colors";
+import { Spinner } from "@std/cli/unstable-spinner";
 
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 let devProgressProps: DevUIProps = defaultDevUIProps();
@@ -34,7 +43,6 @@ export async function dev(options: DevOptions, filename: string) {
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = await getEnv(glueName, filename);
   const debugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
-  console.log("debugMode", debugMode);
   // TODO instead of watching the glue file ourselves and restarting the
   // subprocess on changes, we could lean on deno's built-in `--watch` flag to
   // restart the subprocess on changes. This would also fix the issue where we
@@ -77,8 +85,33 @@ export async function dev(options: DevOptions, filename: string) {
     "connectingToTunnel",
     () => connectToDevEventsWebsocketAndHandleTriggerEvents(glue.devEventsWebsocketUrl!, async (message) => await deliverTriggerEvent(deployment, message)),
   );
-
   await unmountUI();
+  // --- potential initial replay ---
+  if (options.replay) {
+    const spinner = new Spinner({
+      message: "Getting execution to replay...",
+    });
+    spinner.start();
+    const execution = await getExecutionById(options.replay);
+    spinner.stop();
+    if (execution) {
+      const hasCompatibleTrigger = deployment.triggers.some((t) => t.label === execution.trigger.label && t.type === execution.trigger.type);
+      if (hasCompatibleTrigger) {
+        const triggerEvent: TriggerEvent = {
+          type: execution.trigger.type,
+          label: execution.trigger.label,
+          data: execution.inputData,
+        };
+        const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
+        await deliverTriggerEvent(deployment, message, false);
+      } else {
+        console.warn(gray(`⚠️ Execution with ID "${options.replay}" has a trigger/label pair that doesn't match the deployment. Won't replay.`));
+      }
+    } else {
+      console.warn(gray(`⚠️ Execution with ID "${options.replay}" not found. Won't replay.`));
+    }
+  }
+  // ---
 
   const mux = new MuxAsyncIterator<Deno.FsEvent[] | KeyPressEvent>();
   mux.add(debounceAsyncIterable(fileChangeWatcher, 200));
@@ -327,6 +360,7 @@ interface DevOptions {
   name?: string;
   debug?: boolean;
   inspectWait?: boolean;
+  replay?: string;
 }
 
 interface AnalysisResult {

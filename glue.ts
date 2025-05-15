@@ -42,6 +42,10 @@ const cmd = new Command()
   .option("-n, --name <name:string>", "Set glue name")
   .option("--inspect-wait", "Enable the debugger and wait for a connection before proceeding with execution.")
   .option("--no-debug", "Disable the debugger")
+  .option(
+    "--replay <executionId:string>",
+    "Replay a specific execution by ID as soon as the glue is locally running. The execution doesn't have to be from the same glue but it does have to have a compatible trigger/label pair. Useful to debug why a deployed glue didn't behave as expected.",
+  )
   .arguments("<file:string>")
   .action(dev)
   // DEPLOY ----------------------------
