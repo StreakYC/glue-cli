@@ -67,7 +67,7 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
     console.log(JSON.stringify(deployment, null, 2));
     return;
   }
-  
+
   render(React.createElement(DescribeDeploymentUI, { deployment }));
 }
 
