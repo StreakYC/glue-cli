@@ -12,7 +12,7 @@ import {
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
-import { bold, dim, green, red } from "@std/fmt/colors";
+import { bold, dim, green, red, yellow } from "@std/fmt/colors";
 import { colorState } from "./tail.ts";
 import { getRunningStringForDeploymentStatus } from "./list.ts";
 interface DescribeOptions {
@@ -64,7 +64,45 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
     console.log(JSON.stringify(deployment, null, 2));
     return;
   }
-  // TODO render it nicely with build steps
+  
+  console.log(`${bold(deployment.id)} ${dim(`(Glue: ${deployment.glueId})`)}`);
+  console.log(`Status: ${getRunningStringForDeploymentStatus(deployment.status)}`);
+  console.log(`Created: ${new Date(deployment.createdAt).toLocaleString()}`);
+  console.log(`Updated: ${new Date(deployment.updatedAt).toLocaleString()}`);
+  
+  if (deployment.buildSteps.length > 0) {
+    console.log("Build Steps:");
+    for (const step of deployment.buildSteps) {
+      const duration = step.endTime && step.startTime 
+        ? ` ${dim(`(${Math.round(step.endTime - step.startTime)}ms)`)}` 
+        : '';
+      
+      let statusSymbol = '';
+      if (step.status === 'success') {
+        statusSymbol = green('✔︎');
+      } else if (step.status === 'failure') {
+        statusSymbol = red('✗');
+      } else if (step.status === 'in_progress') {
+        statusSymbol = yellow('●');
+      } else if (step.status === 'not_started') {
+        statusSymbol = dim('○');
+      } else if (step.status === 'skipped') {
+        statusSymbol = dim('◉');
+      }
+      
+      console.log(`\t${statusSymbol} ${step.title}${duration}`);
+      if (step.status === 'failure' && step.text) {
+        console.log(`\t\t${red(step.text)}`);
+      }
+    }
+  }
+  
+  if (deployment.triggers.length > 0) {
+    console.log("Triggers:");
+    for (const t of deployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))) {
+      console.log(`\t${t.type} (${t.label}): ${dim(t.description ?? "")}`);
+    }
+  }
 }
 
 function renderGlue(glue: GlueDTO, options: DescribeOptions) {
