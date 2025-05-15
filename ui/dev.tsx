@@ -3,6 +3,7 @@ import React from "react";
 import { AuthTriggerList, BuildStepStatusRow, ClientStepRow, SetupTriggerList } from "./common.tsx";
 import { Text } from "ink";
 import { Newline } from "ink";
+import { DebugMode } from "../commands/dev.ts";
 
 export type Step = {
   state: StepStatus;
@@ -19,6 +20,7 @@ export type DevUIProps = {
   };
   restarting: boolean;
   deployment?: DeploymentDTO;
+  debugMode: DebugMode;
 };
 
 export const DevUI = (
@@ -47,7 +49,11 @@ export const DevUI = (
         </>
       )}
       {steps.codeAnalysis && <ClientStepRow stepState={steps.codeAnalysis.state} stepDuration={steps.codeAnalysis.duration} stepTitle="Analyzing code" />}
-      <ClientStepRow stepState={steps.bootingCode.state} stepDuration={steps.bootingCode.duration} stepTitle="Booting code" />
+      <ClientStepRow
+        stepState={steps.bootingCode.state}
+        stepDuration={steps.bootingCode.duration}
+        stepTitle={`Booting code${props.debugMode === "inspect-wait" ? " and waiting for debugger to connect" : ""}`}
+      />
       <ClientStepRow stepState={steps.discoveringTriggers.state} stepDuration={steps.discoveringTriggers.duration} stepTitle="Discovering triggers" />
       {steps.registeringGlue && (
         <ClientStepRow stepState={steps.registeringGlue.state} stepDuration={steps.registeringGlue.duration} stepTitle="Registering glue" />

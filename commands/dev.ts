@@ -43,6 +43,7 @@ export async function dev(options: DevOptions, filename: string) {
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = await getEnv(glueName, filename);
   const debugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
+  devProgressProps.debugMode = debugMode;
   // TODO instead of watching the glue file ourselves and restarting the
   // subprocess on changes, we could lean on deno's built-in `--watch` flag to
   // restart the subprocess on changes. This would also fix the issue where we
@@ -137,6 +138,7 @@ export async function dev(options: DevOptions, filename: string) {
     }
 
     devProgressProps = defaultRestartingUIProps();
+    devProgressProps.debugMode = debugMode;
     renderUI();
     localRunner.child.kill();
 
@@ -252,7 +254,7 @@ async function discoverTriggers(): Promise<RegisteredTrigger[]> {
   return registeredTriggers;
 }
 
-type DebugMode = "inspect" | "inspect-wait" | "no-debug";
+export type DebugMode = "inspect" | "inspect-wait" | "no-debug";
 
 async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<string, string>, debugMode: DebugMode) {
   const flags = [
@@ -393,6 +395,7 @@ function defaultDevUIProps(): DevUIProps {
     },
     restarting: false,
     deployment: undefined,
+    debugMode: "inspect",
   };
 }
 
@@ -411,6 +414,7 @@ function defaultRestartingUIProps(): DevUIProps {
     },
     restarting: true,
     deployment: undefined,
+    debugMode: "inspect",
   };
 }
 
