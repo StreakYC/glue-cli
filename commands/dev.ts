@@ -1,3 +1,5 @@
+import * as path from "@std/path";
+import { load as dotenvLoad } from "@std/dotenv";
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { z } from "zod";
 import { createDeployment, createGlue, getGlueByName, stopGlue, streamChangesToDeployment as streamChangesTillDeploymentReady } from "../backend.ts";
@@ -30,7 +32,7 @@ export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
 
   const glueName = options.name ?? glueNameFromFilename(filename);
-  const env = getEnv(glueName);
+  const env = await getEnv(glueName, filename);
   const debugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
   console.log("debugMode", debugMode);
   // TODO instead of watching the glue file ourselves and restarting the
@@ -182,10 +184,14 @@ function glueNameFromFilename(filename: string) {
   return basename(filename).replace(/\.[^.]+$/, "");
 }
 
-function getEnv(glueName: string) {
+async function getEnv(glueName: string, filename: string) {
+  const fileDir = path.dirname(filename);
+  const envVarsFromDotEnvFile = await dotenvLoad({ envPath: path.join(fileDir, ".env") });
+
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
     GLUE_DEV_PORT: String(GLUE_DEV_PORT),
+    ...envVarsFromDotEnvFile,
   };
 
   const envKeysToKeep = ["LANG", "TZ", "TERM"];
