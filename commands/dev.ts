@@ -216,16 +216,22 @@ async function discoverTriggers(): Promise<RegisteredTrigger[]> {
 type DebugMode = "inspect" | "inspect-wait" | "no-debug";
 
 async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<string, string>, debugMode: DebugMode) {
+  const flags = [
+    "--quiet",
+    "--env-file",
+    "--no-prompt",
+    "--allow-env",
+    "--allow-net",
+    "--allow-sys",
+  ];
+  if (debugMode !== "no-debug") {
+    flags.push("--" + debugMode);
+  }
+
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
-      "--quiet",
-      "--env-file",
-      "--no-prompt",
-      "--allow-env",
-      "--allow-net",
-      "--allow-sys",
-      debugMode === "no-debug" ? "" : ("--" + debugMode),
+      ...flags,
       file,
     ],
     stdin: "null",
