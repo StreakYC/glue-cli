@@ -15,6 +15,9 @@ import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { bold, dim, green, red } from "@std/fmt/colors";
 import { colorState } from "./tail.ts";
 import { getRunningStringForDeploymentStatus } from "./list.ts";
+import React from "react";
+import { render } from "ink";
+import { DescribeDeploymentUI } from "../ui/describe.tsx";
 interface DescribeOptions {
   json?: boolean;
 }
@@ -64,7 +67,8 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
     console.log(JSON.stringify(deployment, null, 2));
     return;
   }
-  // TODO render it nicely with build steps
+
+  render(React.createElement(DescribeDeploymentUI, { deployment }));
 }
 
 function renderGlue(glue: GlueDTO, options: DescribeOptions) {
