@@ -31,7 +31,7 @@ export async function dev(options: DevOptions, filename: string) {
 
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = getEnv(glueName);
-  const debugMode = options.debug ? "no-debug" : (options.inspectWait ? "inspect-wait" : "inspect");
+  const debugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
   console.log("debugMode", debugMode);
   // TODO instead of watching the glue file ourselves and restarting the
   // subprocess on changes, we could lean on deno's built-in `--watch` flag to
