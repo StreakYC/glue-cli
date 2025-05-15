@@ -1,7 +1,7 @@
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { z } from "zod";
 import { createDeployment, createGlue, getGlueByName, stopGlue, streamChangesToDeployment as streamChangesTillDeploymentReady } from "../backend.ts";
-import { retry } from "@std/async/retry";
+import { retry, type RetryOptions } from "@std/async/retry";
 import { basename } from "@std/path";
 import type { DeploymentDTO, GlueDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
@@ -31,7 +31,8 @@ export async function dev(options: DevOptions, filename: string) {
 
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = getEnv(glueName);
-
+  const debugMode = options.debug ? "no-debug" : (options.inspectWait ? "inspect-wait" : "inspect");
+  console.log("debugMode", debugMode);
   // TODO instead of watching the glue file ourselves and restarting the
   // subprocess on changes, we could lean on deno's built-in `--watch` flag to
   // restart the subprocess on changes. This would also fix the issue where we
@@ -58,7 +59,7 @@ export async function dev(options: DevOptions, filename: string) {
     throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
   }
 
-  let localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env));
+  let localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
   const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
   let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
@@ -104,7 +105,7 @@ export async function dev(options: DevOptions, filename: string) {
     renderUI();
     localRunner.child.kill();
 
-    localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env));
+    localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
     const newTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
 
     if (!equal(registeredTriggers, newTriggers)) {
@@ -212,7 +213,9 @@ async function discoverTriggers(): Promise<RegisteredTrigger[]> {
   return registeredTriggers;
 }
 
-async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<string, string>) {
+type DebugMode = "inspect" | "inspect-wait" | "no-debug";
+
+async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<string, string>, debugMode: DebugMode) {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -222,7 +225,7 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
       "--allow-env",
       "--allow-net",
       "--allow-sys",
-      "--inspect",
+      debugMode === "no-debug" ? "" : ("--" + debugMode),
       file,
     ],
     stdin: "null",
@@ -247,6 +250,16 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
     }
   })();
 
+  // If we're in inspect-wait mode, we need to retry the health check until the debugger is connected.
+  // This is a bit of a hack, but it works.
+  const retryOpts: RetryOptions | undefined = debugMode === "inspect-wait"
+    ? {
+      multiplier: 1,
+      minTimeout: 1000,
+      maxTimeout: 1000,
+      maxAttempts: 1000000,
+    }
+    : undefined;
   await retry(async () => {
     const res = await fetch(
       `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
@@ -254,7 +267,7 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
     if (!res.ok) {
       throw new Error(`Failed health check: ${res.statusText}`);
     }
-  });
+  }, retryOpts);
 
   return { endPromise, child };
 }
@@ -300,6 +313,8 @@ type ServerWebsocketMessage = z.infer<typeof ServerWebsocketMessage>;
 
 interface DevOptions {
   name?: string;
+  debug?: boolean;
+  inspectWait?: boolean;
 }
 
 interface AnalysisResult {

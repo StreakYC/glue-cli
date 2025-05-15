@@ -35,10 +35,13 @@ const cmd = new Command()
     }),
   )
   // DEV ----------------------------
-  .command("dev", "Run a glue locally for development")
+  .command(
+    "dev",
+    "Run a glue locally for development. Your glue is run immediately and your top level triggers are setup. By default a debug port is opened, but can be disabled with --no-debug.",
+  )
   .option("-n, --name <name:string>", "Set glue name")
-  .option("--allow-stdin", "Allow stdin")
-  .option("--keep-full-env", "Keep full environment")
+  .option("--inspect-wait", "Enable the debugger and wait for a connection before proceeding with execution.")
+  .option("--no-debug", "Disable the debugger")
   .arguments("<file:string>")
   .action(dev)
   // DEPLOY ----------------------------
