@@ -7,7 +7,7 @@
   },
   "tasks": {
     "cli": "deno run --allow-all --unstable-temporal glue.ts",
-    "cli-debug": "deno run --inspect-brk --allow-all --unstable-temporal glue.ts list",
+    "cli-debug": "deno run --inspect-brk --allow-all --unstable-temporal glue.ts dev myExampleWebhook.ts",
     "check": "deno check **/*.ts*",
     "lint": "deno lint --watch",
     "test": "deno test --permit-no-files --watch"
