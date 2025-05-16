@@ -5,14 +5,14 @@ import { z } from "zod";
 import {
   createDeployment,
   createGlue,
-  getExecutionById,
+  getExecutionByIdNoThrow,
   getGlueByName,
   stopGlue,
   streamChangesToDeployment as streamChangesTillDeploymentReady,
 } from "../backend.ts";
 import { retry, type RetryOptions } from "@std/async/retry";
 import { basename } from "@std/path";
-import type { DeploymentDTO, GlueDTO } from "../backend.ts";
+import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import React from "react";
@@ -26,8 +26,6 @@ import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
-import { gray } from "@std/fmt/colors";
-import { Spinner } from "@std/cli/unstable-spinner";
 
 const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
 let devProgressProps: DevUIProps = defaultDevUIProps();
@@ -44,6 +42,13 @@ export async function dev(options: DevOptions, filename: string) {
   const env = await getEnv(glueName, filename);
   const debugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
   devProgressProps.debugMode = debugMode;
+  if (options.replay) {
+    devProgressProps.steps.gettingExecutionToReplay = {
+      state: `not_started`,
+      duration: 0,
+    };
+  }
+
   // TODO instead of watching the glue file ourselves and restarting the
   // subprocess on changes, we could lean on deno's built-in `--watch` flag to
   // restart the subprocess on changes. This would also fix the issue where we
@@ -72,6 +77,10 @@ export async function dev(options: DevOptions, filename: string) {
 
   let localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
   const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
+
+  let setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, registeredTriggers)) : undefined;
+  devProgressProps.setupReplayResult = setupReplayResult;
+
   let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
 
   await monitorDeploymentAndRenderChangesTillReady(deployment.id);
@@ -87,32 +96,6 @@ export async function dev(options: DevOptions, filename: string) {
     () => connectToDevEventsWebsocketAndHandleTriggerEvents(glue.devEventsWebsocketUrl!, async (message) => await deliverTriggerEvent(deployment, message)),
   );
   await unmountUI();
-  // --- potential initial replay ---
-  if (options.replay) {
-    const spinner = new Spinner({
-      message: "Getting execution to replay...",
-    });
-    spinner.start();
-    const execution = await getExecutionById(options.replay);
-    spinner.stop();
-    if (execution) {
-      const hasCompatibleTrigger = deployment.triggers.some((t) => t.label === execution.trigger.label && t.type === execution.trigger.type);
-      if (hasCompatibleTrigger) {
-        const triggerEvent: TriggerEvent = {
-          type: execution.trigger.type,
-          label: execution.trigger.label,
-          data: execution.inputData,
-        };
-        const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
-        await deliverTriggerEvent(deployment, message, false);
-      } else {
-        console.warn(gray(`⚠️ Execution with ID "${options.replay}" has a trigger/label pair that doesn't match the deployment. Won't replay.`));
-      }
-    } else {
-      console.warn(gray(`⚠️ Execution with ID "${options.replay}" not found. Won't replay.`));
-    }
-  }
-  // ---
 
   const mux = new MuxAsyncIterator<Deno.FsEvent[] | KeyPressEvent>();
   mux.add(debounceAsyncIterable(fileChangeWatcher, 200));
@@ -127,6 +110,14 @@ export async function dev(options: DevOptions, filename: string) {
         break;
       } else if (keyPressEvent.key === "r" && lastMessage) {
         await deliverTriggerEvent(deployment, lastMessage, true);
+      } else if (keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible && setupReplayResult.execution) {
+        const triggerEvent: TriggerEvent = {
+          type: setupReplayResult.execution.trigger.type,
+          label: setupReplayResult.execution.trigger.label,
+          data: setupReplayResult.execution.inputData,
+        };
+        const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
+        await deliverTriggerEvent(deployment, message, true);
       }
       continue;
     }
@@ -139,11 +130,20 @@ export async function dev(options: DevOptions, filename: string) {
 
     devProgressProps = defaultRestartingUIProps();
     devProgressProps.debugMode = debugMode;
+    if (options.replay) {
+      devProgressProps.steps.gettingExecutionToReplay = {
+        state: `not_started`,
+        duration: 0,
+      };
+    }
+
     renderUI();
     localRunner.child.kill();
 
     localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
     const newTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
+    setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, newTriggers)) : undefined;
+    devProgressProps.setupReplayResult = setupReplayResult;
 
     if (!equal(registeredTriggers, newTriggers)) {
       devProgressProps.steps.registeringGlue = {
@@ -177,6 +177,26 @@ export async function dev(options: DevOptions, filename: string) {
 // ------------------------------------------------------------------------------------------------
 // Helper functions
 // ------------------------------------------------------------------------------------------------
+
+export interface SetupReplayResult {
+  executionId: string;
+  execution: ExecutionDTO | undefined;
+  compatible: boolean;
+}
+async function setupReplay(executionId: string, triggersToCheckCompatibilityWith: RegisteredTrigger[]): Promise<SetupReplayResult> {
+  const execution = await getExecutionByIdNoThrow(executionId);
+  if (!execution) {
+    return { executionId, execution: undefined, compatible: false };
+  }
+  if (!isTriggerCompatible(execution.trigger, triggersToCheckCompatibilityWith)) {
+    return { executionId, execution, compatible: false };
+  }
+  return { executionId, execution, compatible: true };
+}
+
+function isTriggerCompatible(trigger: TriggerDTO, triggersToCheckCompatibilityWith: RegisteredTrigger[]) {
+  return triggersToCheckCompatibilityWith.some((t) => t.label === trigger.label && t.type === trigger.type);
+}
 
 async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage, isReplay: boolean = false) {
   const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);

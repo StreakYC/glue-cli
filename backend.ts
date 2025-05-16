@@ -200,8 +200,16 @@ export async function getExecutions(
   return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
 }
 
-export async function getExecutionById(id: string): Promise<ExecutionDTO | undefined> {
+export async function getExecutionById(id: string): Promise<ExecutionDTO> {
   return await backendRequest<ExecutionDTO>(`/executions/${id}`);
+}
+
+export async function getExecutionByIdNoThrow(id: string): Promise<ExecutionDTO | undefined> {
+  try {
+    return await backendRequest<ExecutionDTO>(`/executions/${id}`);
+  } catch (_e) {
+    return undefined;
+  }
 }
 
 export async function replayExecution(executionId: string) {

@@ -3,7 +3,7 @@ import React from "react";
 import { AuthTriggerList, BuildStepStatusRow, ClientStepRow, SetupTriggerList } from "./common.tsx";
 import { Text } from "ink";
 import { Newline } from "ink";
-import { DebugMode } from "../commands/dev.ts";
+import type { DebugMode, SetupReplayResult } from "../commands/dev.ts";
 
 export type Step = {
   state: StepStatus;
@@ -15,12 +15,14 @@ export type DevUIProps = {
     codeAnalysis?: Step;
     bootingCode: Step;
     discoveringTriggers: Step;
+    gettingExecutionToReplay?: Step;
     registeringGlue?: Step;
     connectingToTunnel?: Step;
   };
   restarting: boolean;
   deployment?: DeploymentDTO;
   debugMode: DebugMode;
+  setupReplayResult?: SetupReplayResult;
 };
 
 export const DevUI = (
@@ -48,16 +50,30 @@ export const DevUI = (
           <Text>File changes detected, restarting glue...</Text>
         </>
       )}
+
       {steps.codeAnalysis && <ClientStepRow stepState={steps.codeAnalysis.state} stepDuration={steps.codeAnalysis.duration} stepTitle="Analyzing code" />}
+
       <ClientStepRow
         stepState={steps.bootingCode.state}
         stepDuration={steps.bootingCode.duration}
         stepTitle={`Booting code${props.debugMode === "inspect-wait" ? " and waiting for debugger to connect" : ""}`}
       />
+
       <ClientStepRow stepState={steps.discoveringTriggers.state} stepDuration={steps.discoveringTriggers.duration} stepTitle="Discovering triggers" />
+
+      {steps.gettingExecutionToReplay && (
+        <ClientStepRow
+          stepState={steps.gettingExecutionToReplay.state}
+          stepDuration={steps.gettingExecutionToReplay.duration}
+          stepTitle="Getting execution to replay"
+        />
+      )}
+      {props.setupReplayResult && <ReplayResultRow {...props.setupReplayResult} />}
+
       {steps.registeringGlue && (
         <ClientStepRow stepState={steps.registeringGlue.state} stepDuration={steps.registeringGlue.duration} stepTitle="Registering glue" />
       )}
+
       {props.deployment && props.deployment.buildSteps.map((step: BuildStepDTO) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
@@ -77,11 +93,33 @@ export const DevUI = (
       {done && (
         <>
           <Newline />
+          <Text>Press:</Text>
           <Text>
-            Waiting for events... (or press <Text color="green">r</Text> to replay, <Text color="red">q</Text> to quit)
+            <Text>
+              <Text color="green">r</Text> to replay last event, <Text />
+            </Text>
+            {props.setupReplayResult && props.setupReplayResult.execution && props.setupReplayResult.compatible && (
+              <Text>
+                <Text color="yellow">e</Text> to replay {props.setupReplayResult.executionId}, <Text />
+              </Text>
+            )}
+            <Text>
+              or <Text color="red">q</Text> to quit
+            </Text>
           </Text>
+          <Newline />
+          <Text>Waiting for events...</Text>
         </>
       )}
     </>
   );
 };
+
+export function ReplayResultRow({ execution, compatible }: SetupReplayResult) {
+  return (
+    <>
+      {!execution && <Text color="dim">⚠️ Could not find execution to replay</Text>}
+      {execution && !compatible && <Text color="dim">⚠️ Execution is not compatible with the current triggers</Text>}
+    </>
+  );
+}
