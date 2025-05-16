@@ -143,7 +143,9 @@ export async function dev(options: DevOptions, filename: string) {
     localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
     const newTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
     setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, newTriggers)) : undefined;
+
     devProgressProps.setupReplayResult = setupReplayResult;
+    renderUI();
 
     if (!equal(registeredTriggers, newTriggers)) {
       devProgressProps.steps.registeringGlue = {
