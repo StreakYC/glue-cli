@@ -31,7 +31,7 @@ export const DeployUI = (
       {done && (
         <Text>
           <Newline />
-          <Text>Successfully deployed your Glue 🎉</Text>
+          <Text>🎉 Successfully deployed your Glue</Text>
           <Newline />
           <Text color="dim">
             Try `glue describe` to see summary info or `glue tail` to watch for executions
