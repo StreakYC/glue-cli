@@ -1,13 +1,14 @@
 {
+  "patch": ["../glue-runtime"],
   "name": "@streak-glue/cli",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
   },
   "tasks": {
     "cli": "deno run --allow-all --unstable-temporal glue.ts",
-    "cli-debug": "deno run --inspect-brk --allow-all --unstable-temporal glue.ts dev myExampleWebhook.ts",
+    "cli-debug": "deno run --inspect-brk --allow-all --unstable-temporal glue.ts accounts",
     "check": "deno check **/*.ts*",
     "lint": "deno lint --watch",
     "test": "deno test --permit-no-files --watch"
@@ -26,7 +27,7 @@
     "@std/fs": "jsr:@std/fs@^1.0.6",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@std/streams": "jsr:@std/streams@^1.0.9",
-    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.1.14",
+    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.1.18",
     "hono": "npm:hono@^4.7.5",
     "ink": "npm:ink@^5.1.1",
     "ink-spinner": "npm:ink-spinner@^5.0.0",

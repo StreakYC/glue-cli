@@ -29,14 +29,15 @@ export const accounts = async (options: AccountsOptions) => {
     }
 
     new Table()
-      .header(["Account ID", "Type", "Name", "Scopes", "Source ID", "Created At"])
+      .header(["Account ID", "Type", "Label", "Name", "Scopes", "API Key", "Created At"])
       .body(
         accounts.map((account) => [
           account.id,
           account.type,
-          displayNameForAccount(account),
+          account.selector,
+          account.displayName,
           account.scopes?.join(", "),
-          account.externalId,
+          account.redactedApiKey,
           formatEpochMillis(account.createdAt),
         ]),
       )

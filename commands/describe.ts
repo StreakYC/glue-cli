@@ -96,12 +96,21 @@ function renderAccount(account: AccountDTO, options: DescribeOptions) {
     console.log(JSON.stringify(account, null, 2));
     return;
   }
-  console.log(`${bold(account.type)} ${dim(account.id)}`);
-  console.log(`${dim("Name: " + account.name)}`);
-  console.log(`${dim("Email: " + account.emailAddress)}`);
-  console.log(`${dim("Username: " + account.username)}`);
-  console.log(`${dim("Scopes: " + account.scopes?.join(", "))}`);
-  console.log(`${dim("Source ID: " + account.externalId)}`);
+  console.log(`${dim("ID: " + bold(account.id))}`);
+  console.log(`${dim("Type: " + account.type)}`);
+  console.log(`${dim("Label: " + account.selector)}`);
+  console.log(`${dim("Created: " + new Date(account.createdAt).toLocaleString())}`);
+
+  if (account.displayName) {
+    console.log(`${dim("Name: " + account.displayName)}`);
+  }
+  if (account.redactedApiKey) {
+    console.log(`${dim("API Key: " + account.redactedApiKey)}`);
+  }
+  if (account.scopes && account.scopes.length > 0) {
+    console.log(`${dim("Scopes: " + account.scopes?.join(", "))}`);
+  }
+
   console.log(`Created: ${new Date(account.createdAt).toLocaleString()}`);
   if (account.liveGlues.length > 0) {
     console.log("Live Glues:");

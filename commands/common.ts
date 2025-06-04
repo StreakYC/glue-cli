@@ -23,12 +23,18 @@ export async function askUserForAccount(): Promise<AccountDTO | undefined> {
     message: "Choose an account to delete",
     search: true,
     options: accounts.map((account) => ({
-      name: displayNameForAccount(account),
+      name: account.type + " " + displayNameForAccount(account),
       value: account,
     })),
   });
 }
 
 export function displayNameForAccount(account: AccountDTO) {
-  return `${account.type} (${account.name ?? account.emailAddress ?? account.username ?? account.externalId})`;
+  let retVal = account.selector;
+  if (account.displayName) {
+    retVal += ` (${account.displayName})`;
+  } else if (account.redactedApiKey) {
+    retVal += ` (${account.redactedApiKey})`;
+  }
+  return retVal;
 }

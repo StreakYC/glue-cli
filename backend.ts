@@ -311,10 +311,9 @@ export interface UserDTO {
 export interface AccountDTO {
   id: string;
   type: string;
-  externalId: string;
-  emailAddress?: string;
-  username?: string;
-  name?: string;
+  selector: string;
+  displayName?: string;
+  redactedApiKey?: string;
   scopes?: string[];
   userId: string;
   /** milliseconds since epoch */
