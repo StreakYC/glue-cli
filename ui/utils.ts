@@ -41,7 +41,10 @@ class DummySpinner {
   stop() {}
 }
 
-export function formatEpochMillis(ms: number) {
+export function formatEpochMillis(ms: number | null | undefined) {
+  if (!ms) {
+    return "-";
+  }
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return Temporal.Instant
     .fromEpochMilliseconds(ms)

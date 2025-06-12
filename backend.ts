@@ -294,8 +294,11 @@ export interface GlueDTO {
 }
 
 export interface ExecutionSummaryDTO {
-  count: number;
-  mostRecent: number;
+  totalCount: number;
+  totalErrorCount: number;
+  mostRecent: number | null;
+  currentDeploymentCount: number;
+  currentDeploymentErrorCount: number;
 }
 
 export interface UserDTO {

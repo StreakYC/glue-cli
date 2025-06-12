@@ -9,7 +9,8 @@ import {
   getGlueByName,
   type GlueDTO,
 } from "../backend.ts";
-import { runStep } from "../ui/utils.ts";
+import * as mod from "@std/fmt/colors";
+import { formatEpochMillis, runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { bold, dim, green, red } from "@std/fmt/colors";
@@ -79,11 +80,27 @@ function renderGlue(glue: GlueDTO, options: DescribeOptions) {
 
   console.log(`${bold(glue.name)} ${dim(`(${glue.id})`)}`);
   console.log(`Status: ${getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled")}`);
-  console.log(`Created: ${new Date(glue.createdAt).toLocaleString()}`);
-  console.log(`Number of runs: ${glue.executionSummary.count}`);
-  console.log(`Last run: ${new Date(glue.executionSummary.mostRecent).toLocaleString()}`);
+  console.log(`Created: ${formatEpochMillis(glue.createdAt)}`);
+  console.log();
+
+  const goodRuns = (glue.executionSummary.totalCount - glue.executionSummary.totalErrorCount).toString();
+  const badRuns = glue.executionSummary.totalErrorCount.toString();
+  const goodRunsSinceLastDeployment = (glue.executionSummary.currentDeploymentCount - glue.executionSummary.currentDeploymentErrorCount).toString();
+  const badRunsSinceLastDeployment = glue.executionSummary.currentDeploymentErrorCount.toString();
+
+  console.log(
+    `Runs: ${mod.green(goodRuns)} successful` +
+      (glue.executionSummary.totalErrorCount > 0 ? `, ${mod.red(badRuns)} failed` : ""),
+  );
+  console.log(
+    `Runs since last deployment: ${mod.green(goodRunsSinceLastDeployment)} successful` +
+      (glue.executionSummary.currentDeploymentErrorCount > 0 ? `, ${mod.red(badRunsSinceLastDeployment)} failed` : ""),
+  );
+  console.log();
+  console.log(`Last run: ${formatEpochMillis(glue.executionSummary.mostRecent)}`);
   if (glue.currentDeployment) {
-    console.log(`Last Deployed: ${new Date(glue.currentDeployment.createdAt).toLocaleString()}`);
+    console.log(`Last Deployed: ${formatEpochMillis(glue.currentDeployment.createdAt)}`);
+    console.log();
     console.log("Triggers:");
     for (const t of glue.currentDeployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))) {
       console.log(`\t${t.type} (${t.label}): ${dim(t.description ?? "")}`);

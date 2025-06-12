@@ -21,16 +21,17 @@ export const list = async (options: ListOptions) => {
       return await getGlues("deploy", options.nameFilter);
     });
     new Table()
-      .header(["Name", "Running", "Runs", "Last run", "Last deployed"])
+      .header(["Name", "Running", "Runs", "Errors", "Last run", "Last deployed"])
       .body(
         glues.map((
           glue,
         ) => [
           glue.name,
           getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled"),
-          glue.executionSummary.count,
-          glue.executionSummary.mostRecent === 0 ? "-" : formatEpochMillis(glue.executionSummary.mostRecent),
-          glue.currentDeployment ? formatEpochMillis(glue.currentDeployment.createdAt) : "-",
+          green(glue.executionSummary.totalCount.toString()),
+          red(glue.executionSummary.totalErrorCount.toString()),
+          formatEpochMillis(glue.executionSummary.mostRecent),
+          formatEpochMillis(glue.currentDeployment?.createdAt),
         ]),
       )
       .padding(4)
