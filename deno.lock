@@ -9,7 +9,7 @@
     "jsr:@cliffy/keypress@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/prompt@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/table@1.0.0-rc.7": "1.0.0-rc.7",
-    "jsr:@hono/hono@^4.7.4": "4.7.10",
+    "jsr:@hono/hono@^4.7.4": "4.7.11",
     "jsr:@std/assert@1": "1.0.13",
     "jsr:@std/assert@~1.0.6": "1.0.13",
     "jsr:@std/async@^1.0.9": "1.0.13",
@@ -27,8 +27,8 @@
     "jsr:@std/path@~1.0.6": "1.0.9",
     "jsr:@std/streams@^1.0.9": "1.0.9",
     "jsr:@std/text@~1.0.7": "1.0.13",
-    "jsr:@streak-glue/runtime@*": "0.1.18",
-    "jsr:@streak-glue/runtime@~0.1.18": "0.1.18",
+    "jsr:@streak-glue/runtime@*": "0.1.23",
+    "jsr:@streak-glue/runtime@~0.1.23": "0.1.23",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
     "npm:@types/node@*": "22.15.15",
     "npm:@types/react@18": "18.3.20",
@@ -98,8 +98,8 @@
         "jsr:@std/fmt@~1.0.2"
       ]
     },
-    "@hono/hono@4.7.10": {
-      "integrity": "e59029e252af371abe43e8e4f9a115e38974c6bd5972022372bf89f763269cc7"
+    "@hono/hono@4.7.11": {
+      "integrity": "52b9395e4f2448fbaf82a6bd7925d15e59f4055037e74d6c2f657f3618b11193"
     },
     "@std/assert@1.0.13": {
       "integrity": "ae0d31e41919b12c656c742b22522c32fb26ed0cba32975cb0de2a273cb68b29",
@@ -146,8 +146,8 @@
     "@std/text@1.0.13": {
       "integrity": "2191c90e6e667b0c3b7dea1cd082137580a93b3c136bad597c0212d5fe006eb1"
     },
-    "@streak-glue/runtime@0.1.18": {
-      "integrity": "5a8a2e10b425fdd4738b11f8c68f4dd23ab96ed8df58ec0332d37729812d6a42",
+    "@streak-glue/runtime@0.1.23": {
+      "integrity": "b85691c016322050d9f9dfa4ac9afe90888d738878f2469a2bf16e651e25f304",
       "dependencies": [
         "jsr:@hono/hono",
         "npm:@octokit/webhooks-types",
@@ -585,7 +585,7 @@
       "jsr:@std/fs@^1.0.6",
       "jsr:@std/path@^1.0.8",
       "jsr:@std/streams@^1.0.9",
-      "jsr:@streak-glue/runtime@~0.1.18",
+      "jsr:@streak-glue/runtime@~0.1.23",
       "npm:@types/react@18",
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",
