@@ -1,9 +1,10 @@
 import { glue } from "jsr:@streak-glue/runtime";
 
 glue.webhook.onGet((_event) => {
-  console.log("GET request receiveds17");
-});
-
-glue.stripe.onEvents(["customer.updated", "account.updated"], (event) => {
-  console.log("Stripe event", event);
+  const random = Math.random();
+  console.log("random", random);
+  if (random < 0.5) {
+    throw new Error("test");
+  }
+  console.log("GET request received");
 });

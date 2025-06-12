@@ -31,17 +31,17 @@ export const describe = async (options: DescribeOptions, query?: string) => {
 
   if (query) {
     if (isPrefixId(query, "d")) {
-      deployment = await runStep("Loading deployment...", () => getDeploymentById(query));
+      deployment = await runStep("Loading deployment...", () => getDeploymentById(query), true, !!options.json);
     } else if (isPrefixId(query, "g")) {
-      glue = await runStep("Loading glue...", () => getGlueById(query));
+      glue = await runStep("Loading glue...", () => getGlueById(query), true, !!options.json);
     } else if (isPrefixId(query, "a")) {
-      account = await runStep("Loading account...", () => getAccountById(query));
+      account = await runStep("Loading account...", () => getAccountById(query), true, !!options.json);
     } else if (isPrefixId(query, "e")) {
-      execution = await runStep("Loading execution...", () => getExecutionById(query));
+      execution = await runStep("Loading execution...", () => getExecutionById(query), true, !!options.json);
     } else {
-      glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"));
+      glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"), true, !!options.json);
     }
-  } else if (Deno.stdout.isTerminal()) {
+  } else if (Deno.stdout.isTerminal() && !options.json) {
     glue = await askUserForGlue();
   } else {
     throw new Error("You must provide a glue name or query when not running in a terminal");
