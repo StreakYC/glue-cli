@@ -20,7 +20,7 @@ import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 import { debounceAsyncIterable } from "../lib/debounceAsyncIterable.ts";
-import { type RegisteredTrigger, TriggerEvent } from "@streak-glue/runtime/internalTypes";
+import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/internalTypes";
 import type { Awaitable } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
@@ -153,7 +153,8 @@ export async function dev(options: DevOptions, filename: string) {
         duration: 0,
       };
       renderUI();
-      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticTriggers: newTriggers }));
+      const optimisticRegistrations: Registrations = { triggers: newTriggers, accountInjections: [] };
+      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticRegistrations }));
       devProgressProps.deployment = deployment;
       await monitorDeploymentAndRenderChangesTillReady(deployment.id);
       if (devProgressProps.deployment?.status !== "success") {
@@ -185,7 +186,7 @@ export interface SetupReplayResult {
   execution: ExecutionDTO | undefined;
   compatible: boolean;
 }
-async function setupReplay(executionId: string, triggersToCheckCompatibilityWith: RegisteredTrigger[]): Promise<SetupReplayResult> {
+async function setupReplay(executionId: string, triggersToCheckCompatibilityWith: TriggerRegistration[]): Promise<SetupReplayResult> {
   const execution = await getExecutionByIdNoThrow(executionId);
   if (!execution) {
     return { executionId, execution: undefined, compatible: false };
@@ -196,7 +197,7 @@ async function setupReplay(executionId: string, triggersToCheckCompatibilityWith
   return { executionId, execution, compatible: true };
 }
 
-function isTriggerCompatible(trigger: TriggerDTO, triggersToCheckCompatibilityWith: RegisteredTrigger[]) {
+function isTriggerCompatible(trigger: TriggerDTO, triggersToCheckCompatibilityWith: TriggerRegistration[]) {
   return triggersToCheckCompatibilityWith.some((t) => t.label === trigger.label && t.type === trigger.type);
 }
 
@@ -223,16 +224,20 @@ async function shutdownGlue(glueId: string) {
   }
 }
 
-async function createDeploymentAndMaybeGlue(glueName: string, registeredTriggers: RegisteredTrigger[]): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
+async function createDeploymentAndMaybeGlue(
+  glueName: string,
+  triggerRegistrations: TriggerRegistration[],
+): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
+  const optimisticRegistrations: Registrations = { triggers: triggerRegistrations, accountInjections: [] };
   const existingGlue = await getGlueByName(glueName, "dev");
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, { optimisticTriggers: registeredTriggers }, "dev");
+    const newGlue = await createGlue(glueName, { optimisticRegistrations }, "dev");
     if (!newGlue.pendingDeployment) {
       throw new Error("No pending deployment");
     }
     return { glue: newGlue, deployment: newGlue.pendingDeployment };
   } else {
-    const newDeployment = await createDeployment(existingGlue.id, { optimisticTriggers: registeredTriggers });
+    const newDeployment = await createDeployment(existingGlue.id, { optimisticRegistrations });
     return { glue: existingGlue, deployment: newDeployment };
   }
 }
@@ -265,14 +270,14 @@ function analyzeCode(_filename: string): AnalysisResult {
   return { errors: [] };
 }
 
-async function discoverTriggers(): Promise<RegisteredTrigger[]> {
+async function discoverTriggers(): Promise<TriggerRegistration[]> {
   const res = await fetch(
     `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
   );
   if (!res.ok) {
     throw new Error(`Failed to get registered triggers: ${res.statusText}`);
   }
-  const registeredTriggers = await res.json() as RegisteredTrigger[];
+  const registeredTriggers = await res.json() as TriggerRegistration[];
   return registeredTriggers;
 }
 
