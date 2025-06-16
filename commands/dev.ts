@@ -1,6 +1,7 @@
 import * as path from "@std/path";
 import { load as dotenvLoad } from "@std/dotenv";
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
+import { getAvailablePort } from "@std/net";
 import { z } from "zod";
 import {
   createDeployment,
@@ -27,7 +28,8 @@ import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
 
-const GLUE_DEV_PORT = 8567; // TODO pick a random unused port or maybe use a unix socket
+const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
+const DEFAULT_DEBUG_PORT = 9229;
 let devProgressProps: DevUIProps = defaultDevUIProps();
 let inkInstance: Instance | undefined;
 let lastMessage: ServerWebsocketMessage | undefined;
@@ -40,7 +42,13 @@ export async function dev(options: DevOptions, filename: string) {
 
   const glueName = options.name ?? glueNameFromFilename(filename);
   const env = await getEnv(glueName, filename);
-  const debugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
+  let debugMode: DebugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
+  if (debugMode !== "no-debug") {
+    if (!isPortAvailable(DEFAULT_DEBUG_PORT)) {
+      console.warn(`Debugger port ${DEFAULT_DEBUG_PORT} is already in use, disabling debugger.`);
+      debugMode = "no-debug";
+    }
+  }
   devProgressProps.debugMode = debugMode;
   if (options.replay) {
     devProgressProps.steps.gettingExecutionToReplay = {
@@ -180,6 +188,19 @@ export async function dev(options: DevOptions, filename: string) {
 // ------------------------------------------------------------------------------------------------
 // Helper functions
 // ------------------------------------------------------------------------------------------------
+
+function isPortAvailable(port: number): boolean {
+  try {
+    const listener = Deno.listen({ port });
+    listener.close();
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.AddrInUse) {
+      return false;
+    }
+    throw error;
+  }
+}
 
 export interface SetupReplayResult {
   executionId: string;
