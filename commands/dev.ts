@@ -235,6 +235,8 @@ async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWeb
     headers: {
       "Content-Type": "application/json",
       "X-Glue-Deployment-Id": deployment.id,
+      // TODO instead of giving the full auth token, get a JWT from the backend
+      // that is scoped to this deployment and a limited expiration time.
       "X-Glue-API-Auth-Header": `Bearer ${authToken}`,
     },
     body: JSON.stringify(message.event satisfies TriggerEvent),
