@@ -28,8 +28,8 @@ export const list = async (options: ListOptions) => {
         ) => [
           glue.name,
           getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled"),
-          green(glue.executionSummary.totalCount.toString()),
-          red(glue.executionSummary.totalErrorCount.toString()),
+          glue.executionSummary.totalCount ? green(glue.executionSummary.totalCount.toString()) : "-",
+          glue.executionSummary.totalErrorCount ? red(glue.executionSummary.totalErrorCount.toString()) : "-",
           formatEpochMillis(glue.executionSummary.mostRecent),
           formatEpochMillis(glue.currentDeployment?.createdAt),
         ]),
