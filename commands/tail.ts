@@ -11,6 +11,7 @@ interface TailOptions {
   noFollow?: boolean;
   logLines: number;
   fullLogLines?: boolean;
+  filter?: string;
 }
 
 export const tail = async (options: TailOptions, name?: string) => {
@@ -38,7 +39,7 @@ export const tail = async (options: TailOptions, name?: string) => {
   const now = new Date();
   const historicalExecutions = await runStep(
     `Loading historical executions for ${glue.name}...`,
-    () => getExecutions(glue.id, options.number, now, "desc", !!options.json),
+    () => getExecutions(glue.id, options.number, now, "desc", !!options.json, options.filter),
     true,
     !!options.json,
   );
@@ -57,7 +58,7 @@ export const tail = async (options: TailOptions, name?: string) => {
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (!options.noFollow) {
     pollingSpinner.start();
-    const executions = await getExecutions(glue.id, 10, startingPoint, "asc", false);
+    const executions = await getExecutions(glue.id, 10, startingPoint, "asc", false, options.filter);
     if (executions.length > 0) {
       pollingSpinner.stop();
       renderExecutions(executions, options.logLines, !!options.fullLogLines);
