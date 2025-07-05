@@ -96,9 +96,3 @@ function convertBuildStepStatusToEmoji(status: string) {
       return mod.gray("⊙");
   }
 }
-
-export function openUrl(url: string): Deno.ChildProcess {
-  return new Deno.Command("open", {
-    args: [url],
-  }).spawn();
-}

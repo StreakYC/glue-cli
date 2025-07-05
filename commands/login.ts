@@ -1,13 +1,9 @@
 import { Hono } from "hono";
 import { setAuthToken } from "../auth.ts";
 import { GLUE_API_SERVER } from "../common.ts";
-import { openUrl } from "../ui/utils.ts";
+import { open } from "@opensrc/deno-open";
 
 export const login = async () => {
-  const loginUrl = `${GLUE_API_SERVER}/login`;
-  console.log(`Opening login page: ${loginUrl}`);
-  openUrl(loginUrl);
-
   const app = new Hono();
 
   app.get("*", (c) => {
@@ -36,6 +32,10 @@ export const login = async () => {
     },
     port: 8123,
   }, app.fetch);
+
+  const loginUrl = `${GLUE_API_SERVER}/login`;
+  console.log(`Opening login page: ${loginUrl}`);
+  await open(loginUrl);
 
   await server.finished;
 };

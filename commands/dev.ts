@@ -18,11 +18,11 @@ import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import React from "react";
 import { type Instance, render } from "ink";
-import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { checkForAuthCredsOtherwiseExit, getAuthToken } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 import { debounceAsyncIterable } from "../lib/debounceAsyncIterable.ts";
 import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/internalTypes";
-import type { Awaitable } from "../common.ts";
+import { type Awaitable, GLUE_API_SERVER } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
@@ -226,9 +226,19 @@ async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWeb
   const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
   const prefix = isReplay ? "REPLAYING " : "";
   console.log(cyan(`\n[${new Date().toISOString()}] ${prefix}: ${trigger?.type.toUpperCase()} ${trigger?.description}`));
+  const authToken = await getAuthToken();
+  if (!authToken) {
+    throw new Error("No auth token found, please run `glue login` first.");
+  }
   await fetch(`http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/triggerEvent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Glue-Deployment-Id": deployment.id,
+      // TODO instead of giving the full auth token, get a JWT from the backend
+      // that is scoped to this deployment and a limited expiration time.
+      "X-Glue-API-Auth-Header": `Bearer ${authToken}`,
+    },
     body: JSON.stringify(message.event satisfies TriggerEvent),
   });
   if (!isReplay) {
@@ -274,6 +284,7 @@ async function getEnv(glueName: string, filename: string) {
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
     GLUE_DEV_PORT: String(GLUE_DEV_PORT),
+    GLUE_API_SERVER,
     ...envVarsFromDotEnvFile,
   };
 
