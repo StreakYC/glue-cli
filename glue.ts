@@ -5,7 +5,6 @@ import { login } from "./commands/login.ts";
 import { logout } from "./commands/logout.ts";
 import { whoami } from "./commands/whoami.ts";
 import { list } from "./commands/list.ts";
-import { deployments } from "./commands/deployments.ts";
 import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
 import { tail } from "./commands/tail.ts";
@@ -70,14 +69,6 @@ const cmd = new Command()
   .command("resume", "Resume a paused glue")
   .arguments("[name:string]")
   .action(resume)
-  // DEPLOYMENTS ----------------------------
-  .command(
-    "deployments",
-    "List all the deployments of a Glue",
-  )
-  .arguments("[name:string]")
-  .option("-j, --json", "Output in JSON format")
-  .action(deployments)
   // DESCRIBE ----------------------------
   .command("describe", "Describe a glue or any other resource. Query can be a glue name or any id for any resource")
   .arguments("[query:string]")

@@ -4,13 +4,14 @@ import {
   type ExecutionDTO,
   getAccountById,
   getDeploymentById,
+  getDeployments,
   getExecutionById,
   getGlueById,
   getGlueByName,
   type GlueDTO,
 } from "../backend.ts";
 import * as mod from "@std/fmt/colors";
-import { formatEpochMillis, runStep } from "../ui/utils.ts";
+import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis, runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { bold, dim, green, red } from "@std/fmt/colors";
@@ -19,13 +20,20 @@ import { getRunningStringForDeploymentStatus } from "./list.ts";
 import React from "react";
 import { render } from "ink";
 import { DescribeDeploymentUI } from "../ui/describe.tsx";
+import { Table } from "@cliffy/table";
+
 interface DescribeOptions {
   json?: boolean;
 }
 
+interface GlueAndDeployments {
+  glue: GlueDTO;
+  deployments: DeploymentDTO[];
+}
+
 export const describe = async (options: DescribeOptions, query?: string) => {
   await checkForAuthCredsOtherwiseExit();
-  let glue: GlueDTO | undefined;
+  let glueAndDeployments: GlueAndDeployments | undefined;
   let deployment: DeploymentDTO | undefined;
   let account: AccountDTO | undefined;
   let execution: ExecutionDTO | undefined;
@@ -34,28 +42,44 @@ export const describe = async (options: DescribeOptions, query?: string) => {
     if (isPrefixId(query, "d")) {
       deployment = await runStep("Loading deployment...", () => getDeploymentById(query), true, !!options.json);
     } else if (isPrefixId(query, "g")) {
-      glue = await runStep("Loading glue...", () => getGlueById(query), true, !!options.json);
+      const glue = await runStep("Loading glue...", () => getGlueById(query), true, !!options.json);
+      if (!glue) {
+        throw new Error("Couldn't find a glue with that id");
+      }
+      const deployments = await runStep("Loading deployments...", () => getDeployments(glue.id), true, !!options.json);
+      glueAndDeployments = { glue, deployments };
     } else if (isPrefixId(query, "a")) {
       account = await runStep("Loading account...", () => getAccountById(query), true, !!options.json);
     } else if (isPrefixId(query, "e")) {
       execution = await runStep("Loading execution...", () => getExecutionById(query), true, !!options.json);
     } else {
-      glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"), true, !!options.json);
+      const glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"), true, !!options.json);
+      if (!glue) {
+        throw new Error("Couldn't find a glue with that name");
+      }
+      const deployments = await runStep("Loading deployments...", () => getDeployments(glue.id), true, !!options.json);
+      glueAndDeployments = { glue, deployments };
     }
   } else if (Deno.stdout.isTerminal() && !options.json) {
-    glue = await askUserForGlue();
+    const glue = await askUserForGlue();
+    if (!glue) {
+      throw new Error("No glues yet!?");
+    }
+    const deployments = await runStep("Loading deployments...", () => getDeployments(glue.id), true, !!options.json);
+    glueAndDeployments = { glue, deployments };
   } else {
     throw new Error("You must provide a glue name or query when not running in a terminal");
   }
 
-  if (!deployment && !glue && !account && !execution) {
+  if (!deployment && !glueAndDeployments && !account && !execution) {
     throw new Error("Couldn't find a glue or deployment or account or execution with that id nor a glue with that name");
   }
 
+  console.log();
   if (deployment) {
     renderDeployment(deployment, options);
-  } else if (glue) {
-    renderGlue(glue, options);
+  } else if (glueAndDeployments) {
+    renderGlue(glueAndDeployments, options);
   } else if (account) {
     renderAccount(account, options);
   } else if (execution) {
@@ -72,11 +96,12 @@ function renderDeployment(deployment: DeploymentDTO, options: DescribeOptions) {
   render(React.createElement(DescribeDeploymentUI, { deployment }));
 }
 
-function renderGlue(glue: GlueDTO, options: DescribeOptions) {
+function renderGlue(glueAndDeployments: GlueAndDeployments, options: DescribeOptions) {
   if (options.json) {
-    console.log(JSON.stringify(glue, null, 2));
+    console.log(JSON.stringify(glueAndDeployments, null, 2));
     return;
   }
+  const { glue, deployments } = glueAndDeployments;
 
   console.log(`${bold(glue.name)} ${dim(`(${glue.id})`)}`);
   console.log(`Status: ${getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled")}`);
@@ -101,11 +126,31 @@ function renderGlue(glue: GlueDTO, options: DescribeOptions) {
   if (glue.currentDeployment) {
     console.log(`Last Deployed: ${formatEpochMillis(glue.currentDeployment.createdAt)}`);
     console.log();
-    console.log("Triggers:");
+    console.log("TRIGGERS");
     for (const t of glue.currentDeployment.triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))) {
       console.log(`\t${t.type} (${t.label}): ${dim(t.description ?? "")}`);
     }
   }
+
+  deployments.sort((a, b) => b.createdAt - a.createdAt);
+
+  console.log("");
+  console.log("DEPLOYMENTS");
+  new Table()
+    .header(["Id", "Status", "Created", "Triggers", "Build steps"])
+    .body(
+      deployments.map((
+        deployment,
+      ) => [
+        deployment.id,
+        formatDeploymentStatus(deployment.status, deployment.id === glue.currentDeployment?.id),
+        formatEpochMillis(deployment.createdAt),
+        deployment.triggers.length,
+        formatBuildSteps(deployment.buildSteps),
+      ]),
+    )
+    .padding(4)
+    .render();
 }
 
 function renderAccount(account: AccountDTO, options: DescribeOptions) {
