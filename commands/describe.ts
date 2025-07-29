@@ -188,7 +188,7 @@ function renderExecution(execution: ExecutionDTO, options: DescribeOptions) {
     return;
   }
   console.log(`${bold(execution.id)}`);
-  console.log(`Trigger: ${execution.trigger.description}`);
+  console.log(`Trigger: ${execution.trigger.type} (${execution.trigger.label}): ${execution.trigger.description}`);
   console.log(`Status: ${colorState(execution.state)}`);
   console.log(`Started: ${new Date(execution.startedAt).toLocaleString()}`);
   console.log(`Completed: ${execution.endedAt ? new Date(execution.endedAt).toLocaleString() : "Not completed"}`);
