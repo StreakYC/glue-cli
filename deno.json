@@ -1,7 +1,4 @@
 {
-  "links": [
-    "../glue-runtime"
-  ],
   "name": "@streak-glue/cli",
   "version": "0.1.35",
   "license": "MIT",
