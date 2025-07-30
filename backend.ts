@@ -51,6 +51,7 @@ export async function backendRequest<T>(path: string, options: RequestInit = {},
   const headers: Record<string, string> = {
     "Authorization": `Bearer ${authToken}`,
     "User-Agent": "glue-cli",
+    "X-Glue-Set-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 
   if (forceTrace) {
