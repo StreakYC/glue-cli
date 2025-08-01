@@ -251,6 +251,7 @@ export interface DeploymentDTO {
   createdAt: number; // milliseconds since epoch
   updatedAt: number; // milliseconds since epoch
   triggers: TriggerDTO[];
+  accountInjections: AccountInjectionDTO[];
   buildSteps: BuildStepDTO[];
 }
 
@@ -272,6 +273,21 @@ export interface TriggerDTO {
   type: string;
   label: string;
   routingId?: string;
+  accountId?: string;
+  config?: Record<string, unknown>;
+
+  createdAt: number;
+  updatedAt: number;
+
+  accountSetupUrl?: string;
+  description?: string;
+}
+
+export interface AccountInjectionDTO {
+  id: string;
+  deploymentId: string;
+  type: string;
+  label: string;
   accountId?: string;
   config?: Record<string, unknown>;
 
