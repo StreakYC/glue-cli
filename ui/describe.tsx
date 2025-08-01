@@ -1,6 +1,6 @@
 import type { DeploymentDTO } from "../backend.ts";
 import React from "react";
-import { BuildStepStatusRow, SetupTriggerList } from "./common.tsx";
+import { BuildStepStatusRow, CompletedRegistrationList } from "./common.tsx";
 import { Newline, Text } from "ink";
 
 export type DescribeDeploymentUIProps = {
@@ -35,11 +35,11 @@ export const DescribeDeploymentUI = ({ deployment }: DescribeDeploymentUIProps) 
         </>
       )}
 
-      {deployment.triggers.length > 0 && (
+      {(deployment.triggers.length > 0 || deployment.accountInjections.length > 0) && (
         <>
           <Newline />
-          <Text>Triggers:</Text>
-          <SetupTriggerList triggers={deployment.triggers} />
+          <Text>Triggers and account injections:</Text>
+          <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
         </>
       )}
     </>

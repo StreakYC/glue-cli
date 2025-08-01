@@ -1,6 +1,6 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
-import { AuthTriggerList, BuildStepStatusRow, ClientStepRow, SetupTriggerList } from "./common.tsx";
+import { BuildStepStatusRow, ClientStepRow, CompletedRegistrationList, RegistrationAccountSetupSection } from "./common.tsx";
 import { Text } from "ink";
 import { Newline } from "ink";
 import type { DebugMode, SetupReplayResult } from "../commands/dev.ts";
@@ -28,6 +28,7 @@ export type DevUIProps = {
 export const DevUI = (
   props: DevUIProps,
 ) => {
+  const { deployment } = props;
   const steps = props.steps;
   const uiStepsDone = Object
     .keys(steps)
@@ -41,6 +42,9 @@ export const DevUI = (
   } else {
     done = uiStepsDone && props.deployment !== undefined && props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success");
   }
+
+  const needsAccountSetup = deployment &&
+    (deployment.triggers.some((t) => !!t.accountSetupUrl) || deployment.accountInjections.some((a) => !!a.accountSetupUrl));
 
   return (
     <>
@@ -74,16 +78,18 @@ export const DevUI = (
         <ClientStepRow stepState={steps.registeringGlue.state} stepDuration={steps.registeringGlue.duration} stepTitle="Registering glue" />
       )}
 
-      {props.deployment && props.deployment.buildSteps.map((step: BuildStepDTO) => (
+      {deployment && deployment.buildSteps.map((step) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
-          {step.name === "triggerAuth" && step.status === "in_progress" && props.deployment?.triggers.some((t) => !!t.accountSetupUrl) && (
-            <AuthTriggerList triggers={props.deployment?.triggers} />
+          {step.name === "triggerAuth" && step.status === "in_progress" && needsAccountSetup && (
+            <RegistrationAccountSetupSection triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
           )}
-          {step.name === "triggerSetup" && step.status === "success" && props.deployment && <SetupTriggerList triggers={props.deployment.triggers} />}
+          {step.name === "triggerSetup" && step.status === "success" && (
+            <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
+          )}
         </React.Fragment>
       ))}
-      {props.deployment && steps.connectingToTunnel && (
+      {deployment && steps.connectingToTunnel && (
         <ClientStepRow
           stepState={steps.connectingToTunnel.state}
           stepDuration={steps.connectingToTunnel.duration}

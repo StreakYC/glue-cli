@@ -1,6 +1,6 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
-import { AuthTriggerList, BuildStepStatusRow, ClientStepRow, SetupTriggerList } from "./common.tsx";
+import { BuildStepStatusRow, ClientStepRow, CompletedRegistrationList, RegistrationAccountSetupSection } from "./common.tsx";
 import { Newline, Text } from "ink";
 
 export type DeployUIProps = {
@@ -15,6 +15,8 @@ export const DeployUI = (
   { deployment, codeAnalysisState, codeAnalysisDuration, uploadingCodeState, uploadingCodeDuration }: DeployUIProps,
 ) => {
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
+  const needsAccountSetup = deployment &&
+    (deployment.triggers.some((t) => !!t.accountSetupUrl) || deployment.accountInjections.some((a) => !!a.accountSetupUrl));
   return (
     <>
       <ClientStepRow stepState={codeAnalysisState} stepDuration={codeAnalysisDuration} stepTitle="Analyzing code" />
@@ -22,10 +24,12 @@ export const DeployUI = (
       {deployment && deployment.buildSteps.map((step: BuildStepDTO) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
-          {step.name === "triggerAuth" && step.status === "in_progress" && deployment.triggers.some((t) => !!t.accountSetupUrl) && (
-            <AuthTriggerList triggers={deployment.triggers} />
+          {step.name === "triggerAuth" && step.status === "in_progress" && needsAccountSetup && (
+            <RegistrationAccountSetupSection triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
           )}
-          {step.name === "triggerSetup" && step.status === "success" && <SetupTriggerList triggers={deployment.triggers} />}
+          {step.name === "triggerSetup" && step.status === "success" && (
+            <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
+          )}
         </React.Fragment>
       ))}
       {done && (
