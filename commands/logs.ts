@@ -5,7 +5,7 @@ import { askUserForGlue } from "./common.ts";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
-interface TailOptions {
+interface LogsOptions {
   json?: boolean;
   number: number;
   noFollow?: boolean;
@@ -14,7 +14,7 @@ interface TailOptions {
   filter?: string;
 }
 
-export const tail = async (options: TailOptions, name?: string) => {
+export const logs = async (options: LogsOptions, name?: string) => {
   await checkForAuthCredsOtherwiseExit();
   // look for sigint
   Deno.addSignalListener("SIGINT", () => {

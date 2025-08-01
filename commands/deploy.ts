@@ -14,6 +14,7 @@ interface DeployOptions {
 
 export async function deploy(options: DeployOptions, file: string) {
   await checkForAuthCredsOtherwiseExit();
+  const glueName = options.name ?? path.basename(file);
 
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
@@ -21,6 +22,7 @@ export async function deploy(options: DeployOptions, file: string) {
     uploadingCodeDuration: 0,
     codeAnalysisDuration: 0,
     deployment: undefined,
+    glueName,
   };
 
   const updateUI = (patch: Partial<DeployUIProps>) => {
@@ -31,7 +33,7 @@ export async function deploy(options: DeployOptions, file: string) {
   updateUI({ codeAnalysisState: "in_progress", codeAnalysisDuration: 0 });
 
   let duration = performance.now();
-  const glueName = options.name ?? path.basename(file);
+
   const deploymentParams = await getCreateDeploymentParams(file);
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
 

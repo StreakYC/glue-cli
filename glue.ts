@@ -7,7 +7,7 @@ import { whoami } from "./commands/whoami.ts";
 import { list } from "./commands/list.ts";
 import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
-import { tail } from "./commands/tail.ts";
+import { logs } from "./commands/logs.ts";
 import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
 import { pause } from "./commands/pause.ts";
@@ -78,8 +78,8 @@ const cmd = new Command()
   .command("replay", "Replay an execution of a glue")
   .arguments("<executionId:string>")
   .action(replay)
-  // TAIL ----------------------------
-  .command("tail", "View a live stream of the executions of a glue. Provide a glue name or id.")
+  // LOGS ----------------------------
+  .command("logs", "View historical and live stream of the executions of a glue. Provide a glue name or id.")
   .arguments("[name:string]")
   .option("-j, --json", "Output in JSON format")
   .option("-n, --number <number:number>", "Number of historical executions to print initially", { default: 10 })
@@ -87,7 +87,7 @@ const cmd = new Command()
   .option("-N, --no-follow", "Don't follow the executions, just print the latest and exit", { default: false })
   .option("-F, --full-log-lines", "Don't clip log lines to the width of the terminal, wrap the full log line. Has no effect in json mode", { default: false })
   .option("-f, --filter <filter:string>", "Filter executions by state. Only show executions with this state. Valid values are: success, failure, running")
-  .action(tail)
+  .action(logs)
   // LOGIN ----------------------------
   .command("login", "Log in to Glue")
   .action(login)

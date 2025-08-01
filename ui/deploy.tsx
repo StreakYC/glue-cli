@@ -9,10 +9,11 @@ export type DeployUIProps = {
   uploadingCodeState: StepStatus;
   uploadingCodeDuration: number;
   deployment?: DeploymentDTO;
+  glueName: string;
 };
 
 export const DeployUI = (
-  { deployment, codeAnalysisState, codeAnalysisDuration, uploadingCodeState, uploadingCodeDuration }: DeployUIProps,
+  { deployment, codeAnalysisState, codeAnalysisDuration, uploadingCodeState, uploadingCodeDuration, glueName }: DeployUIProps,
 ) => {
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
   return (
@@ -34,7 +35,7 @@ export const DeployUI = (
           <Text>🎉 Successfully deployed your Glue</Text>
           <Newline />
           <Text color="dim">
-            Try `glue describe` to see summary info or `glue tail` to watch for executions
+            Try `glue describe` to see summary info or `glue logs {glueName}` to watch for executions
           </Text>
         </Text>
       )}

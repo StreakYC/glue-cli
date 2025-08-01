@@ -15,7 +15,7 @@ import { formatBuildSteps, formatDeploymentStatus, formatEpochMillis, runStep } 
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { bold, dim, green, red } from "@std/fmt/colors";
-import { colorState } from "./tail.ts";
+import { colorState } from "./logs.ts";
 import { getRunningStringForDeploymentStatus } from "./list.ts";
 import React from "react";
 import { render } from "ink";
