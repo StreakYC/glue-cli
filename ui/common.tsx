@@ -1,6 +1,6 @@
 import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
-import type { BuildStepDTO, StepStatus, TriggerDTO } from "../backend.ts";
+import type { AccountInjectionDTO, BuildStepDTO, StepStatus, TriggerDTO } from "../backend.ts";
 
 export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
   if (step.status === "success") {
@@ -31,23 +31,28 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
   }
 };
 
-export const AuthTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
+export const RegistrationAccountSetupSection = ({ triggers, accountInjections }: { triggers: TriggerDTO[]; accountInjections: AccountInjectionDTO[] }) => {
+  const sortedRegistrations = [...triggers, ...accountInjections]
+    .filter((t) => !!t.accountSetupUrl)
+    .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       <Text backgroundColor="red" color="white">Need authentication:</Text>
-      {triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })).filter((t) => !!t.accountSetupUrl).map((t) => (
+      {sortedRegistrations.map((t) => (
         <Text key={t.id}>
-          {t.type}: <Text bold>{t.accountSetupUrl}</Text>
+          {t.type}({t.label}): <Text bold>{t.accountSetupUrl}</Text>
         </Text>
       ))}
     </Box>
   );
 };
 
-export const SetupTriggerList = ({ triggers }: { triggers: TriggerDTO[] }) => {
+export const CompletedRegistrationList = ({ triggers, accountInjections }: { triggers: TriggerDTO[]; accountInjections: AccountInjectionDTO[] }) => {
+  const sortedRegistrations = [...triggers, ...accountInjections]
+    .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      {triggers.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })).map((t) => (
+      {sortedRegistrations.map((t) => (
         <Text key={t.id}>
           {t.type}({t.label}): <Text bold>{t.description}</Text>
         </Text>

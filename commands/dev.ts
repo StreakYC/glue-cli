@@ -84,12 +84,12 @@ export async function dev(options: DevOptions, filename: string) {
   }
 
   let localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
-  const registeredTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
+  const registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
 
-  let setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, registeredTriggers)) : undefined;
+  let setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, registrations.triggers)) : undefined;
   devProgressProps.setupReplayResult = setupReplayResult;
 
-  let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registeredTriggers));
+  let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registrations));
 
   await monitorDeploymentAndRenderChangesTillReady(deployment.id);
   if (devProgressProps.deployment?.status !== "success") {
@@ -149,20 +149,19 @@ export async function dev(options: DevOptions, filename: string) {
     localRunner.child.kill();
 
     localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
-    const newTriggers = await runUIStep("discoveringTriggers", () => discoverTriggers());
-    setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, newTriggers)) : undefined;
+    const newRegistrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
+    setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, newRegistrations.triggers)) : undefined;
 
     devProgressProps.setupReplayResult = setupReplayResult;
     renderUI();
 
-    if (!equal(registeredTriggers, newTriggers)) {
+    if (!equal(registrations, newRegistrations)) {
       devProgressProps.steps.registeringGlue = {
         state: "in_progress",
         duration: 0,
       };
       renderUI();
-      const optimisticRegistrations: Registrations = { triggers: newTriggers, accountInjections: [] };
-      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticRegistrations }));
+      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticRegistrations: newRegistrations }));
       devProgressProps.deployment = deployment;
       await monitorDeploymentAndRenderChangesTillReady(deployment.id);
       if (devProgressProps.deployment?.status !== "success") {
@@ -257,18 +256,17 @@ async function shutdownGlue(glueId: string) {
 
 async function createDeploymentAndMaybeGlue(
   glueName: string,
-  triggerRegistrations: TriggerRegistration[],
+  registrations: Registrations,
 ): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
-  const optimisticRegistrations: Registrations = { triggers: triggerRegistrations, accountInjections: [] };
   const existingGlue = await getGlueByName(glueName, "dev");
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, { optimisticRegistrations }, "dev");
+    const newGlue = await createGlue(glueName, { optimisticRegistrations: registrations }, "dev");
     if (!newGlue.pendingDeployment) {
       throw new Error("No pending deployment");
     }
     return { glue: newGlue, deployment: newGlue.pendingDeployment };
   } else {
-    const newDeployment = await createDeployment(existingGlue.id, { optimisticRegistrations });
+    const newDeployment = await createDeployment(existingGlue.id, { optimisticRegistrations: registrations });
     return { glue: existingGlue, deployment: newDeployment };
   }
 }
@@ -302,15 +300,15 @@ function analyzeCode(_filename: string): AnalysisResult {
   return { errors: [] };
 }
 
-async function discoverTriggers(): Promise<TriggerRegistration[]> {
+async function discoverRegistrations(): Promise<Registrations> {
   const res = await fetch(
-    `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
+    `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegistrations`,
   );
   if (!res.ok) {
-    throw new Error(`Failed to get registered triggers: ${res.statusText}`);
+    throw new Error(`Failed to get registrations: ${res.statusText}`);
   }
-  const registeredTriggers = await res.json() as TriggerRegistration[];
-  return registeredTriggers;
+  const registrations = await res.json() as Registrations;
+  return registrations;
 }
 
 export type DebugMode = "inspect" | "inspect-wait" | "no-debug";
