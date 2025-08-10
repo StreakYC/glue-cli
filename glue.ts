@@ -87,6 +87,7 @@ const cmd = new Command()
   .option("-N, --no-follow", "Don't follow the executions, just print the latest and exit", { default: false })
   .option("-F, --full-log-lines", "Don't clip log lines to the width of the terminal, wrap the full log line. Has no effect in json mode", { default: false })
   .option("-f, --filter <filter:string>", "Filter executions by state. Only show executions with this state. Valid values are: success, failure, running")
+  .option("-s, --search <search:string>", "Search for a string in the execution logs, error or input data")
   .action(logs)
   // LOGIN ----------------------------
   .command("login", "Log in to Glue")

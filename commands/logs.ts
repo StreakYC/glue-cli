@@ -12,6 +12,7 @@ interface LogsOptions {
   logLines: number;
   fullLogLines?: boolean;
   filter?: string;
+  search?: string;
 }
 
 export const logs = async (options: LogsOptions, name?: string) => {
@@ -39,7 +40,7 @@ export const logs = async (options: LogsOptions, name?: string) => {
   const now = new Date();
   const historicalExecutions = await runStep(
     `Loading historical executions for ${glue.name}...`,
-    () => getExecutions(glue.id, options.number, now, "desc", !!options.json, options.filter),
+    () => getExecutions(glue.id, options.number, now, "desc", !!options.json, options.filter, options.search),
     true,
     !!options.json,
   );
@@ -58,7 +59,7 @@ export const logs = async (options: LogsOptions, name?: string) => {
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (!options.noFollow) {
     pollingSpinner.start();
-    const executions = await getExecutions(glue.id, 10, startingPoint, "asc", false, options.filter);
+    const executions = await getExecutions(glue.id, 10, startingPoint, "asc", false, options.filter, options.search);
     if (executions.length > 0) {
       pollingSpinner.stop();
       renderExecutions(executions, options.logLines, !!options.fullLogLines);

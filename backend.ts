@@ -192,6 +192,7 @@ export async function getExecutions(
   direction: "asc" | "desc",
   includeInputData: boolean = false,
   filter: string | undefined = undefined,
+  search: string | undefined = undefined,
 ): Promise<ExecutionDTO[]> {
   const params = new URLSearchParams({
     limit: limit.toString(),
@@ -201,6 +202,9 @@ export async function getExecutions(
   });
   if (filter) {
     params.set("filter", filter);
+  }
+  if (search) {
+    params.set("search", search);
   }
   return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
 }
