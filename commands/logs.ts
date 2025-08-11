@@ -8,7 +8,7 @@ import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 interface LogsOptions {
   json?: boolean;
   number: number;
-  noFollow?: boolean;
+  tail?: boolean;
   logLines: number;
   fullLogLines?: boolean;
   filter?: string;
@@ -57,7 +57,7 @@ export const logs = async (options: LogsOptions, name?: string) => {
 
   let startingPoint = now;
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
-  while (!options.noFollow) {
+  while (options.tail) {
     pollingSpinner.start();
     const executions = await getExecutions(glue.id, 10, startingPoint, "asc", false, options.filter, options.search);
     if (executions.length > 0) {
