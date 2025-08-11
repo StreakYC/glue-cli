@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken } from "./auth.ts";
+import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
@@ -162,6 +163,9 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
     zip(a.buildSteps, b.buildSteps)
       .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.title !== stepB.title || stepA.status !== stepB.status)
   ) {
+    return false;
+  }
+  if (!equal(a.triggers, b.triggers) || !equal(a.accountInjections, b.accountInjections)) {
     return false;
   }
   return true;
