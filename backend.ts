@@ -186,7 +186,7 @@ export async function* streamChangesToDeployment(deploymentId: string): AsyncIte
 }
 
 export async function getExecutions(
-  glueId: string,
+  glueId: string | undefined,
   limit: number,
   startingPoint: Date,
   direction: "asc" | "desc",
@@ -206,7 +206,11 @@ export async function getExecutions(
   if (search) {
     params.set("search", search);
   }
-  return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
+  if (glueId) {
+    return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
+  } else {
+    return await backendRequest<ExecutionDTO[]>(`/executions?${params.toString()}`);
+  }
 }
 
 export async function getExecutionById(id: string): Promise<ExecutionDTO> {
@@ -274,6 +278,7 @@ export interface BuildStepDTO {
 export interface TriggerDTO {
   id: string;
   deploymentId: string;
+  glueId: string;
   type: string;
   label: string;
   routingId?: string;
