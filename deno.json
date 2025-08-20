@@ -6,13 +6,12 @@
     ".": "./glue.ts"
   },
   "tasks": {
-    "cli": "deno run --allow-all --unstable-temporal glue.ts",
-    "cli-debug": "deno run --inspect-brk --allow-all --unstable-temporal glue.ts dev samples/myExampleWebhook.ts --no-debug",
-    "check": "deno check **/*.ts*",
+    "cli": "deno run --allow-all glue.ts",
+    "cli-debug": "deno run --inspect-brk --allow-all glue.ts dev samples/myExampleWebhook.ts --no-debug",
     "lint": "deno lint --watch",
     "test": "deno test --permit-no-files --watch"
   },
-  "unstable": ["kv"],
+  "unstable": ["kv", "temporal"],
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
     "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.7",

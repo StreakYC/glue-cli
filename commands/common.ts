@@ -4,7 +4,7 @@ import { runStep } from "../ui/utils.ts";
 
 export async function askUserForGlue(): Promise<GlueDTO | undefined> {
   const glues = await runStep("Loading glues...", () => getGlues("deploy"));
-  if (!glues) {
+  if (!glues.length) {
     return undefined;
   }
   return await Select.prompt({
