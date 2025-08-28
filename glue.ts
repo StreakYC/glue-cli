@@ -50,6 +50,7 @@ const cmd = new Command()
   // DEPLOY ----------------------------
   .command("deploy", "Deploy a glue")
   .option("-n, --name <name:string>", "Glue name")
+  .option("--fly", "Use Fly.io to host the glue")
   .arguments("<file:string>")
   .action(deploy)
   // CREATE ----------------------------
