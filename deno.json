@@ -9,7 +9,8 @@
     "cli": "deno run --allow-all glue.ts",
     "cli-debug": "deno run --inspect-brk --allow-all glue.ts dev samples/myExampleWebhook.ts --no-debug",
     "lint": "deno lint --watch",
-    "test": "deno test --permit-no-files --watch"
+    "test": "deno test --permit-no-files --watch",
+    "check": "deno check"
   },
   "unstable": ["kv", "temporal"],
   "imports": {

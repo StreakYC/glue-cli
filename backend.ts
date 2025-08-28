@@ -27,7 +27,7 @@ export type DeploymentContent = z.infer<typeof DeploymentContent>;
 const CreateDeploymentParams = z.object({
   deploymentContent: DeploymentContent.optional(),
   optimisticRegistrations: Registrations.optional(),
-  runner: z.enum(["deno", "fly"]).default("deno"),
+  runner: z.enum(["deno", "fly"]).optional(),
 });
 export type CreateDeploymentParams = z.infer<typeof CreateDeploymentParams>;
 
