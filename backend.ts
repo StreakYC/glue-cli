@@ -172,7 +172,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   return true;
 }
 
-export async function* streamChangesToDeployment(deploymentId: string): AsyncIterable<DeploymentDTO> {
+export async function* streamChangesTillDeploymentReady(deploymentId: string): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
     const deployment = await retry(() => getDeploymentById(deploymentId));

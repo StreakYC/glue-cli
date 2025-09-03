@@ -2,7 +2,14 @@ import * as path from "@std/path";
 import { load as dotenvLoad } from "@std/dotenv";
 import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
-import { createDeployment, type CreateDeploymentParams, createGlue, type DeploymentAsset, getGlueByName, streamChangesToDeployment } from "../backend.ts";
+import {
+  createDeployment,
+  type CreateDeploymentParams,
+  createGlue,
+  type DeploymentAsset,
+  getGlueByName,
+  streamChangesTillDeploymentReady,
+} from "../backend.ts";
 import { render } from "ink";
 import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
@@ -55,7 +62,7 @@ export async function deploy(options: DeployOptions, file: string) {
 
   const uploadingCodeDuration = performance.now() - duration;
 
-  for await (const deployment of streamChangesToDeployment(newDeploymentId)) {
+  for await (const deployment of streamChangesTillDeploymentReady(newDeploymentId)) {
     // modify the uploadingCodeStep at the same time as we get the first deployment so it never
     // looks to the user like we're done prematurely
     updateUI({ deployment, uploadingCodeState: "success", uploadingCodeDuration });
