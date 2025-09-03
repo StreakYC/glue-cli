@@ -61,16 +61,6 @@ export async function dev(options: DevOptions, filename: string) {
   const fileChangeWatcher = Deno.watchFs(filename);
   const keypressWatcher = keypress();
 
-  let disposed = false;
-  Deno.addSignalListener("SIGINT", () => {
-    if (disposed) {
-      return;
-    }
-    disposed = true;
-    fileChangeWatcher.close();
-    keypressWatcher.dispose();
-  });
-
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
   if (codeAnalysisResult.errors.length > 0) {
     throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
@@ -478,9 +468,9 @@ function renderUI() {
 
 async function unmountUI() {
   if (inkInstance) {
-    await delay(1);
     inkInstance.unmount();
     inkInstance = undefined;
+    await delay(1);
   }
 }
 
