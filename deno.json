@@ -44,5 +44,10 @@
   },
   "fmt": {
     "lineWidth": 160
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-unversioned-import", "no-import-prefix"]
+    }
   }
 }
