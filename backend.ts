@@ -5,7 +5,7 @@ import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
 import { retry } from "@std/async/retry";
-import { Registrations } from "@streak-glue/runtime/internalTypes";
+import { Registrations } from "@streak-glue/runtime/backendTypes";
 
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
 export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
@@ -172,7 +172,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   return true;
 }
 
-export async function* streamChangesToDeployment(deploymentId: string): AsyncIterable<DeploymentDTO> {
+export async function* streamChangesTillDeploymentReady(deploymentId: string): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
     const deployment = await retry(() => getDeploymentById(deploymentId));

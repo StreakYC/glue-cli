@@ -3,14 +3,7 @@ import { load as dotenvLoad } from "@std/dotenv";
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { getAvailablePort } from "@std/net";
 import { z } from "zod";
-import {
-  createDeployment,
-  createGlue,
-  getExecutionByIdNoThrow,
-  getGlueByName,
-  stopGlue,
-  streamChangesToDeployment as streamChangesTillDeploymentReady,
-} from "../backend.ts";
+import { createDeployment, createGlue, getExecutionByIdNoThrow, getGlueByName, stopGlue, streamChangesTillDeploymentReady } from "../backend.ts";
 import { retry, type RetryOptions } from "@std/async/retry";
 import { basename } from "@std/path";
 import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
@@ -21,7 +14,7 @@ import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit, getAuthToken } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 import { debounceAsyncIterable } from "../lib/debounceAsyncIterable.ts";
-import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/internalTypes";
+import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/backendTypes";
 import { type Awaitable, GLUE_API_SERVER } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
@@ -67,16 +60,6 @@ export async function dev(options: DevOptions, filename: string) {
   // subprocesses.
   const fileChangeWatcher = Deno.watchFs(filename);
   const keypressWatcher = keypress();
-
-  let disposed = false;
-  Deno.addSignalListener("SIGINT", () => {
-    if (disposed) {
-      return;
-    }
-    disposed = true;
-    fileChangeWatcher.close();
-    keypressWatcher.dispose();
-  });
 
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
   if (codeAnalysisResult.errors.length > 0) {
@@ -485,9 +468,9 @@ function renderUI() {
 
 async function unmountUI() {
   if (inkInstance) {
-    await delay(1);
     inkInstance.unmount();
     inkInstance = undefined;
+    await delay(1);
   }
 }
 
