@@ -2,13 +2,13 @@ import { glue } from "jsr:@streak-glue/runtime";
 import { OAuth2Client } from "npm:google-auth-library@10";
 import { GoogleSpreadsheet } from "npm:google-spreadsheet@5";
 
-const googleCredFetcher = glue.google.getCredentialFetcher({
+const googleCredFetcher = glue.google.createCredentialFetcher({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
 glue.webhook.onGet(async (_event) => {
   console.log("GET request received");
-  const credential = await googleCredFetcher();
+  const credential = await googleCredFetcher.get();
 
   const auth = new OAuth2Client();
   auth.setCredentials({ access_token: credential.accessToken });

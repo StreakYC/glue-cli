@@ -14,7 +14,7 @@ import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit, getAuthToken } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
 import { debounceAsyncIterable } from "../lib/debounceAsyncIterable.ts";
-import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/internalTypes";
+import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/backendTypes";
 import { type Awaitable, GLUE_API_SERVER } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";

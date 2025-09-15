@@ -5,7 +5,7 @@ import { delay } from "@std/async/delay";
 import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
 import { retry } from "@std/async/retry";
-import { Registrations } from "@streak-glue/runtime/internalTypes";
+import { Registrations } from "@streak-glue/runtime/backendTypes";
 
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
 export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
