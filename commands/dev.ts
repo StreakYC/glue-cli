@@ -9,6 +9,9 @@ import { basename } from "@std/path";
 import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+import { upgradeWebSocket } from "hono/deno";
 import React from "react";
 import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit, getAuthToken } from "../auth.ts";
@@ -34,7 +37,11 @@ export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
 
   const glueName = options.name ?? glueNameFromFilename(filename);
-  const env = await getEnv(glueName, filename);
+  const glueCliWebsocketAddr = await wsListen(() => {
+    // TODO handle the glue process being ready
+  });
+
+  const env = await getEnv(glueName, filename, glueCliWebsocketAddr);
   let debugMode: DebugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
   if (debugMode !== "no-debug") {
     if (!isPortAvailable(DEFAULT_DEBUG_PORT)) {
@@ -171,6 +178,59 @@ export async function dev(options: DevOptions, filename: string) {
 // Helper functions
 // ------------------------------------------------------------------------------------------------
 
+/**
+ * Listens on a free port on localhost. This is used so the glue subprocess can
+ * connect to this process and detect when this process exits. This is also used
+ * to detect when the subprocess has (re)started successfully (the Deno
+ * `--watch` flag can cause the subprocess to restart itself when the user
+ * changes their glue code).
+ * @returns websocket URL
+ */
+async function wsListen(onConnection: () => void): Promise<string> {
+  const app = new Hono();
+  app.get(
+    "/glue-lifeline-ws",
+    upgradeWebSocket((c) => {
+      if (c.req.header("Origin") != null || c.req.header("Sec-Fetch-Site") != null) {
+        // We want to prevent requests from browsers so that random websites the
+        // user visits can't make their browser connect to this websocket.
+        // https://words.filippo.io/csrf/ suggests that requests by browsers
+        // will have one of these headers.
+        throw new HTTPException(403, { message: "Request may not be made by browser" });
+      }
+
+      onConnection();
+
+      return {
+        // onMessage(event, ws) {
+        //   // don't need to handle any messages from the glue process. The only
+        //   // communication we care about is that it started a connection to us,
+        //   // and the only communication it cares about is when we close the
+        //   // connection when our process dies.
+        // },
+        // onClose() {
+        //   // don't need to do anything on disconnects. Disconnects can mean that
+        //   // the process died (which we'll know through the process APIs) or
+        //   // because the process was running with the `--watch` flag and is
+        //   // restarting the script, which we'll react to when it makes a new
+        //   // connection.
+        // },
+      };
+    }),
+  );
+  const port = await new Promise<number>((resolve, _reject) => {
+    Deno.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      onListen(addr) {
+        resolve(addr.port);
+      },
+    }, app.fetch);
+  });
+  const glueCliWebsocketAddr = `ws://127.0.0.1:${port}/glue-lifeline-ws`;
+  return glueCliWebsocketAddr;
+}
+
 function isPortAvailable(port: number): boolean {
   try {
     const listener = Deno.listen({ port });
@@ -258,12 +318,13 @@ function glueNameFromFilename(filename: string) {
   return basename(filename).replace(/\.[^.]+$/, "");
 }
 
-async function getEnv(glueName: string, filename: string) {
+async function getEnv(glueName: string, filename: string, glueCliWebsocketAddr: string) {
   const fileDir = path.dirname(filename);
   const envVarsFromDotEnvFile = await dotenvLoad({ envPath: path.join(fileDir, ".env") });
 
   const env: Record<string, string> = {
     GLUE_NAME: glueName,
+    GLUE_CLI_WS_ADDR: glueCliWebsocketAddr,
     GLUE_DEV_PORT: String(GLUE_DEV_PORT),
     GLUE_API_SERVER,
     ...envVarsFromDotEnvFile,
@@ -339,12 +400,13 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
 
   // If we're in inspect-wait mode, we need to retry the health check until the debugger is connected.
   // This is a bit of a hack, but it works.
+  // TODO just wait until we get a lifeline websocket connection from the subprocess
   const retryOpts: RetryOptions | undefined = debugMode === "inspect-wait"
     ? {
       multiplier: 1,
       minTimeout: 1000,
       maxTimeout: 1000,
-      maxAttempts: 1000000,
+      maxAttempts: Infinity,
     }
     : undefined;
   await retry(async () => {
