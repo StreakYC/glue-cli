@@ -45,6 +45,7 @@
     "npm:hono@^4.7.5": "4.9.4",
     "npm:ink-spinner@5": "5.0.0_ink@5.2.1__@types+react@18.3.24__react@18.3.1_react@18.3.1_@types+react@18.3.24",
     "npm:ink@^5.1.1": "5.2.1_@types+react@18.3.24_react@18.3.1",
+    "npm:it-pushable@^3.2.3": "3.2.3",
     "npm:react@^18.3.1": "18.3.1",
     "npm:stripe@^18.2.0": "18.5.0_@types+node@24.2.0",
     "npm:zod@^3.24.0": "3.25.76",
@@ -534,6 +535,12 @@
       "integrity": "sha512-eUuAjybVTHMYWm/U+vBO1sY/JOCgoPCXRxzdju0K+K0BiGW0SChEL1MLC0PoCIR1OlPo5YAp8HuQoUlsWEICwg==",
       "bin": true
     },
+    "it-pushable@3.2.3": {
+      "integrity": "sha512-gzYnXYK8Y5t5b/BnJUr7glfQLO4U5vyb05gPx/TyTw+4Bv1zM9gFk4YsOrnulWefMewlphCjKkakFvj1y99Tcg==",
+      "dependencies": [
+        "p-defer"
+      ]
+    },
     "js-tokens@4.0.0": {
       "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="
     },
@@ -597,6 +604,9 @@
       "dependencies": [
         "mimic-fn"
       ]
+    },
+    "p-defer@4.0.1": {
+      "integrity": "sha512-Mr5KC5efvAK5VUptYEIopP1bakB85k2IWXaRC0rsh1uwn1L6M0LVml8OIQ4Gudg4oyZakf7FmeRLkMMtZW1i5A=="
     },
     "patch-console@2.0.0": {
       "integrity": "sha512-0YNdUceMdaQwoKce1gatDScmMo5pu/tfABfnzEqeG0gtTmd7mh/WcwgUjtAeOU7N8nFFlbQBnFK2gXW5fGvmMA=="
@@ -785,6 +795,7 @@
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",
       "npm:ink@^5.1.1",
+      "npm:it-pushable@^3.2.3",
       "npm:react@^18.3.1",
       "npm:zod@^3.24.0"
     ]

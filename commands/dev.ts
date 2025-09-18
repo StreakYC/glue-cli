@@ -4,7 +4,6 @@ import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { getAvailablePort } from "@std/net";
 import { z } from "zod";
 import { createDeployment, createGlue, getExecutionByIdNoThrow, getGlueByName, stopGlue, streamChangesTillDeploymentReady } from "../backend.ts";
-import { retry, type RetryOptions } from "@std/async/retry";
 import { basename } from "@std/path";
 import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
@@ -16,13 +15,13 @@ import React from "react";
 import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit, getAuthToken } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
-import { debounceAsyncIterable } from "../lib/debounceAsyncIterable.ts";
 import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/backendTypes";
 import { type Awaitable, GLUE_API_SERVER } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
+import { pushableV } from "it-pushable";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -36,9 +35,18 @@ let lastMessage: ServerWebsocketMessage | undefined;
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
 
+  let lifelifeHasConnected = false;
+  const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
+  const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
+
   const glueName = options.name ?? glueNameFromFilename(filename);
   const glueCliWebsocketAddr = await wsListen(() => {
-    // TODO handle the glue process being ready
+    if (!lifelifeHasConnected) {
+      lifelifeHasConnected = true;
+      lifelineFirstConnectionDeferred.resolve();
+    } else {
+      lifelineReconnectionEvents.push();
+    }
   });
 
   const env = await getEnv(glueName, filename, glueCliWebsocketAddr);
@@ -57,15 +65,6 @@ export async function dev(options: DevOptions, filename: string) {
     };
   }
 
-  // TODO instead of watching the glue file ourselves and restarting the
-  // subprocess on changes, we could lean on deno's built-in `--watch` flag to
-  // restart the subprocess on changes. This would also fix the issue where we
-  // don't restart on changes of imported files. We would need to make the
-  // subprocess initiate a connection to the glue-cli process on startup. If we
-  // then made the subprocess exit itself when its connection to glue-cli ended,
-  // then this would also fully prevent any possibility of orphaned
-  // subprocesses.
-  const fileChangeWatcher = Deno.watchFs(filename);
   const keypressWatcher = keypress();
 
   const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
@@ -73,8 +72,12 @@ export async function dev(options: DevOptions, filename: string) {
     throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
   }
 
-  let localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
-  const registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
+  const glueProcess = await runUIStep("bootingCode", async () => {
+    const c = spawnLocalGlueProcess(filename, env, debugMode);
+    await lifelineFirstConnectionDeferred.promise;
+    return c;
+  });
+  let registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
 
   let setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, registrations.triggers)) : undefined;
   devProgressProps.setupReplayResult = setupReplayResult;
@@ -85,7 +88,7 @@ export async function dev(options: DevOptions, filename: string) {
   if (devProgressProps.deployment?.status !== "success") {
     // we've already rendered the failed deployment UI, so we just need to exit here
     renderUI();
-    localRunner.child.kill();
+    glueProcess.kill();
     Deno.exit(1);
   }
 
@@ -95,8 +98,8 @@ export async function dev(options: DevOptions, filename: string) {
   );
   await unmountUI();
 
-  const mux = new MuxAsyncIterator<Deno.FsEvent[] | KeyPressEvent>();
-  mux.add(debounceAsyncIterable(fileChangeWatcher, 200));
+  const mux = new MuxAsyncIterator<KeyPressEvent | void[]>();
+  mux.add(lifelineReconnectionEvents);
   mux.add(keypressWatcher);
   for await (const event of mux) {
     // handle keypress events
@@ -119,12 +122,7 @@ export async function dev(options: DevOptions, filename: string) {
       }
       continue;
     }
-
-    // handle file change events
-    const fileChangeEvents = event as Deno.FsEvent[];
-    if (fileChangeEvents.every((e) => e.kind !== "modify")) {
-      continue;
-    }
+    // handle restart events
 
     devProgressProps = defaultRestartingUIProps();
     devProgressProps.debugMode = debugMode;
@@ -136,9 +134,7 @@ export async function dev(options: DevOptions, filename: string) {
     }
 
     renderUI();
-    localRunner.child.kill();
 
-    localRunner = await runUIStep("bootingCode", async () => await spawnLocalDenoRunnerAndWaitForReady(filename, env, debugMode));
     const newRegistrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
     setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, newRegistrations.triggers)) : undefined;
 
@@ -146,27 +142,30 @@ export async function dev(options: DevOptions, filename: string) {
     renderUI();
 
     if (!equal(registrations, newRegistrations)) {
+      registrations = newRegistrations;
+
       devProgressProps.steps.registeringGlue = {
         state: "in_progress",
         duration: 0,
       };
       renderUI();
-      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticRegistrations: newRegistrations }));
+      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticRegistrations: registrations }));
       devProgressProps.deployment = deployment;
       await monitorDeploymentAndRenderChangesTillReady(deployment.id);
       if (devProgressProps.deployment?.status !== "success") {
         // we've already rendered the failed deployment UI, so we just need to exit here
         renderUI();
-        localRunner.child.kill();
+        glueProcess.kill();
         Deno.exit(1);
       }
     }
     await unmountUI();
   }
+  // loop ended, time to exit
 
   ws.close();
   try {
-    localRunner.child.kill();
+    glueProcess.kill();
   } catch {
     // ignore
   }
@@ -357,8 +356,9 @@ async function discoverRegistrations(): Promise<Registrations> {
 
 export type DebugMode = "inspect" | "inspect-wait" | "no-debug";
 
-async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<string, string>, debugMode: DebugMode) {
+function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugMode: DebugMode) {
   const flags = [
+    "--watch",
     "--quiet",
     "--env-file",
     "--no-prompt",
@@ -384,7 +384,6 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
   });
 
   const child = command.spawn();
-  const endPromise = child.status;
 
   (async () => {
     for await (const line of toLines(child.stdout)) {
@@ -398,27 +397,7 @@ async function spawnLocalDenoRunnerAndWaitForReady(file: string, env: Record<str
     }
   })();
 
-  // If we're in inspect-wait mode, we need to retry the health check until the debugger is connected.
-  // This is a bit of a hack, but it works.
-  // TODO just wait until we get a lifeline websocket connection from the subprocess
-  const retryOpts: RetryOptions | undefined = debugMode === "inspect-wait"
-    ? {
-      multiplier: 1,
-      minTimeout: 1000,
-      maxTimeout: 1000,
-      maxAttempts: Infinity,
-    }
-    : undefined;
-  await retry(async () => {
-    const res = await fetch(
-      `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegisteredTriggers`,
-    );
-    if (!res.ok) {
-      throw new Error(`Failed health check: ${res.statusText}`);
-    }
-  }, retryOpts);
-
-  return { endPromise, child };
+  return child;
 }
 
 function connectToDevEventsWebsocketAndHandleTriggerEvents(

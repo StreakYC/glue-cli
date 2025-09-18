@@ -32,6 +32,7 @@
     "hono": "npm:hono@^4.7.5",
     "ink": "npm:ink@^5.1.1",
     "ink-spinner": "npm:ink-spinner@^5.0.0",
+    "it-pushable": "npm:it-pushable@^3.2.3",
     "react": "npm:react@^18.3.1",
     "zod": "npm:zod@^3.24.0",
     "@std/fmt": "jsr:@std/fmt@^1.0.3",
