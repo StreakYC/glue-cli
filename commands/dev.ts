@@ -36,14 +36,14 @@ let lastMessage: ServerWebsocketMessage | undefined;
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
 
-  let lifelifeHasConnected = false;
+  let lifelineHasConnected = false;
   const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
   const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
   const glueName = options.name ?? glueNameFromFilename(filename);
   const glueCliWebsocketAddr = await wsListen(() => {
-    if (!lifelifeHasConnected) {
-      lifelifeHasConnected = true;
+    if (!lifelineHasConnected) {
+      lifelineHasConnected = true;
       lifelineFirstConnectionDeferred.resolve();
     } else {
       lifelineReconnectionEvents.push();
