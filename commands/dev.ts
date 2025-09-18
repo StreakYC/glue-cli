@@ -9,6 +9,7 @@ import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backen
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import { Hono } from "hono";
+import { timingSafeEqual } from "node:crypto";
 import { HTTPException } from "hono/http-exception";
 import { upgradeWebSocket } from "hono/deno";
 import React from "react";
@@ -186,16 +187,20 @@ export async function dev(options: DevOptions, filename: string) {
  * @returns websocket URL
  */
 async function wsListen(onConnection: () => void): Promise<string> {
+  const token = crypto.randomUUID();
+  const tokenBuffer = new TextEncoder().encode(token);
+
   const app = new Hono();
   app.get(
     "/glue-lifeline-ws",
     upgradeWebSocket((c) => {
-      if (c.req.header("Origin") != null || c.req.header("Sec-Fetch-Site") != null) {
-        // We want to prevent requests from browsers so that random websites the
-        // user visits can't make their browser connect to this websocket.
-        // https://words.filippo.io/csrf/ suggests that requests by browsers
-        // will have one of these headers.
-        throw new HTTPException(403, { message: "Request may not be made by browser" });
+      const reqToken = c.req.query("token");
+      if (!reqToken) {
+        throw new HTTPException(400, { message: "Missing token" });
+      }
+      const reqTokenBuffer = new TextEncoder().encode(reqToken);
+      if (reqTokenBuffer.length !== tokenBuffer.length || !timingSafeEqual(reqTokenBuffer, tokenBuffer)) {
+        throw new HTTPException(403, { message: "Invalid token" });
       }
 
       onConnection();
@@ -226,7 +231,7 @@ async function wsListen(onConnection: () => void): Promise<string> {
       },
     }, app.fetch);
   });
-  const glueCliWebsocketAddr = `ws://127.0.0.1:${port}/glue-lifeline-ws`;
+  const glueCliWebsocketAddr = `ws://127.0.0.1:${port}/glue-lifeline-ws?token=${token}`;
   return glueCliWebsocketAddr;
 }
 
