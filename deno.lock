@@ -9,7 +9,7 @@
     "jsr:@cliffy/keypress@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/prompt@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/table@1.0.0-rc.7": "1.0.0-rc.7",
-    "jsr:@hono/hono@^4.7.4": "4.9.7",
+    "jsr:@hono/hono@^4.7.4": "4.9.8",
     "jsr:@opensrc/deno-open@1": "1.0.0",
     "jsr:@std/assert@1": "1.0.14",
     "jsr:@std/assert@~0.218.2": "0.218.2",
@@ -34,8 +34,8 @@
     "jsr:@std/path@~1.0.6": "1.0.9",
     "jsr:@std/streams@^1.0.9": "1.0.11",
     "jsr:@std/text@~1.0.7": "1.0.15",
-    "jsr:@streak-glue/runtime@*": "0.2.0",
-    "jsr:@streak-glue/runtime@0.2": "0.2.0",
+    "jsr:@streak-glue/runtime@*": "0.2.1",
+    "jsr:@streak-glue/runtime@~0.2.1": "0.2.1",
     "npm:@googleapis/gmail@14": "14.0.1",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
     "npm:@types/node@*": "24.2.0",
@@ -45,6 +45,7 @@
     "npm:hono@^4.7.5": "4.9.4",
     "npm:ink-spinner@5": "5.0.0_ink@5.2.1__@types+react@18.3.24__react@18.3.1_react@18.3.1_@types+react@18.3.24",
     "npm:ink@^5.1.1": "5.2.1_@types+react@18.3.24_react@18.3.1",
+    "npm:it-pushable@^3.2.3": "3.2.3",
     "npm:react@^18.3.1": "18.3.1",
     "npm:stripe@^18.2.0": "18.5.0_@types+node@24.2.0",
     "npm:zod@^3.24.0": "3.25.76",
@@ -107,8 +108,8 @@
         "jsr:@std/fmt@~1.0.2"
       ]
     },
-    "@hono/hono@4.9.7": {
-      "integrity": "5293d82fc6d25782ff9e0a89680f99cdd27ed19eb0558e2786c22a46a4594424"
+    "@hono/hono@4.9.8": {
+      "integrity": "908150f13e90181a051a3af3bf15203aff00190682afedfd38824d0cb9299a95"
     },
     "@opensrc/deno-open@1.0.0": {
       "integrity": "590decada8cf2d50f4b35c7d3a8d642e18e45d6e47078ea02a4dbf0096bbf9fd",
@@ -186,8 +187,8 @@
     "@std/text@1.0.15": {
       "integrity": "91f5cc1e12779a3d95f1be34e763f9c28a75a078b7360e6fcaef0d8d9b1e3e7f"
     },
-    "@streak-glue/runtime@0.2.0": {
-      "integrity": "53204ec82dde04e6afdec7517611e45851952e07653875f16a21d810c289a066",
+    "@streak-glue/runtime@0.2.1": {
+      "integrity": "656ab16194c151dfe716957a28ecbe02a915a2230c30f6c7498da799b0bc5c69",
       "dependencies": [
         "jsr:@hono/hono",
         "npm:@octokit/webhooks-types",
@@ -534,6 +535,12 @@
       "integrity": "sha512-eUuAjybVTHMYWm/U+vBO1sY/JOCgoPCXRxzdju0K+K0BiGW0SChEL1MLC0PoCIR1OlPo5YAp8HuQoUlsWEICwg==",
       "bin": true
     },
+    "it-pushable@3.2.3": {
+      "integrity": "sha512-gzYnXYK8Y5t5b/BnJUr7glfQLO4U5vyb05gPx/TyTw+4Bv1zM9gFk4YsOrnulWefMewlphCjKkakFvj1y99Tcg==",
+      "dependencies": [
+        "p-defer"
+      ]
+    },
     "js-tokens@4.0.0": {
       "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="
     },
@@ -597,6 +604,9 @@
       "dependencies": [
         "mimic-fn"
       ]
+    },
+    "p-defer@4.0.1": {
+      "integrity": "sha512-Mr5KC5efvAK5VUptYEIopP1bakB85k2IWXaRC0rsh1uwn1L6M0LVml8OIQ4Gudg4oyZakf7FmeRLkMMtZW1i5A=="
     },
     "patch-console@2.0.0": {
       "integrity": "sha512-0YNdUceMdaQwoKce1gatDScmMo5pu/tfABfnzEqeG0gtTmd7mh/WcwgUjtAeOU7N8nFFlbQBnFK2gXW5fGvmMA=="
@@ -780,11 +790,12 @@
       "jsr:@std/net@^1.0.4",
       "jsr:@std/path@^1.0.8",
       "jsr:@std/streams@^1.0.9",
-      "jsr:@streak-glue/runtime@0.2",
+      "jsr:@streak-glue/runtime@~0.2.1",
       "npm:@types/react@18",
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",
       "npm:ink@^5.1.1",
+      "npm:it-pushable@^3.2.3",
       "npm:react@^18.3.1",
       "npm:zod@^3.24.0"
     ]
