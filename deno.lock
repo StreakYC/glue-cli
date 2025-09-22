@@ -34,8 +34,8 @@
     "jsr:@std/path@~1.0.6": "1.0.9",
     "jsr:@std/streams@^1.0.9": "1.0.11",
     "jsr:@std/text@~1.0.7": "1.0.15",
-    "jsr:@streak-glue/runtime@*": "0.2.1",
-    "jsr:@streak-glue/runtime@~0.2.1": "0.2.1",
+    "jsr:@streak-glue/runtime@*": "0.2.2",
+    "jsr:@streak-glue/runtime@~0.2.2": "0.2.2",
     "npm:@googleapis/gmail@14": "14.0.1",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
     "npm:@types/node@*": "24.2.0",
@@ -43,8 +43,8 @@
     "npm:google-auth-library@10": "10.3.0",
     "npm:google-spreadsheet@5": "5.0.2_google-auth-library@10.3.0",
     "npm:hono@^4.7.5": "4.9.4",
-    "npm:ink-spinner@5": "5.0.0_ink@5.2.1__@types+react@18.3.24__react@18.3.1_react@18.3.1_@types+react@18.3.24",
-    "npm:ink@^5.1.1": "5.2.1_@types+react@18.3.24_react@18.3.1",
+    "npm:ink-spinner@5": "5.0.0_ink@5.2.1__react@18.3.1_react@18.3.1_@types+react@18.3.24",
+    "npm:ink@^5.1.1": "5.2.1_react@18.3.1_@types+react@18.3.24",
     "npm:it-pushable@^3.2.3": "3.2.3",
     "npm:react@^18.3.1": "18.3.1",
     "npm:stripe@^18.2.0": "18.5.0_@types+node@24.2.0",
@@ -187,8 +187,8 @@
     "@std/text@1.0.15": {
       "integrity": "91f5cc1e12779a3d95f1be34e763f9c28a75a078b7360e6fcaef0d8d9b1e3e7f"
     },
-    "@streak-glue/runtime@0.2.1": {
-      "integrity": "656ab16194c151dfe716957a28ecbe02a915a2230c30f6c7498da799b0bc5c69",
+    "@streak-glue/runtime@0.2.2": {
+      "integrity": "3231824c0b0642eb859dbcd0aa82d04dcb141c5d8c4f5a85051bb95d517d0044",
       "dependencies": [
         "jsr:@hono/hono",
         "npm:@octokit/webhooks-types",
@@ -480,15 +480,53 @@
     "indent-string@5.0.0": {
       "integrity": "sha512-m6FAo/spmsW2Ab2fU35JTYwtOKa2yAwXSwgjSv1TJzh4Mh7mC3lzAOVLBprb72XsTrgkEIsl7YrFNAiDiRhIGg=="
     },
-    "ink-spinner@5.0.0_ink@5.2.1__@types+react@18.3.24__react@18.3.1_react@18.3.1_@types+react@18.3.24": {
+    "ink-spinner@5.0.0_ink@5.2.1__react@18.3.1_react@18.3.1": {
       "integrity": "sha512-EYEasbEjkqLGyPOUc8hBJZNuC5GvXGMLu0w5gdTNskPc7Izc5vO3tdQEYnzvshucyGCBXc86ig0ujXPMWaQCdA==",
       "dependencies": [
         "cli-spinners",
-        "ink",
+        "ink@5.2.1_react@18.3.1",
         "react"
       ]
     },
-    "ink@5.2.1_@types+react@18.3.24_react@18.3.1": {
+    "ink-spinner@5.0.0_ink@5.2.1__react@18.3.1_react@18.3.1_@types+react@18.3.24": {
+      "integrity": "sha512-EYEasbEjkqLGyPOUc8hBJZNuC5GvXGMLu0w5gdTNskPc7Izc5vO3tdQEYnzvshucyGCBXc86ig0ujXPMWaQCdA==",
+      "dependencies": [
+        "cli-spinners",
+        "ink@5.2.1_react@18.3.1_@types+react@18.3.24",
+        "react"
+      ]
+    },
+    "ink@5.2.1_react@18.3.1": {
+      "integrity": "sha512-BqcUyWrG9zq5HIwW6JcfFHsIYebJkWWb4fczNah1goUO0vv5vneIlfwuS85twyJ5hYR/y18FlAYUxrO9ChIWVg==",
+      "dependencies": [
+        "@alcalzone/ansi-tokenize",
+        "ansi-escapes",
+        "ansi-styles",
+        "auto-bind",
+        "chalk",
+        "cli-boxes",
+        "cli-cursor",
+        "cli-truncate",
+        "code-excerpt",
+        "es-toolkit",
+        "indent-string",
+        "is-in-ci",
+        "patch-console",
+        "react",
+        "react-reconciler",
+        "scheduler",
+        "signal-exit",
+        "slice-ansi@7.1.2",
+        "stack-utils",
+        "string-width",
+        "type-fest",
+        "widest-line",
+        "wrap-ansi",
+        "ws",
+        "yoga-layout"
+      ]
+    },
+    "ink@5.2.1_react@18.3.1_@types+react@18.3.24": {
       "integrity": "sha512-BqcUyWrG9zq5HIwW6JcfFHsIYebJkWWb4fczNah1goUO0vv5vneIlfwuS85twyJ5hYR/y18FlAYUxrO9ChIWVg==",
       "dependencies": [
         "@alcalzone/ansi-tokenize",
@@ -790,7 +828,7 @@
       "jsr:@std/net@^1.0.4",
       "jsr:@std/path@^1.0.8",
       "jsr:@std/streams@^1.0.9",
-      "jsr:@streak-glue/runtime@~0.2.1",
+      "jsr:@streak-glue/runtime@~0.2.2",
       "npm:@types/react@18",
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",

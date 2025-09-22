@@ -28,7 +28,7 @@
     "@std/net": "jsr:@std/net@^1.0.4",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@std/streams": "jsr:@std/streams@^1.0.9",
-    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.2.1",
+    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.2.2",
     "hono": "npm:hono@^4.7.5",
     "ink": "npm:ink@^5.1.1",
     "ink-spinner": "npm:ink-spinner@^5.0.0",
