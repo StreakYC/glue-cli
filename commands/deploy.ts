@@ -94,7 +94,10 @@ async function getCreateDeploymentParams(file: string, fly: boolean = false): Pr
       includeDirs: false,
     })
   ) {
-    const relativePath = path.relative(fileDir, dirEntry.path);
+    let relativePath = path.relative(fileDir, dirEntry.path);
+    if (globalThis.Deno?.build?.os === "windows") {
+      relativePath = relativePath.replaceAll("\\", "/");
+    }
     filesToUpload.add(relativePath);
   }
 
