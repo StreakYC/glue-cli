@@ -8,6 +8,7 @@ import {
   createGlue,
   type DeploymentAsset,
   getGlueByName,
+  type Runner,
   streamChangesTillDeploymentReady,
 } from "../backend.ts";
 import { render } from "ink";
@@ -17,7 +18,7 @@ import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 
 interface DeployOptions {
   name?: string;
-  fly?: boolean;
+  runner: Runner;
 }
 
 export async function deploy(options: DeployOptions, file: string) {
@@ -42,7 +43,7 @@ export async function deploy(options: DeployOptions, file: string) {
 
   let duration = performance.now();
 
-  const deploymentParams = await getCreateDeploymentParams(file, options.fly);
+  const deploymentParams = await getCreateDeploymentParams(file, options.runner);
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
 
   duration = performance.now();
@@ -69,7 +70,7 @@ export async function deploy(options: DeployOptions, file: string) {
   }
 }
 
-async function getCreateDeploymentParams(file: string, fly: boolean = false): Promise<CreateDeploymentParams> {
+async function getCreateDeploymentParams(file: string, runner: Runner = "deno"): Promise<CreateDeploymentParams> {
   // For now, we're just uploading all .js/.ts files in the same directory as
   // the entry point. TODO follow imports and only upload necessary files.
 
@@ -112,6 +113,6 @@ async function getCreateDeploymentParams(file: string, fly: boolean = false): Pr
       ),
       envVars,
     },
-    runner: fly ? "fly" : "deno",
+    runner,
   };
 }

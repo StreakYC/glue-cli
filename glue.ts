@@ -1,4 +1,4 @@
-import { Command } from "@cliffy/command";
+import { ArgumentValue, Command, ValidationError } from "@cliffy/command";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
@@ -16,6 +16,8 @@ import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 import { create } from "./commands/create.ts";
 import { replay } from "./commands/replay.ts";
+import { Runner } from "./backend.ts";
+import type z from "zod";
 
 const cmd = new Command()
   .name("glue")
@@ -50,7 +52,8 @@ const cmd = new Command()
   // DEPLOY ----------------------------
   .command("deploy", "Deploy a glue")
   .option("-n, --name <name:string>", "Glue name")
-  .option("--fly", "Use Fly.io to host the glue")
+  .type("runner", validateWithZodEnum(Runner))
+  .option("-r, --runner <runner:runner>", "Use a specific runner to host the glue. Valid values are: deno, fly, cloudflare.", { default: "deno" })
   .arguments("<file:string>")
   .action(deploy)
   // CREATE ----------------------------
@@ -118,3 +121,17 @@ const cmd = new Command()
       .action(deleteAccountCmd),
   );
 await cmd.parse(Deno.args);
+
+// HELPERS --------------------------------
+// deno-lint-ignore no-explicit-any
+function validateWithZodEnum(zodEnum: z.ZodEnum<any>) {
+  return ({ value }: ArgumentValue): z.infer<typeof zodEnum> => {
+    const parsed = zodEnum.safeParse(value);
+    if (!parsed.success) {
+      throw new ValidationError(
+        `"${value}" is not a valid runner. Valid values are: ${zodEnum.options.join(", ")}`,
+      );
+    }
+    return parsed.data;
+  };
+}

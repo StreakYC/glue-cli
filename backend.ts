@@ -24,10 +24,13 @@ const DeploymentContent = z.object({
 });
 export type DeploymentContent = z.infer<typeof DeploymentContent>;
 
+export const Runner = z.enum(["deno", "fly", "cloudflare"]);
+export type Runner = z.infer<typeof Runner>;
+
 const CreateDeploymentParams = z.object({
   deploymentContent: DeploymentContent.optional(),
   optimisticRegistrations: Registrations.optional(),
-  runner: z.enum(["deno", "fly"]).optional(),
+  runner: Runner.optional(),
 });
 export type CreateDeploymentParams = z.infer<typeof CreateDeploymentParams>;
 
