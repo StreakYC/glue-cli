@@ -95,7 +95,10 @@ async function getCreateDeploymentParams(file: string, runner: Runner = "deno"):
       includeDirs: false,
     })
   ) {
-    const relativePath = path.relative(fileDir, dirEntry.path);
+    let relativePath = path.relative(fileDir, dirEntry.path);
+    if (globalThis.Deno?.build?.os === "windows") {
+      relativePath = relativePath.replaceAll("\\", "/");
+    }
     filesToUpload.add(relativePath);
   }
 
