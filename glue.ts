@@ -1,4 +1,4 @@
-import { Command, ValidationError } from "@cliffy/command";
+import { type ArgumentValue, Command, ValidationError } from "@cliffy/command";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
