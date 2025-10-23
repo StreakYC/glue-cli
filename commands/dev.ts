@@ -370,6 +370,7 @@ function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugM
     "--allow-env",
     "--allow-net",
     "--allow-sys",
+    "--unstable-kv",
   ];
   if (debugMode !== "no-debug") {
     flags.push("--" + debugMode);
