@@ -11,7 +11,7 @@ const BuildStepTitles: Record<BuildStepName, string> = {
 };
 
 export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
-  const title = BuildStepTitles[step.name];
+  const title = BuildStepTitles[step.name] || step.name;
   if (step.status === "success") {
     return (
       <Text>
