@@ -73,6 +73,8 @@ export function formatDeploymentStatus(status: DeploymentStatus, isRunning: bool
   switch (status) {
     case "pending":
       return mod.yellow("pending");
+    case "committing":
+      return mod.yellow("committing");
     case "success":
       return mod.cyan("success");
     case "failure":

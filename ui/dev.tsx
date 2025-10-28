@@ -81,10 +81,10 @@ export const DevUI = (
       {deployment && deployment.buildSteps.map((step) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
-          {step.name === "triggerAuth" && step.status === "in_progress" && needsAccountSetup && (
+          {step.name === "registrationAuth" && step.status === "in_progress" && needsAccountSetup && (
             <RegistrationAccountSetupSection triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
           )}
-          {step.name === "triggerSetup" && step.status === "success" && (
+          {step.name === "registrationSetup" && step.status === "success" && (
             <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
           )}
         </React.Fragment>
