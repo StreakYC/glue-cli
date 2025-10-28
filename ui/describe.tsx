@@ -50,6 +50,8 @@ function renderDeploymentStatus(status: string): React.ReactNode {
   switch (status) {
     case "pending":
       return <Text color="yellow">pending</Text>;
+    case "committing":
+      return <Text color="yellow">committing</Text>;
     case "success":
       return <Text color="green">success</Text>;
     case "failure":

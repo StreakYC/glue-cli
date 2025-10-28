@@ -43,6 +43,8 @@ export function getRunningStringForDeploymentStatus(status: DeploymentStatus): s
   switch (status) {
     case "pending":
       return yellow("BOOTING");
+    case "committing":
+      return yellow("COMMITTING");
     case "success":
       return green("RUNNING");
     case "failure":
