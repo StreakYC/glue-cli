@@ -49,13 +49,13 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
     .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      <Text backgroundColor="red" color="white">Triggers needing authentication:</Text>
+      <Text>Triggers needing authentication:</Text>
       {sortedTriggers.map((t) => (
         <Text key={t.id}>
           {t.type}({t.label}): <Text bold>{t.accountSetupUrl}</Text>
         </Text>
       ))}
-      {sortedAccountInjections.length > 0 && <Text backgroundColor="red" color="white">Account injections needing authentication:</Text>}
+      {sortedAccountInjections.length > 0 && <Text>Account injections needing authentication:</Text>}
       {sortedAccountInjections.map((a) => (
         <Text key={a.id}>
           {a.type}({a.label}): <Text bold>{a.accountSetupUrl}</Text>
@@ -72,13 +72,13 @@ export const CompletedRegistrationList = ({ triggers, accountInjections }: { tri
     .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      <Text backgroundColor="green" color="white">Triggers:</Text>
+      <Text>Triggers:</Text>
       {sortedTriggers.map((t) => (
         <Text key={t.id}>
           {t.type}({t.label}): <Text bold>{t.description}</Text>
         </Text>
       ))}
-      {sortedAccountInjections.length > 0 && <Text backgroundColor="green" color="white">Account injections:</Text>}
+      {sortedAccountInjections.length > 0 && <Text>Account injections:</Text>}
       {sortedAccountInjections.map((a) => (
         <Text key={a.id}>
           {a.type}({a.label}): <Text bold>{a.description}</Text>
