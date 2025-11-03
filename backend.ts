@@ -165,7 +165,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   }
   if (
     zip(a.buildSteps, b.buildSteps)
-      .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.title !== stepB.title || stepA.status !== stepB.status)
+      .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.status !== stepB.status)
   ) {
     return false;
   }
@@ -185,7 +185,7 @@ export async function* streamChangesTillDeploymentReady(deploymentId: string): A
     if (!lastDeployment || !areDeploymentsEqual(lastDeployment, deployment)) {
       lastDeployment = deployment;
       yield deployment;
-      if (deployment.status !== "pending") {
+      if (deployment.status !== "pending" && deployment.status !== "committing") {
         return;
       }
     }
@@ -256,7 +256,7 @@ export interface Log {
   text: string;
 }
 
-export type DeploymentStatus = "pending" | "success" | "failure" | "cancelled";
+export type DeploymentStatus = "pending" | "committing" | "success" | "failure" | "cancelled";
 
 /** taken from glue-backend */
 export interface DeploymentDTO {
@@ -273,10 +273,10 @@ export interface DeploymentDTO {
 
 export type StepStatus = "success" | "failure" | "in_progress" | "not_started" | "skipped";
 
+export type BuildStepName = "createTunnel" | "createTriggers" | "deployCode" | "registrationAuth" | "registrationSetup";
 export interface BuildStepDTO {
-  name: string;
+  name: BuildStepName;
   deploymentId: string;
-  title: string;
   status: StepStatus;
   text?: string;
   startTime?: number;
