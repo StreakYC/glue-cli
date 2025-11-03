@@ -78,7 +78,7 @@ export const CompletedRegistrationList = ({ triggers, accountInjections }: { tri
           {t.type}({t.label}): <Text bold>{t.description}</Text>
         </Text>
       ))}
-      <Text backgroundColor="green" color="white">Account injections:</Text>
+      {sortedAccountInjections.length > 0 && <Text backgroundColor="green" color="white">Account injections:</Text>}
       {sortedAccountInjections.map((a) => (
         <Text key={a.id}>
           {a.type}({a.label}): <Text bold>{a.description}</Text>
