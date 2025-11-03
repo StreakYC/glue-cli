@@ -1,6 +1,7 @@
 import { Spinner } from "@std/cli/unstable-spinner";
 import * as mod from "@std/fmt/colors";
 import type { BuildStepDTO, DeploymentStatus } from "../backend.ts";
+import { BuildStepTitles } from "./common.tsx";
 
 export async function runStep<T>(
   message: string,
@@ -62,7 +63,7 @@ export function formatEpochMillis(ms: number | null | undefined) {
 
 export function formatBuildSteps(steps: BuildStepDTO[]) {
   return steps.map((step) => {
-    return `${convertBuildStepStatusToEmoji(step.status)} ${step.title}`;
+    return `${convertBuildStepStatusToEmoji(step.status)} ${BuildStepTitles[step.name]}`;
   }).join("\n") + "\n";
 }
 

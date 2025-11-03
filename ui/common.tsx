@@ -2,7 +2,7 @@ import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
 import type { AccountInjectionDTO, BuildStepDTO, BuildStepName, StepStatus, TriggerDTO } from "../backend.ts";
 
-const BuildStepTitles: Record<BuildStepName, string> = {
+export const BuildStepTitles: Record<BuildStepName, string> = {
   deployCode: "Booting code",
   createTriggers: "Creating triggers",
   createTunnel: "Creating local tunnel",

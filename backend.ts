@@ -165,7 +165,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   }
   if (
     zip(a.buildSteps, b.buildSteps)
-      .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.title !== stepB.title || stepA.status !== stepB.status)
+      .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.status !== stepB.status)
   ) {
     return false;
   }
@@ -277,7 +277,6 @@ export type BuildStepName = "createTunnel" | "createTriggers" | "deployCode" | "
 export interface BuildStepDTO {
   name: BuildStepName;
   deploymentId: string;
-  title: string;
   status: StepStatus;
   text?: string;
   startTime?: number;
