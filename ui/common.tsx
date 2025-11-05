@@ -51,16 +51,16 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {sortedTriggers.length > 0 && <Text>Triggers needing authentication:</Text>}
       {sortedTriggers.map((t) => (
-        <Box paddingLeft={2}>
-          <Text key={t.id}>
+        <Box paddingLeft={2} key={t.id}>
+          <Text>
             {t.type}({t.label}): <Text bold>{t.accountSetupUrl}</Text>
           </Text>
         </Box>
       ))}
       {sortedAccountInjections.length > 0 && <Text>Account injections needing authentication:</Text>}
       {sortedAccountInjections.map((a) => (
-        <Box paddingLeft={2}>
-          <Text key={a.id}>
+        <Box paddingLeft={2} key={a.id}>
+          <Text>
             {a.type}({a.label}): <Text bold>{a.accountSetupUrl}</Text>
           </Text>
         </Box>
@@ -78,16 +78,16 @@ export const CompletedRegistrationList = ({ triggers, accountInjections }: { tri
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {sortedTriggers.length > 0 && <Text>Triggers:</Text>}
       {sortedTriggers.map((t) => (
-        <Box paddingLeft={2}>
-          <Text key={t.id}>
+        <Box paddingLeft={2} key={t.id}>
+          <Text>
             {t.type}({t.label}): <Text bold>{t.description}</Text>
           </Text>
         </Box>
       ))}
       {sortedAccountInjections.length > 0 && <Text>Account injections:</Text>}
       {sortedAccountInjections.map((a) => (
-        <Box paddingLeft={2}>
-          <Text key={a.id}>
+        <Box paddingLeft={2} key={a.id}>
+          <Text>
             {a.type}({a.label}): <Text bold>{a.description}</Text>
           </Text>
         </Box>
