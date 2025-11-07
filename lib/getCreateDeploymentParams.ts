@@ -36,12 +36,14 @@ export async function getCreateDeploymentParams(file: string, runner: Runner = "
     filesToUpload.add(relativePath);
   }
 
+  const sortedFilesToUpload = Array.from(filesToUpload).sort();
+
   return {
     deploymentContent: {
       entryPointUrl,
       assets: Object.fromEntries(
         await Promise.all(
-          filesToUpload.values()
+          sortedFilesToUpload
             .map(async (file): Promise<[string, DeploymentAsset]> => [
               file,
               { kind: "file", content: await Deno.readTextFile(path.join(fileDir, file)) },
