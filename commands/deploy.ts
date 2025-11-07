@@ -1,20 +1,10 @@
 import * as path from "@std/path";
-import { load as dotenvLoad } from "@std/dotenv";
-import { walk } from "@std/fs/walk";
-import { exists } from "@std/fs/exists";
-import {
-  createDeployment,
-  type CreateDeploymentParams,
-  createGlue,
-  type DeploymentAsset,
-  getGlueByName,
-  type Runner,
-  streamChangesTillDeploymentReady,
-} from "../backend.ts";
+import { createDeployment, createGlue, getGlueByName, type Runner, streamChangesTillDeploymentReady } from "../backend.ts";
 import { render } from "ink";
 import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { getCreateDeploymentParams } from "../lib/getCreateDeploymentParams.ts";
 
 interface DeployOptions {
   name?: string;
@@ -68,54 +58,4 @@ export async function deploy(options: DeployOptions, file: string) {
     // looks to the user like we're done prematurely
     updateUI({ deployment, uploadingCodeState: "success", uploadingCodeDuration });
   }
-}
-
-async function getCreateDeploymentParams(file: string, runner: Runner = "deno"): Promise<CreateDeploymentParams> {
-  // For now, we're just uploading all .js/.ts files in the same directory as
-  // the entry point. TODO follow imports and only upload necessary files.
-
-  const fileDir = path.dirname(file);
-  const entryPointUrl = path.relative(fileDir, file);
-
-  const envVars = await dotenvLoad({ envPath: path.join(fileDir, ".env") });
-
-  /** Contains filenames relative to fileDir. */
-  const filesToUpload = new Set<string>([entryPointUrl]);
-
-  const uploadIfExists = ["deno.json", "deno.jsonc", "deno.lock"];
-  for (const file of uploadIfExists) {
-    if (await exists(path.join(fileDir, file))) {
-      filesToUpload.add(file);
-    }
-  }
-
-  for await (
-    const dirEntry of walk(fileDir, {
-      exts: ["ts", "js"],
-      includeDirs: false,
-    })
-  ) {
-    let relativePath = path.relative(fileDir, dirEntry.path);
-    if (globalThis.Deno?.build?.os === "windows") {
-      relativePath = relativePath.replaceAll("\\", "/");
-    }
-    filesToUpload.add(relativePath);
-  }
-
-  return {
-    deploymentContent: {
-      entryPointUrl,
-      assets: Object.fromEntries(
-        await Promise.all(
-          filesToUpload.values()
-            .map(async (file): Promise<[string, DeploymentAsset]> => [
-              file,
-              { kind: "file", content: await Deno.readTextFile(path.join(fileDir, file)) },
-            ]),
-        ),
-      ),
-      envVars,
-    },
-    runner,
-  };
 }
