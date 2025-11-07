@@ -1,0 +1,87 @@
+export const snapshot = {};
+
+snapshot[`gives expected output 1`] = `
+{
+  deploymentContent: {
+    assets: {
+      "deno.json": {
+        content: "{}
+",
+        kind: "file",
+      },
+      "dir/import-1.ts": {
+        content: 'import "./import-2.ts";
+
+export const foo = "bar";
+',
+        kind: "file",
+      },
+      "dir/import-2.ts": {
+        content: 'import "../imported-by-dir-file.ts";
+
+export const foo = "far";
+',
+        kind: "file",
+      },
+      "dir/unimported-1.ts": {
+        content: 'export const foo = "car";
+',
+        kind: "file",
+      },
+      "import-1.ts": {
+        content: 'export const a = "A";
+',
+        kind: "file",
+      },
+      "import-2.ts": {
+        content: 'import "./import-1.ts";
+import "./import-3.js";
+',
+        kind: "file",
+      },
+      "import-3.js": {
+        content: 'import "./dir/import-1.ts";
+import foo from "./import-4.json" with { type: "json" };
+
+export const b = "B";
+foo;
+',
+        kind: "file",
+      },
+      "imported-by-dir-file.ts": {
+        content: 'export const foo = "par";
+',
+        kind: "file",
+      },
+      "myGlueScript.ts": {
+        content: 'import { glue } from "@streak-glue/runtime";
+import { a } from "./import-1.ts";
+import "./import-2.ts";
+
+glue;
+a;
+',
+        kind: "file",
+      },
+      "unimported-1.ts": {
+        content: 'import "./import-1.ts";
+import "./unimported-2.js";
+export const a = "a";
+',
+        kind: "file",
+      },
+      "unimported-2.js": {
+        content: 'export const a = "a";
+',
+        kind: "file",
+      },
+    },
+    entryPointUrl: "myGlueScript.ts",
+    envVars: [Object: null prototype] {
+      ANOTHER_ENV_VAR: "another_value",
+      BEST_ENV_VAR: "best_value",
+    },
+  },
+  runner: "deno",
+}
+`;
