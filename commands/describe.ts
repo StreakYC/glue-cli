@@ -21,6 +21,7 @@ import React from "react";
 import { render } from "ink";
 import { DescribeDeploymentUI } from "../ui/describe.tsx";
 import { Table } from "@cliffy/table";
+import { isPrefixId } from "../common.ts";
 
 interface DescribeOptions {
   json?: boolean;
@@ -203,11 +204,4 @@ function renderExecution(execution: ExecutionDTO, options: DescribeOptions) {
   console.log(`--------------------------------`);
   console.log("Input Data:");
   console.log(JSON.stringify(execution.inputData, null, 2));
-}
-
-function isPrefixId(query: string, prefix: string) {
-  // prefix ids are like d_34f4000000000000 or g_1800000000000000 or d_e18000000000000
-  // use a regex to check if the query starts with the prefix, then underscore then followed by any number of hex digits
-  const regex = new RegExp(`^${prefix}_[0-9a-f]{1,}$`);
-  return regex.test(query);
 }

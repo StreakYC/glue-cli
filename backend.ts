@@ -194,18 +194,17 @@ export async function* streamChangesTillDeploymentReady(deploymentId: string): A
 }
 
 export async function getExecutions(
-  glueId: string | undefined,
   limit: number,
   startingPoint: Date,
-  direction: "asc" | "desc",
   includeInputData: boolean = false,
   filter: string | undefined = undefined,
   search: string | undefined = undefined,
+  glueId?: string,
+  deploymentId?: string,
 ): Promise<ExecutionDTO[]> {
   const params = new URLSearchParams({
     limit: limit.toString(),
     startingPoint: startingPoint.getTime().toString(),
-    direction,
     includeInputData: includeInputData.toString(),
   });
   if (filter) {
@@ -216,9 +215,10 @@ export async function getExecutions(
   }
   if (glueId) {
     return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
-  } else {
-    return await backendRequest<ExecutionDTO[]>(`/executions?${params.toString()}`);
+  } else if (deploymentId) {
+    return await backendRequest<ExecutionDTO[]>(`/deployments/${deploymentId}/executions?${params.toString()}`);
   }
+  throw new Error("Either glueId or deploymentId must be provided");
 }
 
 export async function getExecutionById(id: string): Promise<ExecutionDTO> {

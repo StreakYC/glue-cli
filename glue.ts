@@ -83,9 +83,11 @@ const cmd = new Command()
   .arguments("<executionId:string>")
   .action(replay)
   // LOGS ----------------------------
-  .command("logs", "View historical and live stream of the executions of a glue. Provide a glue name or id.")
-  .arguments("[name:string]")
-  .option("-a, --all", "Show all executions across all your glues")
+  .command(
+    "logs",
+    "View historical and live stream of the executions of a glue. Provide a glue name, or glue id, or deployment id or leave blank to list a glue to pick from.",
+  )
+  .arguments("[query:string]")
   .option("-j, --json", "Output in JSON format")
   .option("-n, --number <number:number>", "Number of historical executions to print initially", { default: 10 })
   .option("-l --log-lines <logLines:number>", "Number of log lines to print for each execution. Set to 0 to hide log lines", { default: 10 })

@@ -1,10 +1,11 @@
-import { type ExecutionDTO, getExecutions, getGlueByName, getGlues, type GlueDTO } from "../backend.ts";
+import { type ExecutionDTO, getDeploymentById, getExecutions, getGlueById, getGlueByName } from "../backend.ts";
 import { cyan, dim, green, red } from "@std/fmt/colors";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { isPrefixId } from "../common.ts";
 interface LogsOptions {
   all?: boolean;
   json?: boolean;
@@ -17,31 +18,44 @@ interface LogsOptions {
   failures?: boolean;
 }
 
-export const logs = async (options: LogsOptions, name?: string) => {
+export const logs = async (options: LogsOptions, query?: string) => {
   await checkForAuthCredsOtherwiseExit();
   // look for sigint
   Deno.addSignalListener("SIGINT", () => {
     Deno.exit(0);
   });
 
-  let glues: GlueDTO[] = [];
-  if (options.all) {
-    glues = await runStep("Loading all glues...", () => getGlues("deploy"), true, !!options.json);
-  } else {
-    let glue: GlueDTO | undefined = undefined;
-    if (name) {
-      glue = await runStep("Loading glue...", () => getGlueByName(name, "deploy"), true, !!options.json);
-    } else if (Deno.stdout.isTerminal() && !options.json) {
-      glue = await askUserForGlue();
-    } else {
-      throw new Error("You must provide a glue name when not running in a terminal or when in json mode");
-    }
+  let glueId: string | undefined;
+  let deploymentId: string | undefined;
 
-    if (!glue) {
-      const errorMsg = name ? `Glue ${name} not found` : "No glue found";
-      throw new Error(errorMsg);
+  if (query) {
+    if (isPrefixId(query, "g")) {
+      const glue = await runStep("Loading glue...", () => getGlueById(query), true, !!options.json);
+      if (!glue) {
+        throw new Error("Couldn't find a glue with that id");
+      }
+      glueId = query;
+    } else if (isPrefixId(query, "d")) {
+      const deployment = await runStep("Loading deployment...", () => getDeploymentById(query), true, !!options.json);
+      if (!deployment) {
+        throw new Error("Couldn't find a deployment with that id");
+      }
+      deploymentId = query;
+    } else {
+      const glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"), true, !!options.json);
+      if (!glue) {
+        throw new Error("Couldn't find a glue with that name");
+      }
+      glueId = glue.id;
     }
-    glues.push(glue);
+  } else if (Deno.stdout.isTerminal() && !options.json) {
+    const glue = await askUserForGlue();
+    if (!glue) {
+      throw new Error("No glues yet!?");
+    }
+    glueId = glue.id;
+  } else {
+    throw new Error("You must provide a glue name, glue id or deployment id when not running in a terminal");
   }
 
   if (options.failures) {
@@ -49,14 +63,12 @@ export const logs = async (options: LogsOptions, name?: string) => {
   }
 
   const now = new Date();
-  const scopeToGlueId = glues.length === 1 ? glues[0].id : undefined;
   const historicalExecutions = await runStep(
     `Loading historical executions...`,
-    () => getExecutions(scopeToGlueId, options.number, now, "desc", !!options.json, options.filter, options.search),
+    () => getExecutions(options.number, now, !!options.json, options.filter, options.search, glueId, deploymentId),
     true,
     !!options.json,
   );
-  historicalExecutions.reverse();
 
   if (options.json) {
     historicalExecutions.forEach((e) => {
@@ -65,16 +77,16 @@ export const logs = async (options: LogsOptions, name?: string) => {
     return;
   }
 
-  renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines, glues);
+  renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
   let startingPoint = now;
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (options.tail) {
     pollingSpinner.start();
-    const executions = await getExecutions(scopeToGlueId, 10, startingPoint, "asc", false, options.filter, options.search);
+    const executions = await getExecutions(10, startingPoint, false, options.filter, options.search, glueId, deploymentId);
     if (executions.length > 0) {
       pollingSpinner.stop();
-      renderExecutions(executions, options.logLines, !!options.fullLogLines, glues);
+      renderExecutions(executions, options.logLines, !!options.fullLogLines);
       startingPoint = new Date(executions[executions.length - 1].endedAt!);
       pollingSpinner.start();
     }
@@ -82,17 +94,12 @@ export const logs = async (options: LogsOptions, name?: string) => {
   }
 };
 
-function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogLines: boolean, glues: GlueDTO[]) {
-  const glueIdToName = glues.reduce((acc, g) => {
-    acc[g.id] = g.name;
-    return acc;
-  }, {} as Record<string, string>);
+function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogLines: boolean) {
   executions.forEach((e) => {
     if (!e.endedAt) {
       return;
     }
-    const prefix = glues.length === 1 ? "" : ` ${glueIdToName[e.trigger.glueId]}`;
-    console.log(`[${new Date(e.endedAt).toLocaleString()}]${prefix} ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
+    console.log(`[${new Date(e.endedAt).toLocaleString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
     e.logs.slice(0, logLines).forEach((l) => {
       let toConsole = dim(`[${new Date(l.timestamp).toLocaleString()}] ${l.text.trim()}`);
       if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
