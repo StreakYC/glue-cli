@@ -14,24 +14,25 @@ Deno.test("gives expected output", async (t) => {
   await assertSnapshot(t, params);
 });
 
-Deno.test("finds up-dir deno.json", async (_t) => {
+Deno.test("finds up-dir deno.json", async (t) => {
   const params = await getCreateDeploymentParams(
     join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/up-dir-deno.json/content/myGlueScript.ts"),
   );
-  // assertEquals(params.deploymentContent?.entryPointUrl, "content/myGlueScript.ts");
-  // assertNotEquals(params.deploymentContent!.assets["deno.json"], undefined);
-  // assertNotEquals(params.deploymentContent!.assets["deno.lock"], undefined);
-  assertEquals(params.deploymentContent!.envVars?.BEST_ENV_VAR, "best_value");
-  // TODO
-});
-
-Deno.test("allows up-dir imports", async (_t) => {
-  const params = await getCreateDeploymentParams(
-    join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/up-dir-imports/content-1/content-2/myGlueScript.ts"),
-  );
-  // assertEquals(params.deploymentContent?.entryPointUrl, "content-1/content-2/myGlueScript.ts");
+  assertEquals(params.deploymentContent?.entryPointUrl, "content/myGlueScript.ts");
   assertNotEquals(params.deploymentContent!.assets["deno.json"], undefined);
   assertNotEquals(params.deploymentContent!.assets["deno.lock"], undefined);
   assertEquals(params.deploymentContent!.envVars?.BEST_ENV_VAR, "best_value");
-  // TODO
+  await assertSnapshot(t, params);
+});
+
+Deno.test("allows up-dir imports", async (t) => {
+  const params = await getCreateDeploymentParams(
+    join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/up-dir-imports/content-1/content-2/myGlueScript.ts"),
+  );
+  assertEquals(params.deploymentContent?.entryPointUrl, "content-1/content-2/myGlueScript.ts");
+  // TODO check if deno.json needs to placed at the root
+  assertNotEquals(params.deploymentContent!.assets["content-1/content-2/deno.json"], undefined);
+  assertNotEquals(params.deploymentContent!.assets["content-1/content-2/deno.lock"], undefined);
+  assertEquals(params.deploymentContent!.envVars?.BEST_ENV_VAR, "best_value");
+  await assertSnapshot(t, params);
 });
