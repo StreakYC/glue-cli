@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.2.11"
+  }
+}
