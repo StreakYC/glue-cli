@@ -9,7 +9,7 @@ Deno.test("gives expected output", async (t) => {
   assertNotEquals(params.deploymentContent!.assets["myGlueScript.ts"], undefined);
   assertNotEquals(params.deploymentContent!.assets["deno.json"], undefined);
   assertNotEquals(params.deploymentContent!.assets["deno.lock"], undefined);
-  // assertEquals(params.deploymentContent!.assets["unimported-1.ts"], undefined);
+  assertEquals(params.deploymentContent!.assets["unimported-1.ts"], undefined);
   assertEquals(params.deploymentContent!.envVars?.BEST_ENV_VAR, "best_value");
   await assertSnapshot(t, params);
 });

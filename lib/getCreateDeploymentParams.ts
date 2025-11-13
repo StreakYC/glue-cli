@@ -1,8 +1,8 @@
 import { load as dotenvLoad } from "@std/dotenv";
-import { walk } from "@std/fs/walk";
 import { exists } from "@std/fs/exists";
 import * as path from "@std/path";
 import type { CreateDeploymentParams, DeploymentAsset, Runner } from "../backend.ts";
+import { parseImports } from "./parseImports.ts";
 
 export async function getCreateDeploymentParams(file: string, runner: Runner = "deno"): Promise<CreateDeploymentParams> {
   const fileDir = path.dirname(file);
@@ -11,40 +11,60 @@ export async function getCreateDeploymentParams(file: string, runner: Runner = "
   const envVars = await dotenvLoad({ envPath: path.join(fileDir, ".env") });
 
   const assets = new Map<string, Promise<DeploymentAsset>>();
-  function addFile(relativePath: string) {
+
+  function addAsset(relativePath: string, isCode: boolean): Promise<void> {
     if (assets.has(relativePath)) {
-      return;
+      return Promise.resolve();
     }
+
+    const contentPromise = Deno.readTextFile(path.join(fileDir, relativePath));
+
+    const allImportsAddedPromise = (async () => {
+      if (isCode) {
+        const content = await contentPromise;
+
+        const imports = parseImports(content, relativePath);
+        await Promise.all(
+          imports.map(async (imp) => {
+            // We're only handling local files
+            if (!imp.moduleName.startsWith(".")) {
+              return;
+            }
+            if (imp.type == undefined) {
+              await addAsset(path.join(path.dirname(relativePath), imp.moduleName), true);
+            } else if (imp.type === "json") {
+              await addAsset(path.join(path.dirname(relativePath), imp.moduleName), false);
+            } else {
+              console.warn(`Unknown import type ${JSON.stringify(imp.type)} for ${JSON.stringify(imp.moduleName)}`);
+              await addAsset(path.join(path.dirname(relativePath), imp.moduleName), false);
+            }
+          }),
+        );
+      }
+    })();
+
     assets.set(
       relativePath,
       (async () => {
-        const content = await Deno.readTextFile(path.join(fileDir, relativePath));
-        return { kind: "file", content };
+        return { kind: "file", content: await contentPromise };
       })(),
     );
+
+    return allImportsAddedPromise;
   }
 
-  addFile(entryPointUrl);
+  const entryPointPromise = addAsset(entryPointUrl, true);
 
   const uploadIfExists = ["deno.json", "deno.jsonc", "deno.lock"];
-  for (const file of uploadIfExists) {
-    if (await exists(path.join(fileDir, file))) {
-      addFile(file);
-    }
-  }
+  await Promise.all(
+    uploadIfExists.map(async (file) => {
+      if (await exists(path.join(fileDir, file))) {
+        await addAsset(file, false);
+      }
+    }),
+  );
 
-  for await (
-    const dirEntry of walk(fileDir, {
-      exts: ["ts", "js"],
-      includeDirs: false,
-    })
-  ) {
-    let relativePath = path.relative(fileDir, dirEntry.path);
-    if (globalThis.Deno?.build?.os === "windows") {
-      relativePath = relativePath.replaceAll("\\", "/");
-    }
-    addFile(relativePath);
-  }
+  await entryPointPromise;
 
   const sortedAssets = Array.from(assets).sort((a, b) => defaultCompareFn(a[0], b[0]));
 

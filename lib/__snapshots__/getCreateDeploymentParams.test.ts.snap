@@ -267,11 +267,6 @@ console.log(foo1);
 ',
         kind: "file",
       },
-      "dir/unimported-1.ts": {
-        content: 'export const foo = "car";
-',
-        kind: "file",
-      },
       "import-1.ts": {
         content: 'export const a = "A";
 ',
@@ -292,6 +287,11 @@ console.log(foo);
 ',
         kind: "file",
       },
+      "import-4.json": {
+        content: "{}
+",
+        kind: "file",
+      },
       "imported-by-dir-file.ts": {
         content: 'export const foo = "par";
 ',
@@ -303,18 +303,6 @@ import "./import-1.ts";
 import { b } from "./import-2.ts";
 
 console.log(glue, b);
-',
-        kind: "file",
-      },
-      "unimported-1.ts": {
-        content: 'import "./import-1.ts";
-import "./unimported-2.js";
-export const a = "a";
-',
-        kind: "file",
-      },
-      "unimported-2.js": {
-        content: 'export const a = "a";
 ',
         kind: "file",
       },
