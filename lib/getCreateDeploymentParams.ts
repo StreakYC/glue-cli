@@ -5,6 +5,17 @@ import { join as posixPathJoin } from "@std/path/posix/join";
 import type { CreateDeploymentParams, DeploymentAsset, Runner } from "../backend.ts";
 import { parseImports } from "./parseImports.ts";
 
+/**
+ * This function takes a path to a JS/TS file and returns a
+ * {@link CreateDeploymentParams} object with that file as the entry point and
+ * includes all of its dependencies.
+ *
+ * It also looks for a deno.json or deno.jsonc file in the same directory or any
+ * parent directory and includes it and its lockfile if found.
+ *
+ * It also looks for a .env file in the same directory as the entry point and
+ * includes its variables.
+ */
 export async function getCreateDeploymentParams(file: string, runner: Runner = "deno"): Promise<CreateDeploymentParams> {
   const fileDir = path.dirname(file);
   let entryPointUrl = path.relative(fileDir, file);
