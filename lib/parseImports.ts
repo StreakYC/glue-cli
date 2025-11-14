@@ -31,15 +31,6 @@ export function parseImports(fileContent: string, fileName = "file.ts"): ParsedI
       }
       const moduleName = node.moduleSpecifier.text;
       results.push({ moduleName, type: undefined });
-    } else if (ts.isCallExpression(node)) {
-      if (
-        node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-        node.arguments.length === 1 &&
-        ts.isStringLiteral(node.arguments[0])
-      ) {
-        const moduleName = node.arguments[0].text;
-        results.push({ moduleName, type: undefined });
-      }
     } else {
       getDynamicImports(node, results);
     }
