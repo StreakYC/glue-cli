@@ -56,6 +56,7 @@ function getDynamicImports(node: ts.Node, results: ParsedImport[]) {
   ) {
     const moduleName = node.arguments[0].text;
     results.push({ moduleName, type: undefined });
+  } else {
+    ts.forEachChild(node, (child) => getDynamicImports(child, results));
   }
-  ts.forEachChild(node, (child) => getDynamicImports(child, results));
 }
