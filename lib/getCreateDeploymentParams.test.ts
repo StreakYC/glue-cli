@@ -30,7 +30,6 @@ Deno.test("allows up-dir imports", async (t) => {
     join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/up-dir-imports/content-1/content-2/myGlueScript.ts"),
   );
   assertEquals(params.deploymentContent?.entryPointUrl, "content-1/content-2/myGlueScript.ts");
-  // TODO check if deno.json needs to placed at the root
   assertNotEquals(params.deploymentContent!.assets["content-1/content-2/deno.json"], undefined);
   assertNotEquals(params.deploymentContent!.assets["content-1/content-2/deno.lock"], undefined);
   assertEquals(params.deploymentContent!.envVars?.BEST_ENV_VAR, "best_value");
