@@ -76,7 +76,7 @@ export async function getCreateDeploymentParams(file: string, runner: Runner = "
   const entryPointPromise = addAsset(entryPointUrl, true);
 
   // Find deno.json if present
-  const denoJsonPath = await findDenoJson(fileDir);
+  const denoJsonPath = await findFileInDirectoryOrAbove(fileDir, ["deno.json", "deno.jsonc"]);
   if (denoJsonPath) {
     await addAsset(path.relative(fileDir, denoJsonPath), false);
 
@@ -145,13 +145,12 @@ function* parentDirectories(startDir: string): Generator<string> {
   }
 }
 
-/** Find deno.json or deno.jsonc in fileDir or its parent directories */
-async function findDenoJson(fileDir: string): Promise<string | undefined> {
-  const denoJsonNames = ["deno.json", "deno.jsonc"];
+/** Find any of the `searchNames` files in fileDir or its parent directories */
+async function findFileInDirectoryOrAbove(fileDir: string, searchNames: string[]): Promise<string | undefined> {
   try {
     for (const currentDir of parentDirectories(fileDir)) {
-      for (const denoJsonName of denoJsonNames) {
-        const currentPath = path.join(currentDir, denoJsonName);
+      for (const searchName of searchNames) {
+        const currentPath = path.join(currentDir, searchName);
         if (await exists(currentPath)) {
           return currentPath;
         }
