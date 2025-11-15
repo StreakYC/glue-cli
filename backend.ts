@@ -239,6 +239,12 @@ export async function replayExecution(executionId: string) {
   });
 }
 
+export async function sampleTrigger(triggerId: string) {
+  await backendRequest<void>(`/triggers/${triggerId}/sample`, {
+    method: "POST",
+  });
+}
+
 export interface ExecutionDTO {
   id: string;
   deploymentId: string;
@@ -298,6 +304,7 @@ export interface TriggerDTO {
 
   accountSetupUrl?: string;
   description?: string;
+  supportsSampleEvents: boolean;
 }
 
 export interface AccountInjectionDTO {

@@ -1,6 +1,6 @@
 import { Spinner } from "@std/cli/unstable-spinner";
 import * as mod from "@std/fmt/colors";
-import type { BuildStepDTO, DeploymentStatus } from "../backend.ts";
+import type { BuildStepDTO, DeploymentStatus, TriggerDTO } from "../backend.ts";
 import { BuildStepTitles } from "./common.tsx";
 
 export async function runStep<T>(
@@ -98,4 +98,12 @@ function convertBuildStepStatusToEmoji(status: string) {
     case "skipped":
       return mod.gray("⊙");
   }
+}
+
+export function toSortedByTypeThenLabel<T extends { type: string; label: string }>(items: T[]): T[] {
+  return items.toSorted((a, b) => {
+    const typeCmp = a.type.localeCompare(b.type);
+    if (typeCmp !== 0) return typeCmp;
+    return a.label.localeCompare(b.label, undefined, { numeric: true });
+  });
 }

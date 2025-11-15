@@ -1,7 +1,7 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
 import { BuildStepStatusRow, ClientStepRow, CompletedRegistrationList, RegistrationAccountSetupSection } from "./common.tsx";
-import { Text } from "ink";
+import { Box, Text } from "ink";
 import { Newline } from "ink";
 import type { DebugMode, SetupReplayResult } from "../commands/dev.ts";
 
@@ -100,19 +100,29 @@ export const DevUI = (
         <>
           <Newline />
           <Text>Press:</Text>
-          <Text>
-            <Text>
-              <Text color="green">r</Text> to replay last event, <Text />
-            </Text>
-            {props.setupReplayResult && props.setupReplayResult.execution && props.setupReplayResult.compatible && (
-              <Text>
-                <Text color="yellow">e</Text> to replay {props.setupReplayResult.executionId}, <Text />
-              </Text>
-            )}
-            <Text>
-              or <Text color="red">q</Text> to quit
-            </Text>
-          </Text>
+
+          <Box paddingLeft={2}>
+            <Text color="green">r</Text>
+            <Text>- replay last event</Text>
+          </Box>
+
+          {props.setupReplayResult && props.setupReplayResult.execution && props.setupReplayResult.compatible && (
+            <Box paddingLeft={2}>
+              <Text color="yellow">e</Text>
+              <Text>- replay {props.setupReplayResult.executionId}</Text>
+            </Box>
+          )}
+
+          <Box paddingLeft={2}>
+            <Text color="blue">s</Text>
+            <Text>- generate a sample event</Text>
+          </Box>
+
+          <Box paddingLeft={2}>
+            <Text color="red">q</Text>
+            <Text>- quit</Text>
+          </Box>
+
           <Newline />
           <Text>Waiting for events...</Text>
         </>

@@ -1,6 +1,7 @@
 import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
 import type { AccountInjectionDTO, BuildStepDTO, BuildStepName, StepStatus, TriggerDTO } from "../backend.ts";
+import { toSortedByTypeThenLabel } from "./utils.ts";
 
 export const BuildStepTitles: Record<BuildStepName, string> = {
   deployCode: "Booting code",
@@ -70,10 +71,8 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
 };
 
 export const CompletedRegistrationList = ({ triggers, accountInjections }: { triggers: TriggerDTO[]; accountInjections: AccountInjectionDTO[] }) => {
-  const sortedTriggers = triggers
-    .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
-  const sortedAccountInjections = accountInjections
-    .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+  const sortedTriggers = toSortedByTypeThenLabel(triggers);
+  const sortedAccountInjections = toSortedByTypeThenLabel(accountInjections);
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {sortedTriggers.length > 0 && <Text>Triggers:</Text>}

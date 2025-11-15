@@ -3,7 +3,7 @@ import { load as dotenvLoad } from "@std/dotenv";
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { getAvailablePort } from "@std/net";
 import { z } from "zod";
-import { createDeployment, createGlue, getExecutionByIdNoThrow, getGlueByName, stopGlue, streamChangesTillDeploymentReady } from "../backend.ts";
+import { createDeployment, createGlue, getExecutionByIdNoThrow, getGlueByName, sampleTrigger, stopGlue, streamChangesTillDeploymentReady } from "../backend.ts";
 import { basename } from "@std/path";
 import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
@@ -23,6 +23,8 @@ import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
 import { pushableV } from "it-pushable";
+import { Select } from "@cliffy/prompt/select";
+import { toSortedByTypeThenLabel } from "../ui/utils.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -120,7 +122,21 @@ export async function dev(options: DevOptions, filename: string) {
         };
         const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
         await deliverTriggerEvent(deployment, message, true);
+      } else if (keyPressEvent.key === "s") {
+        const samplableTriggers = toSortedByTypeThenLabel(deployment.triggers
+          .filter((t) => t.supportsSampleEvents));
+        if (samplableTriggers.length === 0) {
+          console.log("None of your triggers support sample events");
+          continue;
+        }
+        const trigger = await Select.prompt({
+          message: "Choose a trigger to sample:",
+          options: samplableTriggers.map((t) => ({ name: `${t.type}(${t.label}) ${t.description}`, value: t })),
+        });
+        console.log("Generating a sample event for:", `${trigger.type}(${trigger.label}) ${trigger.description}`);
+        await sampleTrigger(trigger.id);
       }
+
       continue;
     }
     // handle restart events
