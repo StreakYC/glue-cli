@@ -62,13 +62,17 @@ export const logs = async (options: LogsOptions, query?: string) => {
     options.filter = "failure";
   }
 
-  const now = new Date();
+  const commandStartTime = new Date();
   const historicalExecutions = await runStep(
     `Loading historical executions...`,
-    () => getExecutions(options.number, now, !!options.json, options.filter, options.search, glueId, deploymentId),
+    () => getExecutions(options.number, commandStartTime, "desc", !!options.json, options.filter, options.search, glueId, deploymentId),
     true,
     !!options.json,
   );
+
+  // we requested the executions in descending order, so we need to reverse them to get them to get the
+  // most recent executions printed out last which is necessary if the user wants to tail the executions.
+  historicalExecutions.reverse();
 
   if (options.json) {
     historicalExecutions.forEach((e) => {
@@ -79,11 +83,11 @@ export const logs = async (options: LogsOptions, query?: string) => {
 
   renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
-  let startingPoint = now;
+  let startingPoint = commandStartTime;
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (options.tail) {
     pollingSpinner.start();
-    const executions = await getExecutions(10, startingPoint, false, options.filter, options.search, glueId, deploymentId);
+    const executions = await getExecutions(10, startingPoint, "asc", false, options.filter, options.search, glueId, deploymentId);
     if (executions.length > 0) {
       pollingSpinner.stop();
       renderExecutions(executions, options.logLines, !!options.fullLogLines);

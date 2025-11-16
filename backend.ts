@@ -196,6 +196,7 @@ export async function* streamChangesTillDeploymentReady(deploymentId: string): A
 export async function getExecutions(
   limit: number,
   startingPoint: Date,
+  direction: "asc" | "desc" = "desc",
   includeInputData: boolean = false,
   filter: string | undefined = undefined,
   search: string | undefined = undefined,
@@ -205,6 +206,7 @@ export async function getExecutions(
   const params = new URLSearchParams({
     limit: limit.toString(),
     startingPoint: startingPoint.getTime().toString(),
+    direction: direction,
     includeInputData: includeInputData.toString(),
   });
   if (filter) {
