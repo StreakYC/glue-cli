@@ -77,6 +77,7 @@ const cmd = new Command()
   .command("describe", "Describe a glue or any other resource. Query can be a glue name or any id for any resource")
   .arguments("[query:string]")
   .option("-j, --json", "Output in JSON format")
+  .option("-w, --watch", "Refresh the description every 3 seconds")
   .action(describe)
   // REPLAY ----------------------------
   .command("replay", "Replay an execution of a glue")
