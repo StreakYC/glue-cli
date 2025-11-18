@@ -7,7 +7,7 @@ export const BuildStepTitles: Record<BuildStepName, string> = {
   deployCode: "Booting code",
   createTriggers: "Creating triggers",
   createTunnel: "Creating local tunnel",
-  registrationAuth: "Authenticating triggers & injections",
+  registrationAuth: "Checking authentication",
   registrationSetup: "Setting up triggers & injections",
 };
 
@@ -62,7 +62,7 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
       {sortedAccountInjections.map((a) => (
         <Box paddingLeft={2} key={a.id}>
           <Text>
-            {a.type}({a.label}): <Text bold>{a.accountSetupUrl}</Text>
+            {a.type}({a.description ?? a.label}): <Text bold>{a.accountSetupUrl}</Text>
           </Text>
         </Box>
       ))}
@@ -87,7 +87,7 @@ export const CompletedRegistrationList = ({ triggers, accountInjections }: { tri
       {sortedAccountInjections.map((a) => (
         <Box paddingLeft={2} key={a.id}>
           <Text>
-            {a.type}({a.label}): <Text bold>{a.description}</Text>
+            {a.type}({a.description ?? a.label})
           </Text>
         </Box>
       ))}
