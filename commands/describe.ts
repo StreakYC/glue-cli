@@ -7,7 +7,6 @@ import { delay } from "@std/async/delay";
 import { type Instance, render } from "ink";
 import { DescribeAccountUI, DescribeDeploymentUI, DescribeExecutionUI, DescribeGlueUI, DescribeUI } from "../ui/describe.tsx";
 import { isPrefixId } from "../common.ts";
-import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 
 interface DescribeOptions {
   json?: boolean;
