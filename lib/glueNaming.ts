@@ -20,7 +20,7 @@ export async function getGlueName(filePath: string, explicitName?: string): Prom
     .pipeThrough(new TextLineStream()); // split string line by line
 
   for await (const line of readable) {
-    const match = line.match(/^\s*\/\/\s*glue-name:\s*(.+)$/);
+    const match = line.match(/^\s*\/\/\s*glue-name\s+(\S+)\s*$/);
     if (match) {
       return match[1].trim();
     }

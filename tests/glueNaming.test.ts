@@ -15,7 +15,7 @@ Deno.test("getGlueName - file comment", async () => {
     await Deno.writeTextFile(
       filePath,
       `
-// glue-name: comment-name
+// glue-name comment-name
 import something from "somewhere";
 
 console.log("hello");
@@ -37,7 +37,7 @@ Deno.test("getGlueName - file comment with spaces", async () => {
     await Deno.writeTextFile(
       filePath,
       `
-    //   glue-name:   spaced-name  
+    //   glue-name   spaced-name  
     console.log("hello");
     `.trim(),
     );
@@ -125,7 +125,7 @@ Deno.test("getGlueName - file comment with extreme spacing", async () => {
     await Deno.writeTextFile(
       filePath,
       `
-    //      glue-name:      extremely-spaced      
+    //      glue-name      extremely-spaced      
     console.log("hello");
     `.trim(),
     );
@@ -145,7 +145,7 @@ Deno.test("getGlueName - file comment with no spaces", async () => {
     await Deno.writeTextFile(
       filePath,
       `
-//glue-name:compact
+//glue-name compact
     console.log("hello");
     `.trim(),
     );
@@ -165,7 +165,7 @@ Deno.test("getGlueName - file comment indented", async () => {
     await Deno.writeTextFile(
       filePath,
       `
-      // glue-name: indented
+      // glue-name indented
     console.log("hello");
     `.trim(),
     );
