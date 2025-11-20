@@ -9,15 +9,9 @@
     "cli": "deno run --allow-all glue.ts",
     "cli-debug": "deno run --inspect-brk --allow-all glue.ts dev samples/myExampleWebhook.ts --no-debug",
     "lint": "deno lint --watch",
-    "test": "deno test -P --permit-no-files --watch",
-    "check": "deno check"
-  },
-  "test": {
-    "permissions": {
-      "read": ["./lib/__snapshots__", "./tests/resources"],
-      "write": ["./lib/__snapshots__"],
-      "env": true
-    }
+    "test": "deno test --allow-read --allow-write --allow-env --watch",
+    "check": "deno check",
+    "check:watch": "deno run --allow-all --watch=./ ../glue-backend/utils/check.ts"
   },
   "unstable": ["kv", "temporal"],
   "imports": {

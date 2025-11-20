@@ -1,10 +1,10 @@
-import * as path from "@std/path";
 import { createDeployment, createGlue, getGlueByName, type Runner, streamChangesTillDeploymentReady } from "../backend.ts";
 import { render } from "ink";
 import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { getCreateDeploymentParams } from "../lib/getCreateDeploymentParams.ts";
+import { assertFileExists, getGlueName } from "../lib/glueNaming.ts";
 
 interface DeployOptions {
   name?: string;
@@ -13,7 +13,9 @@ interface DeployOptions {
 
 export async function deploy(options: DeployOptions, file: string) {
   await checkForAuthCredsOtherwiseExit();
-  const glueName = options.name ?? path.basename(file);
+
+  await assertFileExists(file);
+  const glueName = await getGlueName(file, options.name);
 
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
