@@ -1,4 +1,5 @@
 import { basename } from "@std/path";
+import { TextLineStream } from "@std/streams/text-line-stream";
 
 /**
  * figures out the name of a glue given a file path the user has provided and any options the user has provided.
@@ -13,9 +14,12 @@ export async function getGlueName(filePath: string, explicitName?: string): Prom
   }
 
   // 2. Comment in file
-  const fileContent = await Deno.readTextFile(filePath);
-  const lines = fileContent.split("\n");
-  for (const line of lines) {
+  using f = await Deno.open(filePath);
+  const readable = f.readable
+    .pipeThrough(new TextDecoderStream()) // decode Uint8Array to string
+    .pipeThrough(new TextLineStream()); // split string line by line
+
+  for await (const line of readable) {
     const match = line.match(/^\s*\/\/\s*glue-name:\s*(.+)$/);
     if (match) {
       return match[1].trim();
