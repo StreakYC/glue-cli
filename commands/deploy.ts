@@ -4,7 +4,7 @@ import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { getCreateDeploymentParams } from "../lib/getCreateDeploymentParams.ts";
-import { assertFileExists, getGlueName } from "../lib/glueNaming.ts";
+import { getGlueName } from "../lib/glueNaming.ts";
 
 interface DeployOptions {
   name?: string;
@@ -14,7 +14,6 @@ interface DeployOptions {
 export async function deploy(options: DeployOptions, file: string) {
   await checkForAuthCredsOtherwiseExit();
 
-  await assertFileExists(file);
   const glueName = await getGlueName(file, options.name);
 
   let deploymentProgressProps: DeployUIProps = {

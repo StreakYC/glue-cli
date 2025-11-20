@@ -29,10 +29,3 @@ export async function getGlueName(filePath: string, explicitName?: string): Prom
   // 3. Fallback to filename
   return basename(filePath).replace(/\.[^.]+$/, "");
 }
-
-export async function assertFileExists(filePath: string) {
-  const fileStat = await Deno.stat(filePath);
-  if (!fileStat.isFile) {
-    throw new Error(`File ${filePath} is not a file or doesn't exist`);
-  }
-}

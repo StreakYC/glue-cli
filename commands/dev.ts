@@ -25,7 +25,7 @@ import { pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
 
-import { assertFileExists, getGlueName } from "../lib/glueNaming.ts";
+import { getGlueName } from "../lib/glueNaming.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -43,7 +43,6 @@ export async function dev(options: DevOptions, filename: string) {
   const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
   const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
-  await assertFileExists(filename);
   const glueName = await getGlueName(filename, options.name);
 
   const glueCliWebsocketAddr = await wsListen(() => {
