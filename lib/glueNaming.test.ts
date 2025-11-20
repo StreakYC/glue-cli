@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { getGlueName } from "../lib/glueNaming.ts";
+import { getGlueName } from "./glueNaming.ts";
 import { join } from "@std/path";
 
 Deno.test("getGlueName - explicit name", async () => {
