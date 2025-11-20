@@ -4,7 +4,6 @@ import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { getAvailablePort } from "@std/net";
 import { z } from "zod";
 import { createDeployment, createGlue, getExecutionByIdNoThrow, getGlueByName, sampleTrigger, stopGlue, streamChangesTillDeploymentReady } from "../backend.ts";
-import { basename } from "@std/path";
 import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
@@ -26,6 +25,8 @@ import { pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
 
+import { getGlueName } from "../lib/glueNaming.ts";
+
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
 let devProgressProps: DevUIProps = defaultDevUIProps();
@@ -42,7 +43,8 @@ export async function dev(options: DevOptions, filename: string) {
   const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
   const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
-  const glueName = options.name ?? glueNameFromFilename(filename);
+  const glueName = await getGlueName(filename, options.name);
+
   const glueCliWebsocketAddr = await wsListen(() => {
     if (!lifelineHasConnected) {
       lifelineHasConnected = true;
@@ -332,10 +334,6 @@ async function createDeploymentAndMaybeGlue(
     const newDeployment = await createDeployment(existingGlue.id, { optimisticRegistrations: registrations });
     return { glue: existingGlue, deployment: newDeployment };
   }
-}
-
-function glueNameFromFilename(filename: string) {
-  return basename(filename).replace(/\.[^.]+$/, "");
 }
 
 async function getEnv(glueName: string, filename: string, glueCliWebsocketAddr: string) {
