@@ -22,7 +22,7 @@ export async function getGlueName(filePath: string, explicitName?: string): Prom
   for await (const line of readable) {
     const match = line.match(/^\s*\/\/\s*glue-name\s+(\S+)\s*$/);
     if (match) {
-      return match[1].trim();
+      return match[1];
     }
   }
 
