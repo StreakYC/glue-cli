@@ -16,7 +16,7 @@ export async function tag(options: TagOptions, ...glueNames: string[]) {
   let glues: GlueDTO[] = [];
   if (glueNames.length) {
     const gluePromises = glueNames.map((n) => getGlueByName(n, "deploy"));
-    const resolvedGlues = await Promise.all(gluePromises);
+    const resolvedGlues = await runStep(`Loading glue${glueNames.length === 1 ? "" : "s"}...`, () => Promise.all(gluePromises));
     glues = resolvedGlues.filter((g) => g !== undefined);
     if (glues.length !== glueNames.length) {
       console.error("One or more glues not found.");
@@ -30,7 +30,7 @@ export async function tag(options: TagOptions, ...glueNames: string[]) {
   const removals = normalizeTags(options.remove);
   const replacement = normalizeTags(options.replace);
 
-  if (new Set(additions).union(new Set(removals)).size > 0) {
+  if (new Set(additions).intersection(new Set(removals)).size > 0) {
     console.error("Cannot add and remove tags at the same time.");
     Deno.exit(1);
   }
