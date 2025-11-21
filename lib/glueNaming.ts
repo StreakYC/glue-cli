@@ -27,5 +27,5 @@ export async function getGlueName(filePath: string, explicitName?: string): Prom
   }
 
   // 3. Fallback to filename
-  return basename(filePath).replace(/\.[^.]+$/, "");
+  return basename(filePath);
 }

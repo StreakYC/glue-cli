@@ -55,7 +55,7 @@ Deno.test("getGlueName - fallback to filename", async () => {
   await Deno.writeTextFile(filePath, "");
   try {
     const name = await getGlueName(filePath);
-    assertEquals(name, "my-file-name");
+    assertEquals(name, "my-file-name.ts");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -75,7 +75,7 @@ Deno.test("getGlueName - fallback to filename if comment missing", async () => {
     );
 
     const name = await getGlueName(filePath);
-    assertEquals(name, "noComment");
+    assertEquals(name, "noComment.ts");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -87,7 +87,7 @@ Deno.test("getGlueName - fallback to filename with multiple extensions", async (
   await Deno.writeTextFile(filePath, "");
   try {
     const name = await getGlueName(filePath);
-    assertEquals(name, "my.glue.script");
+    assertEquals(name, "my.glue.script.ts");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -99,7 +99,7 @@ Deno.test("getGlueName - fallback to filename with underscores", async () => {
   await Deno.writeTextFile(filePath, "");
   try {
     const name = await getGlueName(filePath);
-    assertEquals(name, "name_with_underscores");
+    assertEquals(name, "name_with_underscores.js");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -111,7 +111,7 @@ Deno.test("getGlueName - fallback to filename with dashes", async () => {
   await Deno.writeTextFile(filePath, "");
   try {
     const name = await getGlueName(filePath);
-    assertEquals(name, "name-with-dashes");
+    assertEquals(name, "name-with-dashes.tsx");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
