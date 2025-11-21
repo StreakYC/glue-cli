@@ -2,177 +2,149 @@ import { assertEquals } from "@std/assert";
 import { getGlueName } from "./glueNaming.ts";
 import { join } from "@std/path";
 
+async function createTempDir(): Promise<{ path: string } & AsyncDisposable> {
+  const tempDir = await Deno.makeTempDir({
+    prefix: "glue-naming-test-",
+  });
+  return {
+    path: tempDir,
+    async [Symbol.asyncDispose]() {
+      await Deno.remove(tempDir, { recursive: true });
+    },
+  };
+}
+
 Deno.test("getGlueName - explicit name", async () => {
   const name = await getGlueName("some/path/file.ts", "explicit-name");
   assertEquals(name, "explicit-name");
 });
 
 Deno.test("getGlueName - file comment", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "myGlue.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "myGlue.ts");
 
-  try {
-    await Deno.writeTextFile(
-      filePath,
-      `
+  await Deno.writeTextFile(
+    filePath,
+    `
 // glue-name comment-name
 import something from "somewhere";
 
 console.log("hello");
     `.trim(),
-    );
+  );
 
-    const name = await getGlueName(filePath);
-    assertEquals(name, "comment-name");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "comment-name");
 });
 
 Deno.test("getGlueName - file comment with spaces", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "myGlueSpaces.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "myGlueSpaces.ts");
 
-  try {
-    await Deno.writeTextFile(
-      filePath,
-      `
+  await Deno.writeTextFile(
+    filePath,
+    `
     //   glue-name   spaced-name  
     console.log("hello");
     `.trim(),
-    );
+  );
 
-    const name = await getGlueName(filePath);
-    assertEquals(name, "spaced-name");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "spaced-name");
 });
 
 Deno.test("getGlueName - fallback to filename", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "my-file-name.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "my-file-name.ts");
   await Deno.writeTextFile(filePath, "");
-  try {
-    const name = await getGlueName(filePath);
-    assertEquals(name, "my-file-name.ts");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "my-file-name.ts");
 });
 
 Deno.test("getGlueName - fallback to filename if comment missing", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "noComment.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "noComment.ts");
 
-  try {
-    await Deno.writeTextFile(
-      filePath,
-      `
+  await Deno.writeTextFile(
+    filePath,
+    `
     // regular comment
     console.log("hello");
     `.trim(),
-    );
+  );
 
-    const name = await getGlueName(filePath);
-    assertEquals(name, "noComment.ts");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "noComment.ts");
 });
 
 Deno.test("getGlueName - fallback to filename with multiple extensions", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "my.glue.script.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "my.glue.script.ts");
   await Deno.writeTextFile(filePath, "");
-  try {
-    const name = await getGlueName(filePath);
-    assertEquals(name, "my.glue.script.ts");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "my.glue.script.ts");
 });
 
 Deno.test("getGlueName - fallback to filename with underscores", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "name_with_underscores.js");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "name_with_underscores.js");
   await Deno.writeTextFile(filePath, "");
-  try {
-    const name = await getGlueName(filePath);
-    assertEquals(name, "name_with_underscores.js");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "name_with_underscores.js");
 });
 
 Deno.test("getGlueName - fallback to filename with dashes", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "name-with-dashes.tsx");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "name-with-dashes.tsx");
   await Deno.writeTextFile(filePath, "");
-  try {
-    const name = await getGlueName(filePath);
-    assertEquals(name, "name-with-dashes.tsx");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "name-with-dashes.tsx");
 });
 
 Deno.test("getGlueName - file comment with extreme spacing", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "myGlueExtremeSpaces.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "myGlueExtremeSpaces.ts");
 
-  try {
-    await Deno.writeTextFile(
-      filePath,
-      `
+  await Deno.writeTextFile(
+    filePath,
+    `
     //      glue-name      extremely-spaced      
     console.log("hello");
     `.trim(),
-    );
+  );
 
-    const name = await getGlueName(filePath);
-    assertEquals(name, "extremely-spaced");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "extremely-spaced");
 });
 
 Deno.test("getGlueName - file comment with no spaces", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "myGlueNoSpaces.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "myGlueNoSpaces.ts");
 
-  try {
-    await Deno.writeTextFile(
-      filePath,
-      `
+  await Deno.writeTextFile(
+    filePath,
+    `
 //glue-name compact
     console.log("hello");
     `.trim(),
-    );
+  );
 
-    const name = await getGlueName(filePath);
-    assertEquals(name, "compact");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "compact");
 });
 
 Deno.test("getGlueName - file comment indented", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const filePath = join(tempDir, "myGlueIndented.ts");
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "myGlueIndented.ts");
 
-  try {
-    await Deno.writeTextFile(
-      filePath,
-      `
+  await Deno.writeTextFile(
+    filePath,
+    `
       // glue-name indented
     console.log("hello");
     `.trim(),
-    );
+  );
 
-    const name = await getGlueName(filePath);
-    assertEquals(name, "indented");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  const name = await getGlueName(filePath);
+  assertEquals(name, "indented");
 });
