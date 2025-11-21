@@ -250,9 +250,6 @@ const DeploymentStatusTag = ({ status, isCurrent }: { status: string; isCurrent:
 };
 
 const RunningStatus = ({ status }: { status?: string }) => {
-  if (!status) {
-    return <Text color="gray">UNKNOWN</Text>;
-  }
   switch (status) {
     case "pending":
       return <Text color="yellow">BOOTING</Text>;
@@ -263,9 +260,9 @@ const RunningStatus = ({ status }: { status?: string }) => {
     case "failure":
       return <Text color="red">FAILED</Text>;
     case "cancelled":
-      return <Text color="gray">SHUT DOWN</Text>;
+      return <Text color="gray">CANCELLED</Text>;
     default:
-      return <Text>{status.toUpperCase()}</Text>;
+      return <Text color="gray">STOPPED</Text>;
   }
 };
 

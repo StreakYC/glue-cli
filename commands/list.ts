@@ -27,7 +27,7 @@ export const list = async (options: ListOptions) => {
           glue,
         ) => [
           glue.name,
-          getRunningStringForDeploymentStatus(glue.currentDeployment?.status ?? "cancelled"),
+          getRunningStringForDeploymentStatus(glue.currentDeployment?.status),
           glue.executionSummary.totalCount ? green(glue.executionSummary.totalCount.toString()) : "-",
           glue.executionSummary.totalErrorCount ? red(glue.executionSummary.totalErrorCount.toString()) : "-",
           formatEpochMillis(glue.executionSummary.mostRecent),
@@ -39,7 +39,7 @@ export const list = async (options: ListOptions) => {
   }
 };
 
-export function getRunningStringForDeploymentStatus(status: DeploymentStatus): string {
+export function getRunningStringForDeploymentStatus(status?: DeploymentStatus): string {
   switch (status) {
     case "pending":
       return yellow("BOOTING");
@@ -50,6 +50,8 @@ export function getRunningStringForDeploymentStatus(status: DeploymentStatus): s
     case "failure":
       return red("FAILED");
     case "cancelled":
-      return dim("SHUT DOWN");
+      return dim("CANCELLED");
+    default:
+      return dim("STOPPED");
   }
 }
