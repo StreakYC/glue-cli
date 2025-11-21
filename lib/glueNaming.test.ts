@@ -148,3 +148,19 @@ Deno.test("getGlueName - file comment indented", async () => {
   const name = await getGlueName(filePath);
   assertEquals(name, "indented");
 });
+
+Deno.test("getGlueName - JSON string", async () => {
+  await using tempDir = await createTempDir();
+  const filePath = join(tempDir.path, "myGlueJsonName.ts");
+
+  await Deno.writeTextFile(
+    filePath,
+    `
+      // glue-name "foo \\" bar \u2603 \\u2603 "
+    console.log("hello");
+    `.trim(),
+  );
+
+  const name = await getGlueName(filePath);
+  assertEquals(name, 'foo " bar \u2603 \u2603 ');
+});
