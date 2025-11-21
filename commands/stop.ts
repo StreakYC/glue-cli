@@ -1,10 +1,10 @@
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
-import { getGlueByName, type GlueDTO, resumeGlue } from "../backend.ts";
+import { getGlueByName, type GlueDTO, stopGlue } from "../backend.ts";
 import * as mod from "@std/fmt/colors";
 
-export const resume = async (_options: unknown, name?: string) => {
+export const stop = async (_options: unknown, name?: string) => {
   await checkForAuthCredsOtherwiseExit();
   let glue: GlueDTO | undefined;
 
@@ -21,11 +21,11 @@ export const resume = async (_options: unknown, name?: string) => {
     throw new Error(errorMsg);
   }
 
-  if (glue.running) {
-    console.log(`Glue ${glue.name} is already running`);
+  if (!glue.currentDeployment) {
+    console.log(`Glue ${glue.name} is already stopped`);
     return;
   }
 
-  await runStep(`Resuming glue ${glue.name}...`, () => resumeGlue(glue.id));
+  await runStep(`Stopping glue ${glue.name}...`, () => stopGlue(glue.id));
   console.log(`\n\n${mod.bold(`glue describe ${glue.name}`)} for more details`);
 };

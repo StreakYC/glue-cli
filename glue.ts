@@ -10,7 +10,7 @@ import denoJson from "./deno.json" with { type: "json" };
 import { logs } from "./commands/logs.ts";
 import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
-import { pause } from "./commands/pause.ts";
+import { stop } from "./commands/stop.ts";
 import { resume } from "./commands/resume.ts";
 import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
@@ -65,14 +65,10 @@ const cmd = new Command()
   .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
   .option("-j, --json", "Output in JSON format")
   .action(list)
-  // PAUSE ----------------------------
-  .command("pause", "Pause a deployed glue")
+  // STOP ----------------------------
+  .command("stop", "Stop a deployed glue")
   .arguments("[name:string]")
-  .action(pause)
-  // RESUME ----------------------------
-  .command("resume", "Resume a paused glue")
-  .arguments("[name:string]")
-  .action(resume)
+  .action(stop)
   // DESCRIBE ----------------------------
   .command("describe", "Describe a glue or any other resource. Query can be a glue name or any id for any resource")
   .arguments("[query:string]")
