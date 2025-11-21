@@ -7,11 +7,15 @@
   },
   "tasks": {
     "cli": "deno run --allow-all glue.ts",
-    "cli-debug": "deno run --inspect-brk --allow-all glue.ts dev samples/myExampleWebhook.ts --no-debug",
-    "lint": "deno lint --watch",
-    "test": "deno test -P --watch",
+    "cli:debug": "deno run --inspect-brk --allow-all glue.ts dev samples/myExampleWebhook.ts --no-debug",
+    "lint": "deno lint",
+    "lint:watch": "deno lint --watch",
+    "test": "deno test -P",
+    "test:watch": "deno test -P --watch",
     "check": "deno check",
-    "check:watch": "deno run --allow-all --watch=./ ../glue-backend/utils/check.ts"
+    "check:watch": "deno run --allow-all --watch=./ ../glue-backend/utils/check.ts",
+    "fmt": "deno fmt",
+    "fmt:watch": "deno fmt --watch"
   },
   "test": {
     "permissions": {

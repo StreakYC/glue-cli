@@ -13,7 +13,7 @@
         "GLUE_API_SERVER": "https://aleem-dev.glue.wtf"
       },
       "runtimeExecutable": "deno",
-      "runtimeArgs": ["task", "cli-debug"],
+      "runtimeArgs": ["task", "cli:debug"],
       "attachSimplePort": 9229
     }
   ]
