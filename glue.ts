@@ -11,7 +11,6 @@ import { logs } from "./commands/logs.ts";
 import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
 import { stop } from "./commands/stop.ts";
-import { resume } from "./commands/resume.ts";
 import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 import { create } from "./commands/create.ts";
