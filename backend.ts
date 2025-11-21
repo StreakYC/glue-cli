@@ -38,6 +38,7 @@ export const CreateGlueParams = z.object({
   name: z.string(),
   environment: GlueEnvironment,
   description: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
   deployment: CreateDeploymentParams,
 });
 export type CreateGlueParams = z.infer<typeof CreateGlueParams>;
@@ -45,6 +46,7 @@ export type CreateGlueParams = z.infer<typeof CreateGlueParams>;
 export const UpdateGlueParams = z.object({
   name: z.string().optional(),
   description: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
   running: z.boolean().optional(),
   currentDeploymentId: z.string().optional(),
   triggerStorage: z.record(z.string(), z.unknown()).optional(),
@@ -106,7 +108,12 @@ export async function stopGlue(id: string) {
   });
 }
 
-export async function createGlue(name: string, deployment: CreateDeploymentParams, environment: GlueEnvironment): Promise<GlueDTO> {
+export async function createGlue(
+  name: string,
+  deployment: CreateDeploymentParams,
+  environment: GlueEnvironment,
+  options?: { description?: string | null; tags?: string[] },
+): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues`, {
     method: "POST",
     body: JSON.stringify(
@@ -114,8 +121,18 @@ export async function createGlue(name: string, deployment: CreateDeploymentParam
         name,
         deployment,
         environment,
+        description: options?.description,
+        tags: options?.tags,
       } satisfies CreateGlueParams,
     ),
+  });
+  return res;
+}
+
+export async function updateGlue(id: string, params: UpdateGlueParams): Promise<GlueDTO> {
+  const res = await backendRequest<GlueDTO>(`/glues/${id}`, {
+    method: "POST",
+    body: JSON.stringify(params satisfies UpdateGlueParams),
   });
   return res;
 }
@@ -310,6 +327,7 @@ export interface GlueDTO {
   environment: GlueEnvironment;
   userId: string;
   description: string | null;
+  tags: string[];
   createdAt: number;
   updatedAt: number;
   creator: UserDTO;

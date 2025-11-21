@@ -1,4 +1,5 @@
 import { type AccountDTO, getAccounts, getGlues, type GlueDTO } from "../backend.ts";
+import { Checkbox } from "@cliffy/prompt/checkbox";
 import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui/utils.ts";
 
@@ -10,6 +11,17 @@ export async function askUserForGlue(): Promise<GlueDTO | undefined> {
   return await Select.prompt({
     message: "Choose a glue",
     search: true,
+    options: glues.map((glue) => ({ name: glue.name, value: glue })),
+  });
+}
+
+export async function askUserForGlues(): Promise<GlueDTO[]> {
+  const glues = await runStep("Loading glues...", () => getGlues("deploy"));
+  if (!glues.length) {
+    return [];
+  }
+  return await Checkbox.prompt({
+    message: "Choose one or more glues",
     options: glues.map((glue) => ({ name: glue.name, value: glue })),
   });
 }
