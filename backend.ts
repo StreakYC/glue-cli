@@ -75,7 +75,7 @@ export async function backendRequest<T>(path: string, options: RequestInit = {},
   }
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Failed to fetch ${path}: ${res.statusText} ${body}`);
+    throw new Error(`Failed request: ${path} (${options.method ?? "GET"}): ${res.status} ${res.statusText} ${body}`);
   }
   return res.json() as Promise<T>;
 }
