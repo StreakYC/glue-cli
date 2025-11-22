@@ -35,7 +35,7 @@ export async function tag(options: TagOptions, ...glueNames: string[]) {
     Deno.exit(1);
   }
 
-  if (replacement) {
+  if (replacement.length) {
     glues.forEach((g) => g.tags = replacement);
   } else {
     glues.forEach((g) => g.tags = addTags(g.tags, additions));

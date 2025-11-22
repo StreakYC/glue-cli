@@ -52,7 +52,7 @@ export async function deploy(options: DeployOptions, file: string) {
     newDeploymentId = newGlue.pendingDeployment.id;
   } else {
     const newDeployment = await createDeployment(existingGlue.id, deploymentParams);
-    if (tags) {
+    if (tags.length) {
       const desiredTags = addTags(existingGlue.tags, tags);
       existingGlue = await updateGlue(existingGlue.id, { tags: desiredTags });
     }

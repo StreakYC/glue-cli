@@ -1,8 +1,8 @@
 export function normalizeTags(tags?: string[]): string[] {
   if (!tags) return [];
-  const normalized = tags.map((tag) => tag.trim())
-    .filter((tag) => tag.length)
-    .reduce((acc, tag) => acc.add(tag), new Set<string>());
+  const normalized = new Set(
+    ...tags.map((t) => t.trim()).filter((t) => t.length),
+  );
   return Array.from(normalized);
 }
 
@@ -13,5 +13,5 @@ export function addTags(tags: string[] | undefined, additions: string[]): string
 export function removeTags(tags: string[] | undefined, removals: string[]): string[] {
   const tagsNormalized = normalizeTags(tags);
   const removalsNormalized = normalizeTags(removals);
-  return tagsNormalized.filter((tag) => !removalsNormalized.includes(tag));
+  return new Array(...new Set(tagsNormalized).difference(new Set(removalsNormalized)));
 }
