@@ -7,7 +7,7 @@
   },
   "tasks": {
     "cli": "deno run --allow-all glue.ts",
-    "cli:debug": "deno run --inspect-brk --allow-all glue.ts dev samples/myExampleWebhook.ts --no-debug",
+    "cli:debug": "deno run --inspect-brk --allow-all glue.ts tag lgtmMergeBot --replace baz",
     "lint": "deno lint",
     "lint:watch": "deno lint --watch",
     "test": "deno test -P",

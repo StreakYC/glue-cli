@@ -10,7 +10,19 @@
       "type": "node",
       "cwd": "${workspaceFolder}",
       "env": {
-        "GLUE_API_SERVER": "https://aleem-dev.glue.wtf"
+        "GLUE_API_SERVER": "https://${env:USER}-dev.glue.wtf"
+      },
+      "runtimeExecutable": "deno",
+      "runtimeArgs": ["task", "cli:debug"],
+      "attachSimplePort": 9229
+    },
+    {
+      "request": "launch",
+      "name": "CLI debug prod",
+      "type": "node",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "GLUE_API_SERVER": "https://api.glue.wtf"
       },
       "runtimeExecutable": "deno",
       "runtimeArgs": ["task", "cli:debug"],
