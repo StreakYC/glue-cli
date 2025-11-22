@@ -15,6 +15,7 @@ import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 import { create } from "./commands/create.ts";
 import { replay } from "./commands/replay.ts";
+import { tag } from "./commands/tag.ts";
 import { Runner } from "./backend.ts";
 import type z from "zod";
 
@@ -53,6 +54,7 @@ const cmd = new Command()
   .option("-n, --name <name:string>", "Glue name")
   .type("runner", validateWithZodEnum(Runner))
   .option("-r, --runner <runner:runner>", "Use a specific runner to host the glue. Valid values are: deno, fly, cloudflare.", { default: "deno" })
+  .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
   .arguments("<file:string>")
   .action(deploy)
   // CREATE ----------------------------
@@ -64,6 +66,13 @@ const cmd = new Command()
   .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
   .option("-j, --json", "Output in JSON format")
   .action(list)
+  // TAG ----------------------------
+  .command("tag", "Add, remove, or replace tags on one or more glues")
+  .arguments("[glueNames...:string]")
+  .option("-a, --add <tag...:string>", "Add tags (repeatable)")
+  .option("-r, --remove <tag...:string>", "Remove tags (repeatable)")
+  .option("-R, --replace <tag...:string>", "Replace all tags with the provided set (repeatable)", { standalone: true })
+  .action(tag)
   // STOP ----------------------------
   .command("stop", "Stop a deployed glue")
   .arguments("[name:string]")

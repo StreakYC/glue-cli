@@ -1,20 +1,23 @@
-import { createDeployment, createGlue, getGlueByName, type Runner, streamChangesTillDeploymentReady } from "../backend.ts";
+import { createDeployment, createGlue, getGlueByName, type Runner, streamChangesTillDeploymentReady, updateGlue } from "../backend.ts";
 import { render } from "ink";
 import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { getCreateDeploymentParams } from "../lib/getCreateDeploymentParams.ts";
 import { getGlueName } from "../lib/glueNaming.ts";
+import { addTags, normalizeTags } from "../lib/tagUtils.ts";
 
 interface DeployOptions {
   name?: string;
   runner: Runner;
+  tags?: string[];
 }
 
 export async function deploy(options: DeployOptions, file: string) {
   await checkForAuthCredsOtherwiseExit();
 
   const glueName = await getGlueName(file, options.name);
+  const tags = normalizeTags(options.tags);
 
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
@@ -39,16 +42,20 @@ export async function deploy(options: DeployOptions, file: string) {
 
   duration = performance.now();
   updateUI({ uploadingCodeState: "in_progress", uploadingCodeDuration: 0 });
-  const existingGlue = await getGlueByName(glueName, "deploy");
+  let existingGlue = await getGlueByName(glueName, "deploy");
   let newDeploymentId: string;
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, deploymentParams, "deploy");
+    const newGlue = await createGlue(glueName, deploymentParams, "deploy", { tags });
     if (!newGlue.pendingDeployment) {
       throw new Error("Failed to create glue");
     }
     newDeploymentId = newGlue.pendingDeployment.id;
   } else {
     const newDeployment = await createDeployment(existingGlue.id, deploymentParams);
+    if (tags.length) {
+      const desiredTags = addTags(existingGlue.tags, tags);
+      existingGlue = await updateGlue(existingGlue.id, { tags: desiredTags });
+    }
     newDeploymentId = newDeployment.id;
   }
 
