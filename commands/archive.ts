@@ -24,24 +24,28 @@ export const archive = async (_options: unknown, ...glueNames: string[]) => {
     throw new Error("You must provide one or more glue names when not running in a terminal");
   }
 
-  const updatePromises = glues.map((glue) => {
-    return runStep(`Archiving glue ${glue.name}`, () => {
-      if (glue.currentDeployment) {
-        throw new Error(`glue still running, stop first with \`glue stop ${glue.name}\``);
-      }
-      if (glue.tags.includes("archived")) {
-        throw new Error("already archived");
-      }
-      const newTags = [...glue.tags, "archived"];
-      return updateGlue(glue.id, { tags: newTags });
-    });
-  });
+  let anyErrors = false;
+  for (const glue of glues) {
+    try {
+      await runStep(`Archiving glue ${glue.name}`, () => {
+        if (glue.currentDeployment) {
+          throw new Error(`glue still running, stop first with \`glue stop ${glue.name}\``);
+        }
+        if (glue.tags.includes("archived")) {
+          throw new Error("already archived");
+        }
+        const newTags = [...glue.tags, "archived"];
+        return updateGlue(glue.id, { tags: newTags });
+      });
+    } catch (_e) {
+      anyErrors = true;
+    }
+  }
   console.log();
-  try {
-    await Promise.all(updatePromises);
-    console.log("All glues archived");
-  } catch (_e) {
+  if (anyErrors) {
     console.log("some glues failed to archive");
     Deno.exit(1);
+  } else {
+    console.log("All glues archived");
   }
 };

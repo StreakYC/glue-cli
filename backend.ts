@@ -90,10 +90,22 @@ export async function getGlueByName(name: string, environment: GlueEnvironment):
   return glues[0];
 }
 
-export async function getGlues(environment: GlueEnvironment, nameFilter?: string): Promise<GlueDTO[]> {
-  const params = new URLSearchParams({ environment });
-  if (nameFilter) {
-    params.set("name", nameFilter);
+export interface GetGluesFilters {
+  environment: GlueEnvironment;
+  name?: string;
+  includeTags?: string[];
+  excludeTags?: string[];
+}
+export async function getGlues(filters: GetGluesFilters = { environment: "deploy", excludeTags: ["archived"] }): Promise<GlueDTO[]> {
+  const params = new URLSearchParams({ environment: filters.environment });
+  if (filters?.name) {
+    params.set("name", filters.name);
+  }
+  if (filters?.includeTags) {
+    params.set("includeTags", filters.includeTags.join(","));
+  }
+  if (filters?.excludeTags) {
+    params.set("excludeTags", filters.excludeTags.join(","));
   }
   return await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
 }

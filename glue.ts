@@ -65,7 +65,10 @@ const cmd = new Command()
   .action(create)
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
-  .option("-nf, --name-filter <nameFilter:string>", "Filter glues by name")
+  .option("-n, --name <name:string>", "Filter glues by name")
+  .option("-t, --tag <tag...:string>", "Filter glues by tag (repeatable)")
+  .option("-e, --exclude-tags <excludeTags...:string>", "Exclude glues by tag (repeatable)")
+  .option("-a, --all", "Show all glues, including archived ones")
   .option("-j, --json", "Output in JSON format")
   .action(list)
   // TAG ----------------------------
