@@ -6,7 +6,7 @@ import { runStep } from "../ui/utils.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 interface ListOptions {
   name?: string;
-  tags?: string[];
+  tag?: string[];
   excludeTags?: string[];
   all?: boolean;
   json?: boolean;
@@ -20,8 +20,8 @@ export const list = async (options: ListOptions) => {
   if (options.name) {
     filters.name = options.name;
   }
-  if (options.tags) {
-    filters.includeTags = Array.from(new Set(options.tags.map((t) => t.trim())));
+  if (options.tag) {
+    filters.includeTags = Array.from(new Set(options.tag.map((t) => t.trim())));
   }
   if (options.excludeTags) {
     filters.excludeTags = Array.from(new Set([...options.excludeTags, "archived"].map((t) => t.trim())));
