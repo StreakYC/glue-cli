@@ -18,6 +18,8 @@ import { replay } from "./commands/replay.ts";
 import { tag } from "./commands/tag.ts";
 import { Runner } from "./backend.ts";
 import type z from "zod";
+import { archive } from "./commands/archive.ts";
+import { unarchive } from "./commands/unarchive.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -73,6 +75,14 @@ const cmd = new Command()
   .option("-r, --remove <tag...:string>", "Remove tags (repeatable)")
   .option("-R, --replace <tag...:string>", "Replace all tags with the provided set (repeatable)", { standalone: true })
   .action(tag)
+  // ARCHIVE ----------------------------
+  .command("archive", "Archive one or more glues")
+  .arguments("[glueNames...:string]")
+  .action(archive)
+  // UNARCHIVE ----------------------------
+  .command("unarchive", "Unarchive one or more glues")
+  .arguments("[glueNames...:string]")
+  .action(unarchive)
   // STOP ----------------------------
   .command("stop", "Stop a deployed glue")
   .arguments("[name:string]")

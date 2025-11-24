@@ -15,20 +15,17 @@ export async function runStep<T>(
   const spinner = Deno.env.get("TERM")?.includes("xterm") ? new Spinner({ message }) : new DummySpinner(message);
   spinner.start();
   let result: T;
+  const start = performance.now();
   try {
-    const start = performance.now();
     result = await fn();
     const end = performance.now();
     spinner.stop();
-    console.log(
-      mod.green("✔︎") + " " + message +
-        mod.gray(` (${Math.round(end - start)}ms)`),
-    );
+    console.log(mod.green("✔︎") + " " + message + mod.gray(` (${Math.round(end - start)}ms)`));
   } catch (e) {
+    const end = performance.now();
     spinner.stop();
-    console.log(
-      mod.red("✘") + " " + message + (logError ? ": " + String(e) : ""),
-    );
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.log(mod.red("✘") + " " + message + (logError ? ": " + errorMessage : "") + mod.gray(` (${Math.round(end - start)}ms)`));
     throw e;
   }
   return result;

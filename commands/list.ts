@@ -21,7 +21,7 @@ export const list = async (options: ListOptions) => {
       return await getGlues("deploy", options.nameFilter);
     });
     new Table()
-      .header(["Name", "Running", "Runs", "Errors", "Last run", "Last deployed"])
+      .header(["Name", "Running", "Runs", "Errors", "Last run", "Last deployed", "Tags"])
       .body(
         glues.map((
           glue,
@@ -32,6 +32,7 @@ export const list = async (options: ListOptions) => {
           glue.executionSummary.totalErrorCount ? red(glue.executionSummary.totalErrorCount.toString()) : "-",
           formatEpochMillis(glue.executionSummary.mostRecent),
           formatEpochMillis(glue.currentDeployment?.createdAt),
+          glue.tags.length ? glue.tags.join(", ") : "-",
         ]),
       )
       .padding(4)
