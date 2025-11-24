@@ -45,7 +45,5 @@ export const archive = async (_options: unknown, ...glueNames: string[]) => {
   if (anyErrors) {
     console.log("some glues failed to archive");
     Deno.exit(1);
-  } else {
-    console.log("All glues archived");
   }
 };

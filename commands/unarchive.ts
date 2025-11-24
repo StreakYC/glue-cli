@@ -42,7 +42,5 @@ export const unarchive = async (_options: unknown, ...glueNames: string[]) => {
   if (anyErrors) {
     console.log("some glues failed to unarchive");
     Deno.exit(1);
-  } else {
-    console.log("All glues unarchived");
   }
 };
