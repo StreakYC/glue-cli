@@ -60,8 +60,7 @@ const cmd = new Command()
   .arguments("<file:string>")
   .action(deploy)
   // CREATE ----------------------------
-  .command("create", "Create a new glue from a template")
-  .arguments("[filename:string]")
+  .command("create", "Create a new glue from a basic template or from a natural language description")
   .action(create)
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
