@@ -2,7 +2,7 @@ import { bold, green } from "@std/fmt/colors";
 import { Select } from "@cliffy/prompt/select";
 import { Input } from "@cliffy/prompt/input";
 import { runStep } from "../ui/utils.ts";
-import * as path from "jsr:@std/path";
+import * as path from "@std/path";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
