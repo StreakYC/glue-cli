@@ -7,8 +7,8 @@ export const BuildStepTitles: Record<BuildStepName, string> = {
   deployCode: "Booting code",
   createTriggers: "Creating triggers",
   createTunnel: "Creating local tunnel",
-  registrationAuth: "Checking authentication",
-  registrationSetup: "Setting up triggers & injections",
+  registrationAuth: "Checking accounts needed",
+  registrationSetup: "Setting up triggers",
 };
 
 export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
@@ -42,24 +42,35 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
 };
 
 export const RegistrationAccountSetupSection = ({ triggers, accountInjections }: { triggers: TriggerDTO[]; accountInjections: AccountInjectionDTO[] }) => {
-  const sortedTriggers = triggers
+  const triggersMissingAccounts = triggers
     .filter((t) => !!t.accountSetupUrl)
     .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
-  const sortedAccountInjections = accountInjections
+  const accountInjectionsMissingAccounts = accountInjections
     .filter((a) => !!a.accountSetupUrl)
     .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+  const triggersWithAccounts = triggers
+    .filter((t) => !!t.accountSetupUrl)
+    .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+  const accountInjectionsWithAccounts = accountInjections
+    .filter((a) => !!a.accountSetupUrl)
+    .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      {sortedTriggers.length > 0 && <Text>Triggers needing authentication:</Text>}
-      {sortedTriggers.map((t) => (
+      {triggersMissingAccounts.length > 0 && (
+        <Text>${triggersWithAccounts.length} triggers have accounts, authenticate ${triggersMissingAccounts.length} more:</Text>
+      )}
+      {triggersMissingAccounts.map((t) => (
         <Box paddingLeft={2} key={t.id}>
           <Text>
             {t.type}({t.label}): <Text bold>{t.accountSetupUrl}</Text>
           </Text>
         </Box>
       ))}
-      {sortedAccountInjections.length > 0 && <Text>Account injections needing authentication:</Text>}
-      {sortedAccountInjections.map((a) => (
+      {accountInjectionsMissingAccounts.length > 0 && (
+        <Text>${accountInjectionsWithAccounts.length} credential fetchers have accounts, authenticate ${accountInjectionsMissingAccounts.length} more:</Text>
+      )}
+      {accountInjectionsMissingAccounts.map((a) => (
         <Box paddingLeft={2} key={a.id}>
           <Text>
             {a.type}({a.description ?? a.label}): <Text bold>{a.accountSetupUrl}</Text>
@@ -83,7 +94,7 @@ export const CompletedRegistrationList = ({ triggers, accountInjections }: { tri
           </Text>
         </Box>
       ))}
-      {sortedAccountInjections.length > 0 && <Text>Account injections:</Text>}
+      {sortedAccountInjections.length > 0 && <Text>Credential fetchers:</Text>}
       {sortedAccountInjections.map((a) => (
         <Box paddingLeft={2} key={a.id}>
           <Text>

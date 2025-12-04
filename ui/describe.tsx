@@ -49,7 +49,7 @@ export const DescribeDeploymentUI = ({ deployment }: DescribeDeploymentUIProps) 
       {(deployment.triggers.length > 0 || deployment.accountInjections.length > 0) && (
         <>
           <Newline />
-          <Text>Triggers and account injections:</Text>
+          <Text>Triggers and credential fetchers:</Text>
           <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
         </>
       )}
@@ -105,7 +105,7 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
           {(glue.currentDeployment.triggers.length > 0 || glue.currentDeployment.accountInjections.length > 0) && (
             <>
               <Newline />
-              <Text>Triggers and account injections:</Text>
+              <Text>Triggers and credential fetchers:</Text>
               <CompletedRegistrationList triggers={glue.currentDeployment.triggers} accountInjections={glue.currentDeployment.accountInjections} />
             </>
           )}
