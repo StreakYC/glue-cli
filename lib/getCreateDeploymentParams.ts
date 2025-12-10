@@ -16,7 +16,10 @@ import { parseImports } from "./parseImports.ts";
  * It also looks for a .env file in the same directory as the entry point and
  * includes its variables.
  */
-export async function getCreateDeploymentParams(file: string, runner: Runner = "deno"): Promise<CreateDeploymentParams> {
+export async function getCreateDeploymentParams(
+  file: string,
+  runner: Runner = "deno",
+): Promise<CreateDeploymentParams> {
   const fileDir = path.dirname(file);
   let entryPointUrl = path.relative(fileDir, file);
 
@@ -55,7 +58,11 @@ export async function getCreateDeploymentParams(file: string, runner: Runner = "
             } else if (imp.type === "json") {
               await addAsset(relativeImportPath, false);
             } else {
-              console.warn(`Unknown import type ${JSON.stringify(imp.type)} for ${JSON.stringify(imp.moduleName)}`);
+              console.warn(
+                `Unknown import type ${JSON.stringify(imp.type)} for ${
+                  JSON.stringify(imp.moduleName)
+                }`,
+              );
               await addAsset(relativeImportPath, false);
             }
           }),
@@ -117,7 +124,9 @@ export async function getCreateDeploymentParams(file: string, runner: Runner = "
       assets: Object.fromEntries(
         await Promise.all(
           sortedAssets
-            .map(async ([file, contentsPromise]): Promise<[string, DeploymentAsset]> => [file, await contentsPromise]),
+            .map(async (
+              [file, contentsPromise],
+            ): Promise<[string, DeploymentAsset]> => [file, await contentsPromise]),
         ),
       ),
       envVars,
@@ -146,7 +155,10 @@ function* parentDirectories(startDir: string): Generator<string> {
 }
 
 /** Find any of the `searchNames` files in fileDir or its parent directories */
-async function findFileInDirectoryOrAbove(fileDir: string, searchNames: string[]): Promise<string | undefined> {
+async function findFileInDirectoryOrAbove(
+  fileDir: string,
+  searchNames: string[],
+): Promise<string | undefined> {
   try {
     for (const currentDir of parentDirectories(fileDir)) {
       for (const searchName of searchNames) {

@@ -1,11 +1,25 @@
-import { getAccountById, getDeploymentById, getDeployments, getExecutionById, getGlueById, getGlueByName, type GlueDTO } from "../backend.ts";
+import {
+  getAccountById,
+  getDeploymentById,
+  getDeployments,
+  getExecutionById,
+  getGlueById,
+  getGlueByName,
+  type GlueDTO,
+} from "../backend.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import React from "react";
 import { delay } from "@std/async/delay";
 import { type Instance, render } from "ink";
-import { DescribeAccountUI, DescribeDeploymentUI, DescribeExecutionUI, DescribeGlueUI, DescribeUI } from "../ui/describe.tsx";
+import {
+  DescribeAccountUI,
+  DescribeDeploymentUI,
+  DescribeExecutionUI,
+  DescribeGlueUI,
+  DescribeUI,
+} from "../ui/describe.tsx";
 import { isPrefixId } from "../common.ts";
 
 interface DescribeOptions {
@@ -47,7 +61,12 @@ export const describe = async (options: DescribeOptions, query?: string) => {
   }
 
   const target = createDescribeTarget(query);
-  const initialLoadResult = await runStep(`Loading ${target.kind}...`, () => target.load(), true, !!options.json);
+  const initialLoadResult = await runStep(
+    `Loading ${target.kind}...`,
+    () => target.load(),
+    true,
+    !!options.json,
+  );
 
   if (options.json) {
     console.log(JSON.stringify(initialLoadResult.data, null, 2));
@@ -98,7 +117,10 @@ function createDeploymentTarget(deploymentId: string): DescribeTarget {
       if (!deployment) {
         throw new Error("Couldn't find a deployment with that id");
       }
-      return { data: deployment, toReactElement: () => React.createElement(DescribeDeploymentUI, { deployment }) };
+      return {
+        data: deployment,
+        toReactElement: () => React.createElement(DescribeDeploymentUI, { deployment }),
+      };
     },
   };
 }
@@ -113,7 +135,10 @@ function createGlueTargetById(glueId: string): DescribeTarget {
       }
       const deployments = await getDeployments(glue.id);
       const glueAndDeployments = { glue, deployments };
-      return { data: glueAndDeployments, toReactElement: () => React.createElement(DescribeGlueUI, { glueAndDeployments }) };
+      return {
+        data: glueAndDeployments,
+        toReactElement: () => React.createElement(DescribeGlueUI, { glueAndDeployments }),
+      };
     },
   };
 }
@@ -141,7 +166,10 @@ function createGlueTargetByName(glueName: string): DescribeTarget {
 
       const deployments = await getDeployments(glue.id);
       const glueAndDeployments = { glue, deployments };
-      return { data: glueAndDeployments, toReactElement: () => React.createElement(DescribeGlueUI, { glueAndDeployments }) };
+      return {
+        data: glueAndDeployments,
+        toReactElement: () => React.createElement(DescribeGlueUI, { glueAndDeployments }),
+      };
     },
   };
 }
@@ -154,7 +182,10 @@ function createAccountTarget(accountId: string): DescribeTarget {
       if (!account) {
         throw new Error("Couldn't find an account with that id");
       }
-      return { data: account, toReactElement: () => React.createElement(DescribeAccountUI, { account }) };
+      return {
+        data: account,
+        toReactElement: () => React.createElement(DescribeAccountUI, { account }),
+      };
     },
   };
 }
@@ -167,15 +198,22 @@ function createExecutionTarget(executionId: string): DescribeTarget {
       if (!execution) {
         throw new Error("Couldn't find an execution with that id");
       }
-      return { data: execution, toReactElement: () => React.createElement(DescribeExecutionUI, { execution }) };
+      return {
+        data: execution,
+        toReactElement: () => React.createElement(DescribeExecutionUI, { execution }),
+      };
     },
   };
 }
 
 function renderTarget(targetReactElement: React.ReactElement, watch: boolean) {
   if (!describeInkInstance) {
-    describeInkInstance = render(React.createElement(DescribeUI, { target: targetReactElement, isWatching: watch }));
+    describeInkInstance = render(
+      React.createElement(DescribeUI, { target: targetReactElement, isWatching: watch }),
+    );
   } else {
-    describeInkInstance.rerender(React.createElement(DescribeUI, { target: targetReactElement, isWatching: watch }));
+    describeInkInstance.rerender(
+      React.createElement(DescribeUI, { target: targetReactElement, isWatching: watch }),
+    );
   }
 }

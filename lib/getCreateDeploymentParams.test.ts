@@ -4,7 +4,9 @@ import { join } from "@std/path/join";
 import { getCreateDeploymentParams } from "./getCreateDeploymentParams.ts";
 
 Deno.test("gives expected output", async (t) => {
-  const params = await getCreateDeploymentParams(join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/main/myGlueScript.ts"));
+  const params = await getCreateDeploymentParams(
+    join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/main/myGlueScript.ts"),
+  );
   assertEquals(params.deploymentContent!.entryPointUrl, "myGlueScript.ts");
   assertNotEquals(params.deploymentContent!.assets["myGlueScript.ts"], undefined);
   assertNotEquals(params.deploymentContent!.assets["deno.json"], undefined);
@@ -16,7 +18,10 @@ Deno.test("gives expected output", async (t) => {
 
 Deno.test("finds up-dir deno.json", async (t) => {
   const params = await getCreateDeploymentParams(
-    join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/up-dir-deno.json/content/myGlueScript.ts"),
+    join(
+      import.meta.dirname!,
+      "../tests/resources/getCreateDeploymentParams/up-dir-deno.json/content/myGlueScript.ts",
+    ),
   );
   assertEquals(params.deploymentContent?.entryPointUrl, "content/myGlueScript.ts");
   assertNotEquals(params.deploymentContent!.assets["deno.json"], undefined);
@@ -27,7 +32,10 @@ Deno.test("finds up-dir deno.json", async (t) => {
 
 Deno.test("allows up-dir imports", async (t) => {
   const params = await getCreateDeploymentParams(
-    join(import.meta.dirname!, "../tests/resources/getCreateDeploymentParams/up-dir-imports/content-1/content-2/myGlueScript.ts"),
+    join(
+      import.meta.dirname!,
+      "../tests/resources/getCreateDeploymentParams/up-dir-imports/content-1/content-2/myGlueScript.ts",
+    ),
   );
   assertEquals(params.deploymentContent?.entryPointUrl, "content-1/content-2/myGlueScript.ts");
   assertNotEquals(params.deploymentContent!.assets["content-1/content-2/deno.json"], undefined);

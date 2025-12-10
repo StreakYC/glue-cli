@@ -12,7 +12,9 @@ export async function runStep<T>(
   if (quiet) {
     return await fn();
   }
-  const spinner = Deno.env.get("TERM")?.includes("xterm") ? new Spinner({ message }) : new DummySpinner(message);
+  const spinner = Deno.env.get("TERM")?.includes("xterm")
+    ? new Spinner({ message })
+    : new DummySpinner(message);
   spinner.start();
   let result: T;
   const start = performance.now();
@@ -25,7 +27,10 @@ export async function runStep<T>(
     const end = performance.now();
     spinner.stop();
     const errorMessage = e instanceof Error ? e.message : String(e);
-    console.log(mod.red("✘") + " " + message + (logError ? ": " + errorMessage : "") + mod.gray(` (${Math.round(end - start)}ms)`));
+    console.log(
+      mod.red("✘") + " " + message + (logError ? ": " + errorMessage : "") +
+        mod.gray(` (${Math.round(end - start)}ms)`),
+    );
     throw e;
   }
   return result;
@@ -97,7 +102,9 @@ function convertBuildStepStatusToEmoji(status: string) {
   }
 }
 
-export function toSortedByTypeThenLabel<T extends { type: string; label: string }>(items: T[]): T[] {
+export function toSortedByTypeThenLabel<T extends { type: string; label: string }>(
+  items: T[],
+): T[] {
   return items.toSorted((a, b) => {
     const typeCmp = a.type.localeCompare(b.type);
     if (typeCmp !== 0) return typeCmp;

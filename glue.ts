@@ -43,7 +43,10 @@ const cmd = new Command()
     "Run a glue locally for development. Your glue is run immediately and your top level triggers are setup. By default a debug port is opened, but can be disabled with --no-debug.",
   )
   .option("-n, --name <name:string>", "Set glue name")
-  .option("--inspect-wait", "Enable the debugger and wait for a connection before proceeding with execution.")
+  .option(
+    "--inspect-wait",
+    "Enable the debugger and wait for a connection before proceeding with execution.",
+  )
   .option("--no-debug", "Disable the debugger")
   .option(
     "--replay <executionId:string>",
@@ -55,12 +58,19 @@ const cmd = new Command()
   .command("deploy", "Deploy a glue")
   .option("-n, --name <name:string>", "Glue name")
   .type("runner", validateWithZodEnum(Runner))
-  .option("-r, --runner <runner:runner>", "Use a specific runner to host the glue. Valid values are: deno, fly, cloudflare.", { default: "deno" })
+  .option(
+    "-r, --runner <runner:runner>",
+    "Use a specific runner to host the glue. Valid values are: deno, fly, cloudflare.",
+    { default: "deno" },
+  )
   .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
   .arguments("<file:string>")
   .action(deploy)
   // CREATE ----------------------------
-  .command("create", "Create a new glue from a basic template or from a natural language description")
+  .command(
+    "create",
+    "Create a new glue from a basic template or from a natural language description",
+  )
   .action(create)
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
@@ -75,7 +85,9 @@ const cmd = new Command()
   .arguments("[...glueNames:string]")
   .option("-a, --add <tag:string[]>", "Add tags (repeatable)", { separator: "," })
   .option("-r, --remove <tag:string[]>", "Remove tags (repeatable)", { separator: "," })
-  .option("-R, --replace <tag:string[]>", "Replace all tags with the provided set (repeatable)", { separator: "," })
+  .option("-R, --replace <tag:string[]>", "Replace all tags with the provided set (repeatable)", {
+    separator: ",",
+  })
   .action(tag)
   // ARCHIVE ----------------------------
   .command("archive", "Archive one or more glues")
@@ -90,7 +102,10 @@ const cmd = new Command()
   .arguments("[name:string]")
   .action(stop)
   // DESCRIBE ----------------------------
-  .command("describe", "Describe a glue or any other resource. Query can be a glue name or any id for any resource")
+  .command(
+    "describe",
+    "Describe a glue or any other resource. Query can be a glue name or any id for any resource",
+  )
   .arguments("[query:string]")
   .option("-j, --json", "Output in JSON format")
   .option("-w, --watch", "Refresh the description every 3 seconds")
@@ -106,12 +121,28 @@ const cmd = new Command()
   )
   .arguments("[query:string]")
   .option("-j, --json", "Output in JSON format")
-  .option("-n, --number <number:number>", "Number of historical executions to print initially", { default: 10 })
-  .option("-l --log-lines <logLines:number>", "Number of log lines to print for each execution. Set to 0 to hide log lines", { default: 10 })
+  .option("-n, --number <number:number>", "Number of historical executions to print initially", {
+    default: 10,
+  })
+  .option(
+    "-l --log-lines <logLines:number>",
+    "Number of log lines to print for each execution. Set to 0 to hide log lines",
+    { default: 10 },
+  )
   .option("-t, --tail", "Live follow the executions as they happen", { default: false })
-  .option("-F, --full-log-lines", "Don't clip log lines to the width of the terminal, wrap the full log line. Has no effect in json mode", { default: false })
-  .option("-f, --filter <filter:string>", "Filter executions by state. Only show executions with this state. Valid values are: success, failure, running")
-  .option("-s, --search <search:string>", "Search for a string in the execution logs, error or input data")
+  .option(
+    "-F, --full-log-lines",
+    "Don't clip log lines to the width of the terminal, wrap the full log line. Has no effect in json mode",
+    { default: false },
+  )
+  .option(
+    "-f, --filter <filter:string>",
+    "Filter executions by state. Only show executions with this state. Valid values are: success, failure, running",
+  )
+  .option(
+    "-s, --search <search:string>",
+    "Search for a string in the execution logs, error or input data",
+  )
   .option("--failures", "Only show failures, shorthand for --filter=failure")
   .action(logs)
   // LOGIN ----------------------------

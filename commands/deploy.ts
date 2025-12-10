@@ -1,4 +1,11 @@
-import { createDeployment, createGlue, getGlueByName, type Runner, streamChangesTillDeploymentReady, updateGlue } from "../backend.ts";
+import {
+  createDeployment,
+  createGlue,
+  getGlueByName,
+  type Runner,
+  streamChangesTillDeploymentReady,
+  updateGlue,
+} from "../backend.ts";
 import { type Instance, render } from "ink";
 import { DeployUI, type DeployUIProps } from "../ui/deploy.tsx";
 import React from "react";
@@ -72,8 +79,15 @@ export async function deploy(options: DeployOptions, file: string) {
     // If there's an existing glue, we want to warn the user that it will be
     // overwritten *unless* they have already deployed this file (identified by
     // absolute path) on their current machine to this glue before.
-    const lookupResult = await kv.get<string>(["glue-last-deployed-path", GLUE_API_SERVER, existingGlue.id]);
-    if (!lookupResult.value || absPath.localeCompare(lookupResult.value, undefined, { sensitivity: "base" }) !== 0) {
+    const lookupResult = await kv.get<string>([
+      "glue-last-deployed-path",
+      GLUE_API_SERVER,
+      existingGlue.id,
+    ]);
+    if (
+      !lookupResult.value ||
+      absPath.localeCompare(lookupResult.value, undefined, { sensitivity: "base" }) !== 0
+    ) {
       unmountUI();
       console.warn(
         `Warning: You are deploying to an existing glue named %c${

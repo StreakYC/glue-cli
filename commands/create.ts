@@ -29,7 +29,10 @@ export async function create(_options: void) {
     filename = codeGenResult.filename;
     contents = codeGenResult.fileContents;
   } else {
-    filename = await Input.prompt({ message: "Enter the filename for the new glue", default: DEFAULT_FILENAME });
+    filename = await Input.prompt({
+      message: "Enter the filename for the new glue",
+      default: DEFAULT_FILENAME,
+    });
     contents = TEMPLATE_CONTENT;
   }
   filename = await uniquifyPath(filename);

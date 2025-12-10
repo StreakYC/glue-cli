@@ -4,7 +4,9 @@ import { Box, Newline, Text } from "ink";
 import { BuildStepStatusRow, CompletedRegistrationList } from "./common.tsx";
 import { formatEpochMillis } from "./utils.ts";
 
-export const DescribeUI = ({ target, isWatching }: { target: React.ReactElement; isWatching: boolean }) => {
+export const DescribeUI = (
+  { target, isWatching }: { target: React.ReactElement; isWatching: boolean },
+) => {
   return (
     <>
       {target}
@@ -50,7 +52,10 @@ export const DescribeDeploymentUI = ({ deployment }: DescribeDeploymentUIProps) 
         <>
           <Newline />
           <Text>Triggers and credential fetchers:</Text>
-          <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
+          <CompletedRegistrationList
+            triggers={deployment.triggers}
+            accountInjections={deployment.accountInjections}
+          />
         </>
       )}
     </>
@@ -67,7 +72,8 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
   const { glue, deployments } = glueAndDeployments;
   const totalSuccess = glue.executionSummary.totalCount - glue.executionSummary.totalErrorCount;
   const totalFail = glue.executionSummary.totalErrorCount;
-  const currentSuccess = glue.executionSummary.currentDeploymentCount - glue.executionSummary.currentDeploymentErrorCount;
+  const currentSuccess = glue.executionSummary.currentDeploymentCount -
+    glue.executionSummary.currentDeploymentErrorCount;
   const currentFail = glue.executionSummary.currentDeploymentErrorCount;
   const sortedDeployments = deployments.toSorted((a, b) => b.createdAt - a.createdAt);
 
@@ -102,11 +108,15 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
       {glue.currentDeployment && (
         <>
           <Text>Last deployed: {formatEpochMillis(glue.currentDeployment.createdAt)}</Text>
-          {(glue.currentDeployment.triggers.length > 0 || glue.currentDeployment.accountInjections.length > 0) && (
+          {(glue.currentDeployment.triggers.length > 0 ||
+            glue.currentDeployment.accountInjections.length > 0) && (
             <>
               <Newline />
               <Text>Triggers and credential fetchers:</Text>
-              <CompletedRegistrationList triggers={glue.currentDeployment.triggers} accountInjections={glue.currentDeployment.accountInjections} />
+              <CompletedRegistrationList
+                triggers={glue.currentDeployment.triggers}
+                accountInjections={glue.currentDeployment.accountInjections}
+              />
             </>
           )}
         </>
@@ -120,15 +130,21 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
               <Box key={deployment.id} flexDirection="column" marginBottom={1}>
                 <Text>
                   <Text bold>{deployment.id}</Text> ·{" "}
-                  <DeploymentStatusTag status={deployment.status} isCurrent={deployment.id === glue.currentDeployment?.id} />
+                  <DeploymentStatusTag
+                    status={deployment.status}
+                    isCurrent={deployment.id === glue.currentDeployment?.id}
+                  />
                 </Text>
                 <Text>
-                  Created: {formatEpochMillis(deployment.createdAt)} · Triggers: {deployment.triggers.length}
+                  Created: {formatEpochMillis(deployment.createdAt)} · Triggers:{" "}
+                  {deployment.triggers.length}
                 </Text>
                 {deployment.buildSteps.length > 0 && (
                   <Box flexDirection="column" paddingLeft={2}>
                     <Text>Build steps:</Text>
-                    {deployment.buildSteps.map((step) => <BuildStepStatusRow key={step.name} step={step} />)}
+                    {deployment.buildSteps.map((step) => (
+                      <BuildStepStatusRow key={step.name} step={step} />
+                    ))}
                   </Box>
                 )}
               </Box>
@@ -153,7 +169,9 @@ export const DescribeAccountUI = ({ account }: DescribeAccountUIProps) => {
       <Text>Created: {new Date(account.createdAt).toLocaleString()}</Text>
       {account.displayName && <Text>Name: {account.displayName}</Text>}
       {account.redactedApiKey && <Text>API Key: {account.redactedApiKey}</Text>}
-      {account.scopes && account.scopes.length > 0 && <Text>Scopes: {account.scopes.join(", ")}</Text>}
+      {account.scopes && account.scopes.length > 0 && (
+        <Text>Scopes: {account.scopes.join(", ")}</Text>
+      )}
       {account.liveGlues.length > 0 && (
         <>
           <Newline />
@@ -162,7 +180,8 @@ export const DescribeAccountUI = ({ account }: DescribeAccountUIProps) => {
             {account.liveGlues.map((glue) => (
               <Text key={glue.id}>
                 <Text color="green">{glue.name}</Text>
-                {glue.environment === "dev" && <Text color="yellow">[DEV]</Text>} <Text color="gray">({glue.id})</Text>
+                {glue.environment === "dev" && <Text color="yellow">[DEV]</Text>}{" "}
+                <Text color="gray">({glue.id})</Text>
               </Text>
             ))}
           </Box>
@@ -175,8 +194,12 @@ export const DescribeAccountUI = ({ account }: DescribeAccountUIProps) => {
 export type DescribeExecutionUIProps = { execution: ExecutionDTO };
 
 export const DescribeExecutionUI = ({ execution }: DescribeExecutionUIProps) => {
-  const completedAt = execution.endedAt ? new Date(execution.endedAt).toLocaleString() : "Not completed";
-  const duration = execution.endedAt ? `${execution.endedAt - execution.startedAt}ms` : "Not completed";
+  const completedAt = execution.endedAt
+    ? new Date(execution.endedAt).toLocaleString()
+    : "Not completed";
+  const duration = execution.endedAt
+    ? `${execution.endedAt - execution.startedAt}ms`
+    : "Not completed";
   return (
     <>
       <Text bold>{execution.id}</Text>
@@ -197,7 +220,10 @@ export const DescribeExecutionUI = ({ execution }: DescribeExecutionUIProps) => 
           <Box flexDirection="column" paddingLeft={2}>
             {execution.logs.map((log, index) => (
               <Text key={`${log.timestamp}-${index}`}>
-                <Text color={log.type === "stdout" ? "green" : "red"}>{new Date(log.timestamp).toLocaleString()}</Text> {log.text}
+                <Text color={log.type === "stdout" ? "green" : "red"}>
+                  {new Date(log.timestamp).toLocaleString()}
+                </Text>{" "}
+                {log.text}
               </Text>
             ))}
           </Box>

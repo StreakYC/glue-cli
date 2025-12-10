@@ -16,7 +16,10 @@ export async function tag(options: TagOptions, ...glueNames: string[]) {
   let glues: GlueDTO[] = [];
   if (glueNames.length) {
     const gluePromises = glueNames.map((n) => getGlueByName(n, "deploy"));
-    const resolvedGlues = await runStep(`Loading glue${glueNames.length === 1 ? "" : "s"}...`, () => Promise.all(gluePromises));
+    const resolvedGlues = await runStep(
+      `Loading glue${glueNames.length === 1 ? "" : "s"}...`,
+      () => Promise.all(gluePromises),
+    );
     glues = resolvedGlues.filter((g) => g !== undefined);
     if (glues.length !== glueNames.length) {
       console.error("One or more glues not found.");
@@ -42,6 +45,8 @@ export async function tag(options: TagOptions, ...glueNames: string[]) {
     glues.forEach((g) => g.tags = removeTags(g.tags, removals));
   }
 
-  const updatePromises = glues.map((g) => runStep(`Updating tags for ${g.name}`, () => updateGlue(g.id, { tags: g.tags })));
+  const updatePromises = glues.map((g) =>
+    runStep(`Updating tags for ${g.name}`, () => updateGlue(g.id, { tags: g.tags }))
+  );
   await Promise.all(updatePromises);
 }

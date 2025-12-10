@@ -1,4 +1,10 @@
-import { type AccountDTO, deleteAccount, getAccountById, getAccounts, stopGlue } from "../backend.ts";
+import {
+  type AccountDTO,
+  deleteAccount,
+  getAccountById,
+  getAccounts,
+  stopGlue,
+} from "../backend.ts";
 import { Table } from "@cliffy/table";
 import { green } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
@@ -65,7 +71,8 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
 
   if (accountToDelete.liveGlues.length > 0) {
     console.log("This account is being used by the following glues that need to be stopped first:");
-    const glueNames = accountToDelete.liveGlues.map((glue) => `${green(glue.name)} (${glue.id})`).join(",");
+    const glueNames = accountToDelete.liveGlues.map((glue) => `${green(glue.name)} (${glue.id})`)
+      .join(",");
     console.log(glueNames);
     const confirm = await Confirm.prompt({
       message: `Stop these glues`,
@@ -82,7 +89,9 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
     console.log(`\n`);
   }
   const confirm = await Confirm.prompt({
-    message: `Are you sure you want to delete the ${displayNameForAccount(accountToDelete)} account`,
+    message: `Are you sure you want to delete the ${
+      displayNameForAccount(accountToDelete)
+    } account`,
     default: false,
   });
 

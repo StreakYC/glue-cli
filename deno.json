@@ -58,7 +58,7 @@
     "jsxImportSourceTypes": "npm:@types/react@^18"
   },
   "fmt": {
-    "lineWidth": 160
+    "lineWidth": 100
   },
   "lint": {
     "rules": {

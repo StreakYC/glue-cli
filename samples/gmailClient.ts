@@ -3,7 +3,10 @@ import { gmail_v1 } from "npm:@googleapis/gmail@14";
 import { OAuth2Client } from "npm:google-auth-library@10";
 
 const googleCredFetcher = glue.google.createCredentialFetcher({
-  scopes: ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/userinfo.profile"],
+  scopes: [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/userinfo.profile",
+  ],
 });
 
 glue.webhook.onGet(async (_event) => {

@@ -1,6 +1,12 @@
 import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
-import type { AccountInjectionDTO, BuildStepDTO, BuildStepName, StepStatus, TriggerDTO } from "../backend.ts";
+import type {
+  AccountInjectionDTO,
+  BuildStepDTO,
+  BuildStepName,
+  StepStatus,
+  TriggerDTO,
+} from "../backend.ts";
 import { toSortedByTypeThenLabel } from "./utils.ts";
 
 export const BuildStepTitles: Record<BuildStepName, string> = {
@@ -17,7 +23,9 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
     return (
       <Text>
         <Text color="green">✔︎</Text> {title}
-        {step.endTime && step.startTime && <Text color="gray">{` (${Math.round(step.endTime - step.startTime)}ms)`}</Text>}
+        {step.endTime && step.startTime && (
+          <Text color="gray">{` (${Math.round(step.endTime - step.startTime)}ms)`}</Text>
+        )}
       </Text>
     );
   } else if (step.status === "failure") {
@@ -41,7 +49,12 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
   }
 };
 
-export const RegistrationAccountSetupSection = ({ triggers, accountInjections }: { triggers: TriggerDTO[]; accountInjections: AccountInjectionDTO[] }) => {
+export const RegistrationAccountSetupSection = (
+  { triggers, accountInjections }: {
+    triggers: TriggerDTO[];
+    accountInjections: AccountInjectionDTO[];
+  },
+) => {
   const triggersMissingAccounts = triggers
     .filter((t) => !!t.accountSetupUrl)
     .toSorted((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
@@ -58,7 +71,10 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {triggersMissingAccounts.length > 0 && (
-        <Text>${triggersWithAccounts.length} triggers have accounts, authenticate ${triggersMissingAccounts.length} more:</Text>
+        <Text>
+          ${triggersWithAccounts.length}{" "}
+          triggers have accounts, authenticate ${triggersMissingAccounts.length} more:
+        </Text>
       )}
       {triggersMissingAccounts.map((t) => (
         <Box paddingLeft={2} key={t.id}>
@@ -68,7 +84,12 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
         </Box>
       ))}
       {accountInjectionsMissingAccounts.length > 0 && (
-        <Text>${accountInjectionsWithAccounts.length} credential fetchers have accounts, authenticate ${accountInjectionsMissingAccounts.length} more:</Text>
+        <Text>
+          ${accountInjectionsWithAccounts.length}{" "}
+          credential fetchers have accounts, authenticate ${accountInjectionsMissingAccounts.length}
+          {" "}
+          more:
+        </Text>
       )}
       {accountInjectionsMissingAccounts.map((a) => (
         <Box paddingLeft={2} key={a.id}>
@@ -81,7 +102,12 @@ export const RegistrationAccountSetupSection = ({ triggers, accountInjections }:
   );
 };
 
-export const CompletedRegistrationList = ({ triggers, accountInjections }: { triggers: TriggerDTO[]; accountInjections: AccountInjectionDTO[] }) => {
+export const CompletedRegistrationList = (
+  { triggers, accountInjections }: {
+    triggers: TriggerDTO[];
+    accountInjections: AccountInjectionDTO[];
+  },
+) => {
   const sortedTriggers = toSortedByTypeThenLabel(triggers);
   const sortedAccountInjections = toSortedByTypeThenLabel(accountInjections);
   return (
@@ -106,13 +132,20 @@ export const CompletedRegistrationList = ({ triggers, accountInjections }: { tri
   );
 };
 
-export const ClientStepRow = ({ stepState, stepDuration, stepTitle }: { stepState: StepStatus; stepDuration: number; stepTitle: string }) => {
+export const ClientStepRow = (
+  { stepState, stepDuration, stepTitle }: {
+    stepState: StepStatus;
+    stepDuration: number;
+    stepTitle: string;
+  },
+) => {
   if (stepState === "not_started") {
     return <Text color="gray">○ {stepTitle}</Text>;
   } else if (stepState === "success") {
     return (
       <Text>
-        <Text color="green">✔︎</Text> {stepTitle} <Text color="gray">{`(${Math.round(stepDuration)}ms)`}</Text>
+        <Text color="green">✔︎</Text> {stepTitle}{" "}
+        <Text color="gray">{`(${Math.round(stepDuration)}ms)`}</Text>
       </Text>
     );
   } else if (stepState === "failure") {

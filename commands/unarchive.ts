@@ -8,7 +8,10 @@ export const unarchive = async (_options: unknown, ...glueNames: string[]) => {
   let glues: GlueDTO[] = [];
   if (glueNames.length) {
     const gluePromises = glueNames.map((n) => getGlueByName(n, "deploy"));
-    const resolvedGlues = await runStep(`Loading glue${glueNames.length === 1 ? "" : "s"}...`, () => Promise.all(gluePromises));
+    const resolvedGlues = await runStep(
+      `Loading glue${glueNames.length === 1 ? "" : "s"}...`,
+      () => Promise.all(gluePromises),
+    );
     glues = resolvedGlues.filter((g) => g !== undefined);
     if (glues.length !== glueNames.length) {
       resolvedGlues.forEach((g, n) => {
