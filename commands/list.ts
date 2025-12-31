@@ -24,7 +24,9 @@ export const list = async (options: ListOptions) => {
     filters.includeTags = Array.from(new Set(options.tag.map((t) => t.trim())));
   }
   if (options.excludeTags) {
-    filters.excludeTags = Array.from(new Set([...options.excludeTags, "archived"].map((t) => t.trim())));
+    filters.excludeTags = Array.from(
+      new Set([...options.excludeTags, "archived"].map((t) => t.trim())),
+    );
   }
   if (options.all) {
     filters.excludeTags = undefined;
@@ -44,8 +46,12 @@ export const list = async (options: ListOptions) => {
         ) => [
           glue.name,
           getRunningStringForDeploymentStatus(glue.currentDeployment?.status),
-          glue.executionSummary.totalCount ? green(glue.executionSummary.totalCount.toString()) : "-",
-          glue.executionSummary.totalErrorCount ? red(glue.executionSummary.totalErrorCount.toString()) : "-",
+          glue.executionSummary.totalCount
+            ? green(glue.executionSummary.totalCount.toString())
+            : "-",
+          glue.executionSummary.totalErrorCount
+            ? red(glue.executionSummary.totalErrorCount.toString())
+            : "-",
           formatEpochMillis(glue.executionSummary.mostRecent),
           formatEpochMillis(glue.currentDeployment?.createdAt),
           glue.tags.length ? glue.tags.join(", ") : "-",

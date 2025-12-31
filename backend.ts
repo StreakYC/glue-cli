@@ -53,7 +53,11 @@ export const UpdateGlueParams = z.object({
 });
 export type UpdateGlueParams = z.infer<typeof UpdateGlueParams>;
 
-export async function backendRequest<T>(path: string, options: RequestInit = {}, forceTrace = true): Promise<T> {
+export async function backendRequest<T>(
+  path: string,
+  options: RequestInit = {},
+  forceTrace = true,
+): Promise<T> {
   const authToken = await getAuthToken();
   const headers: Record<string, string> = {
     "Authorization": `Bearer ${authToken}`,
@@ -75,7 +79,11 @@ export async function backendRequest<T>(path: string, options: RequestInit = {},
   }
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Failed request: ${path} (${options.method ?? "GET"}): ${res.status} ${res.statusText} ${body}`);
+    throw new Error(
+      `Failed request: ${path} (${
+        options.method ?? "GET"
+      }): ${res.status} ${res.statusText} ${body}`,
+    );
   }
   return res.json() as Promise<T>;
 }
@@ -84,7 +92,10 @@ export async function getLoggedInUser(): Promise<UserDTO> {
   return await backendRequest<UserDTO>("/users/me");
 }
 
-export async function getGlueByName(name: string, environment: GlueEnvironment): Promise<GlueDTO | undefined> {
+export async function getGlueByName(
+  name: string,
+  environment: GlueEnvironment,
+): Promise<GlueDTO | undefined> {
   const params = new URLSearchParams({ name, environment });
   const glues = await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
   return glues[0];
@@ -96,7 +107,9 @@ export interface GetGluesFilters {
   includeTags?: string[];
   excludeTags?: string[];
 }
-export async function getGlues(filters: GetGluesFilters = { environment: "deploy", excludeTags: ["archived"] }): Promise<GlueDTO[]> {
+export async function getGlues(
+  filters: GetGluesFilters = { environment: "deploy", excludeTags: ["archived"] },
+): Promise<GlueDTO[]> {
   const params = new URLSearchParams({ environment: filters.environment });
   if (filters?.name) {
     params.set("name", filters.name);
@@ -149,7 +162,10 @@ export async function updateGlue(id: string, params: UpdateGlueParams): Promise<
   return res;
 }
 
-export async function createDeployment(glueId: string, deployment: CreateDeploymentParams): Promise<DeploymentDTO> {
+export async function createDeployment(
+  glueId: string,
+  deployment: CreateDeploymentParams,
+): Promise<DeploymentDTO> {
   const res = await backendRequest<DeploymentDTO>(
     `/glues/${glueId}/deployments`,
     {
@@ -184,7 +200,9 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   return true;
 }
 
-export async function* streamChangesTillDeploymentReady(deploymentId: string): AsyncIterable<DeploymentDTO> {
+export async function* streamChangesTillDeploymentReady(
+  deploymentId: string,
+): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
     const deployment = await retry(() => getDeploymentById(deploymentId));
@@ -227,7 +245,9 @@ export async function getExecutions(
   if (glueId) {
     return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
   } else if (deploymentId) {
-    return await backendRequest<ExecutionDTO[]>(`/deployments/${deploymentId}/executions?${params.toString()}`);
+    return await backendRequest<ExecutionDTO[]>(
+      `/deployments/${deploymentId}/executions?${params.toString()}`,
+    );
   }
   throw new Error("Either glueId or deploymentId must be provided");
 }
@@ -290,7 +310,12 @@ export interface DeploymentDTO {
 
 export type StepStatus = "success" | "failure" | "in_progress" | "not_started" | "skipped";
 
-export type BuildStepName = "createTunnel" | "createTriggers" | "deployCode" | "registrationAuth" | "registrationSetup";
+export type BuildStepName =
+  | "createTunnel"
+  | "createTriggers"
+  | "deployCode"
+  | "registrationAuth"
+  | "registrationSetup";
 export interface BuildStepDTO {
   name: BuildStepName;
   deploymentId: string;

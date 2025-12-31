@@ -1,6 +1,11 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
-import { BuildStepStatusRow, ClientStepRow, CompletedRegistrationList, RegistrationAccountSetupSection } from "./common.tsx";
+import {
+  BuildStepStatusRow,
+  ClientStepRow,
+  CompletedRegistrationList,
+  RegistrationAccountSetupSection,
+} from "./common.tsx";
 import { Box, Text } from "ink";
 import { Newline } from "ink";
 import type { DebugMode, SetupReplayResult } from "../commands/dev.ts";
@@ -38,13 +43,18 @@ export const DevUI = (
 
   let done = false;
   if (props.restarting) {
-    done = uiStepsDone && (props.deployment ? props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success") : true);
+    done = uiStepsDone &&
+      (props.deployment
+        ? props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success")
+        : true);
   } else {
-    done = uiStepsDone && props.deployment !== undefined && props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success");
+    done = uiStepsDone && props.deployment !== undefined &&
+      props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success");
   }
 
   const needsAccountSetup = deployment &&
-    (deployment.triggers.some((t) => !!t.accountSetupUrl) || deployment.accountInjections.some((a) => !!a.accountSetupUrl));
+    (deployment.triggers.some((t) => !!t.accountSetupUrl) ||
+      deployment.accountInjections.some((a) => !!a.accountSetupUrl));
 
   return (
     <>
@@ -55,15 +65,27 @@ export const DevUI = (
         </>
       )}
 
-      {steps.codeAnalysis && <ClientStepRow stepState={steps.codeAnalysis.state} stepDuration={steps.codeAnalysis.duration} stepTitle="Analyzing code" />}
+      {steps.codeAnalysis && (
+        <ClientStepRow
+          stepState={steps.codeAnalysis.state}
+          stepDuration={steps.codeAnalysis.duration}
+          stepTitle="Analyzing code"
+        />
+      )}
 
       <ClientStepRow
         stepState={steps.bootingCode.state}
         stepDuration={steps.bootingCode.duration}
-        stepTitle={`Booting code${props.debugMode === "inspect-wait" ? " and waiting for debugger to connect" : ""}`}
+        stepTitle={`Booting code${
+          props.debugMode === "inspect-wait" ? " and waiting for debugger to connect" : ""
+        }`}
       />
 
-      <ClientStepRow stepState={steps.discoveringTriggers.state} stepDuration={steps.discoveringTriggers.duration} stepTitle="Discovering triggers" />
+      <ClientStepRow
+        stepState={steps.discoveringTriggers.state}
+        stepDuration={steps.discoveringTriggers.duration}
+        stepTitle="Discovering triggers"
+      />
 
       {steps.gettingExecutionToReplay && (
         <ClientStepRow
@@ -75,17 +97,28 @@ export const DevUI = (
       {props.setupReplayResult && <ReplayResultRow {...props.setupReplayResult} />}
 
       {steps.registeringGlue && (
-        <ClientStepRow stepState={steps.registeringGlue.state} stepDuration={steps.registeringGlue.duration} stepTitle="Registering glue" />
+        <ClientStepRow
+          stepState={steps.registeringGlue.state}
+          stepDuration={steps.registeringGlue.duration}
+          stepTitle="Registering glue"
+        />
       )}
 
       {deployment && deployment.buildSteps.map((step) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
-          {step.name === "registrationAuth" && step.status === "in_progress" && needsAccountSetup && (
-            <RegistrationAccountSetupSection triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
-          )}
+          {step.name === "registrationAuth" && step.status === "in_progress" && needsAccountSetup &&
+            (
+              <RegistrationAccountSetupSection
+                triggers={deployment.triggers}
+                accountInjections={deployment.accountInjections}
+              />
+            )}
           {step.name === "registrationSetup" && step.status === "success" && (
-            <CompletedRegistrationList triggers={deployment.triggers} accountInjections={deployment.accountInjections} />
+            <CompletedRegistrationList
+              triggers={deployment.triggers}
+              accountInjections={deployment.accountInjections}
+            />
           )}
         </React.Fragment>
       ))}
@@ -106,7 +139,8 @@ export const DevUI = (
             <Text>- replay last event</Text>
           </Box>
 
-          {props.setupReplayResult && props.setupReplayResult.execution && props.setupReplayResult.compatible && (
+          {props.setupReplayResult && props.setupReplayResult.execution &&
+            props.setupReplayResult.compatible && (
             <Box paddingLeft={2}>
               <Text color="yellow">e</Text>
               <Text>- replay {props.setupReplayResult.executionId}</Text>
@@ -135,7 +169,9 @@ export function ReplayResultRow({ execution, compatible }: SetupReplayResult) {
   return (
     <>
       {!execution && <Text color="dim">⚠️ Could not find execution to replay</Text>}
-      {execution && !compatible && <Text color="dim">⚠️ Execution is not compatible with the current triggers</Text>}
+      {execution && !compatible && (
+        <Text color="dim">⚠️ Execution is not compatible with the current triggers</Text>
+      )}
     </>
   );
 }

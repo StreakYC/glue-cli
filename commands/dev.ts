@@ -3,7 +3,15 @@ import { load as dotenvLoad } from "@std/dotenv";
 import { MuxAsyncIterator } from "@std/async/mux-async-iterator";
 import { getAvailablePort } from "@std/net";
 import { z } from "zod";
-import { createDeployment, createGlue, getExecutionByIdNoThrow, getGlueByName, sampleTrigger, stopGlue, streamChangesTillDeploymentReady } from "../backend.ts";
+import {
+  createDeployment,
+  createGlue,
+  getExecutionByIdNoThrow,
+  getGlueByName,
+  sampleTrigger,
+  stopGlue,
+  streamChangesTillDeploymentReady,
+} from "../backend.ts";
 import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
@@ -15,7 +23,11 @@ import React from "react";
 import { type Instance, render } from "ink";
 import { checkForAuthCredsOtherwiseExit, getAuthToken } from "../auth.ts";
 import { cyan } from "@std/fmt/colors";
-import { type Registrations, TriggerEvent, type TriggerRegistration } from "@streak-glue/runtime/backendTypes";
+import {
+  type Registrations,
+  TriggerEvent,
+  type TriggerRegistration,
+} from "@streak-glue/runtime/backendTypes";
 import { type Awaitable, GLUE_API_SERVER } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
@@ -55,7 +67,9 @@ export async function dev(options: DevOptions, filename: string) {
   });
 
   const env = await getEnv(glueName, filename, glueCliWebsocketAddr);
-  let debugMode: DebugMode = options.inspectWait ? "inspect-wait" : (options.debug ? "inspect" : "no-debug");
+  let debugMode: DebugMode = options.inspectWait
+    ? "inspect-wait"
+    : (options.debug ? "inspect" : "no-debug");
   if (debugMode !== "no-debug") {
     if (!isPortAvailable(DEFAULT_DEBUG_PORT)) {
       console.warn(`Debugger port ${DEFAULT_DEBUG_PORT} is already in use, disabling debugger.`);
@@ -84,10 +98,18 @@ export async function dev(options: DevOptions, filename: string) {
   });
   let registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
 
-  let setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, registrations.triggers)) : undefined;
+  let setupReplayResult = options.replay
+    ? await runUIStep(
+      "gettingExecutionToReplay",
+      () => setupReplay(options.replay!, registrations.triggers),
+    )
+    : undefined;
   devProgressProps.setupReplayResult = setupReplayResult;
 
-  let { glue, deployment } = await runUIStep("registeringGlue", async () => await createDeploymentAndMaybeGlue(glueName, registrations));
+  let { glue, deployment } = await runUIStep(
+    "registeringGlue",
+    async () => await createDeploymentAndMaybeGlue(glueName, registrations),
+  );
 
   await monitorDeploymentAndRenderChangesTillReady(deployment.id);
   if (devProgressProps.deployment?.status !== "success") {
@@ -99,7 +121,11 @@ export async function dev(options: DevOptions, filename: string) {
 
   const ws = await runUIStep(
     "connectingToTunnel",
-    () => connectToDevEventsWebsocketAndHandleTriggerEvents(glue.devEventsWebsocketUrl!, async (message) => await deliverTriggerEvent(deployment, message)),
+    () =>
+      connectToDevEventsWebsocketAndHandleTriggerEvents(
+        glue.devEventsWebsocketUrl!,
+        async (message) => await deliverTriggerEvent(deployment, message),
+      ),
   );
   await unmountUI();
 
@@ -116,7 +142,10 @@ export async function dev(options: DevOptions, filename: string) {
         break;
       } else if (keyPressEvent.key === "r" && lastMessage) {
         await deliverTriggerEvent(deployment, lastMessage, true);
-      } else if (keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible && setupReplayResult.execution) {
+      } else if (
+        keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible &&
+        setupReplayResult.execution
+      ) {
         const triggerEvent: TriggerEvent = {
           type: setupReplayResult.execution.trigger.type,
           label: setupReplayResult.execution.trigger.label,
@@ -133,9 +162,15 @@ export async function dev(options: DevOptions, filename: string) {
         }
         const trigger = await Select.prompt({
           message: "Choose a trigger to sample:",
-          options: samplableTriggers.map((t) => ({ name: `${t.type}(${t.label}) ${t.description}`, value: t })),
+          options: samplableTriggers.map((t) => ({
+            name: `${t.type}(${t.label}) ${t.description}`,
+            value: t,
+          })),
         });
-        console.log("Generating a sample event for:", `${trigger.type}(${trigger.label}) ${trigger.description}`);
+        console.log(
+          "Generating a sample event for:",
+          `${trigger.type}(${trigger.label}) ${trigger.description}`,
+        );
         await sampleTrigger(trigger.id);
       }
 
@@ -155,7 +190,12 @@ export async function dev(options: DevOptions, filename: string) {
     renderUI();
 
     const newRegistrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
-    setupReplayResult = options.replay ? await runUIStep("gettingExecutionToReplay", () => setupReplay(options.replay!, newRegistrations.triggers)) : undefined;
+    setupReplayResult = options.replay
+      ? await runUIStep(
+        "gettingExecutionToReplay",
+        () => setupReplay(options.replay!, newRegistrations.triggers),
+      )
+      : undefined;
 
     devProgressProps.setupReplayResult = setupReplayResult;
     renderUI();
@@ -168,7 +208,10 @@ export async function dev(options: DevOptions, filename: string) {
         duration: 0,
       };
       renderUI();
-      deployment = await runUIStep("registeringGlue", async () => await createDeployment(glue.id, { optimisticRegistrations: registrations }));
+      deployment = await runUIStep(
+        "registeringGlue",
+        async () => await createDeployment(glue.id, { optimisticRegistrations: registrations }),
+      );
       devProgressProps.deployment = deployment;
       await monitorDeploymentAndRenderChangesTillReady(deployment.id);
       if (devProgressProps.deployment?.status !== "success") {
@@ -217,7 +260,10 @@ async function wsListen(onConnection: () => void): Promise<string> {
         throw new HTTPException(400, { message: "Missing token" });
       }
       const reqTokenBuffer = new TextEncoder().encode(reqToken);
-      if (reqTokenBuffer.length !== tokenBuffer.length || !timingSafeEqual(reqTokenBuffer, tokenBuffer)) {
+      if (
+        reqTokenBuffer.length !== tokenBuffer.length ||
+        !timingSafeEqual(reqTokenBuffer, tokenBuffer)
+      ) {
         throw new HTTPException(403, { message: "Invalid token" });
       }
 
@@ -271,7 +317,10 @@ export interface SetupReplayResult {
   execution: ExecutionDTO | undefined;
   compatible: boolean;
 }
-async function setupReplay(executionId: string, triggersToCheckCompatibilityWith: TriggerRegistration[]): Promise<SetupReplayResult> {
+async function setupReplay(
+  executionId: string,
+  triggersToCheckCompatibilityWith: TriggerRegistration[],
+): Promise<SetupReplayResult> {
   const execution = await getExecutionByIdNoThrow(executionId);
   if (!execution) {
     return { executionId, execution: undefined, compatible: false };
@@ -282,14 +331,31 @@ async function setupReplay(executionId: string, triggersToCheckCompatibilityWith
   return { executionId, execution, compatible: true };
 }
 
-function isTriggerCompatible(trigger: TriggerDTO, triggersToCheckCompatibilityWith: TriggerRegistration[]) {
-  return triggersToCheckCompatibilityWith.some((t) => t.label === trigger.label && t.type === trigger.type);
+function isTriggerCompatible(
+  trigger: TriggerDTO,
+  triggersToCheckCompatibilityWith: TriggerRegistration[],
+) {
+  return triggersToCheckCompatibilityWith.some((t) =>
+    t.label === trigger.label && t.type === trigger.type
+  );
 }
 
-async function deliverTriggerEvent(deployment: DeploymentDTO, message: ServerWebsocketMessage, isReplay: boolean = false) {
-  const trigger = deployment.triggers.find((t) => t.label === message.event.label && t.type === message.event.type);
+async function deliverTriggerEvent(
+  deployment: DeploymentDTO,
+  message: ServerWebsocketMessage,
+  isReplay: boolean = false,
+) {
+  const trigger = deployment.triggers.find((t) =>
+    t.label === message.event.label && t.type === message.event.type
+  );
   const prefix = isReplay ? "REPLAYING " : "";
-  console.log(cyan(`\n[${new Date().toISOString()}] ${prefix}: ${trigger?.type.toUpperCase()} ${trigger?.description}`));
+  console.log(
+    cyan(
+      `\n[${
+        new Date().toISOString()
+      }] ${prefix}: ${trigger?.type.toUpperCase()} ${trigger?.description}`,
+    ),
+  );
   const authToken = await getAuthToken();
   if (!authToken) {
     throw new Error("No auth token found, please run `glue login` first.");
@@ -331,7 +397,9 @@ async function createDeploymentAndMaybeGlue(
     }
     return { glue: newGlue, deployment: newGlue.pendingDeployment };
   } else {
-    const newDeployment = await createDeployment(existingGlue.id, { optimisticRegistrations: registrations });
+    const newDeployment = await createDeployment(existingGlue.id, {
+      optimisticRegistrations: registrations,
+    });
     return { glue: existingGlue, deployment: newDeployment };
   }
 }
@@ -535,7 +603,10 @@ async function unmountUI() {
   }
 }
 
-async function runUIStep<R>(stepName: keyof DevUIProps["steps"], fn: () => Awaitable<R>): Promise<R> {
+async function runUIStep<R>(
+  stepName: keyof DevUIProps["steps"],
+  fn: () => Awaitable<R>,
+): Promise<R> {
   const step = devProgressProps.steps[stepName];
   if (!step) {
     return await fn();

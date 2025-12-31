@@ -1,4 +1,10 @@
-import { type ExecutionDTO, getDeploymentById, getExecutions, getGlueById, getGlueByName } from "../backend.ts";
+import {
+  type ExecutionDTO,
+  getDeploymentById,
+  getExecutions,
+  getGlueById,
+  getGlueByName,
+} from "../backend.ts";
 import { cyan, dim, green, red } from "@std/fmt/colors";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
@@ -36,13 +42,23 @@ export const logs = async (options: LogsOptions, query?: string) => {
       }
       glueId = query;
     } else if (isPrefixId(query, "d")) {
-      const deployment = await runStep("Loading deployment...", () => getDeploymentById(query), true, !!options.json);
+      const deployment = await runStep(
+        "Loading deployment...",
+        () => getDeploymentById(query),
+        true,
+        !!options.json,
+      );
       if (!deployment) {
         throw new Error("Couldn't find a deployment with that id");
       }
       deploymentId = query;
     } else {
-      const glue = await runStep("Loading glue...", () => getGlueByName(query, "deploy"), true, !!options.json);
+      const glue = await runStep(
+        "Loading glue...",
+        () => getGlueByName(query, "deploy"),
+        true,
+        !!options.json,
+      );
       if (!glue) {
         throw new Error("Couldn't find a glue with that name");
       }
@@ -55,7 +71,9 @@ export const logs = async (options: LogsOptions, query?: string) => {
     }
     glueId = glue.id;
   } else {
-    throw new Error("You must provide a glue name, glue id or deployment id when not running in a terminal");
+    throw new Error(
+      "You must provide a glue name, glue id or deployment id when not running in a terminal",
+    );
   }
 
   if (options.failures) {
@@ -65,7 +83,17 @@ export const logs = async (options: LogsOptions, query?: string) => {
   const commandStartTime = new Date();
   const historicalExecutions = await runStep(
     `Loading historical executions...`,
-    () => getExecutions(options.number, commandStartTime, "desc", !!options.json, options.filter, options.search, glueId, deploymentId),
+    () =>
+      getExecutions(
+        options.number,
+        commandStartTime,
+        "desc",
+        !!options.json,
+        options.filter,
+        options.search,
+        glueId,
+        deploymentId,
+      ),
     true,
     !!options.json,
   );
@@ -87,7 +115,16 @@ export const logs = async (options: LogsOptions, query?: string) => {
   const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
   while (options.tail) {
     pollingSpinner.start();
-    const executions = await getExecutions(10, startingPoint, "asc", false, options.filter, options.search, glueId, deploymentId);
+    const executions = await getExecutions(
+      10,
+      startingPoint,
+      "asc",
+      false,
+      options.filter,
+      options.search,
+      glueId,
+      deploymentId,
+    );
     if (executions.length > 0) {
       pollingSpinner.stop();
       renderExecutions(executions, options.logLines, !!options.fullLogLines);
@@ -103,7 +140,11 @@ function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogL
     if (!e.endedAt) {
       return;
     }
-    console.log(`[${new Date(e.endedAt).toLocaleString()}] ${e.id} ${colorState(e.state)} ${e.trigger.type} ${e.trigger.description}`);
+    console.log(
+      `[${new Date(e.endedAt).toLocaleString()}] ${e.id} ${
+        colorState(e.state)
+      } ${e.trigger.type} ${e.trigger.description}`,
+    );
     e.logs.slice(0, logLines).forEach((l) => {
       let toConsole = dim(`[${new Date(l.timestamp).toLocaleString()}] ${l.text.trim()}`);
       if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
