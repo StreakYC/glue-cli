@@ -33,11 +33,18 @@ export async function create(_options: void) {
     contents = TEMPLATE_CONTENT;
   }
   filename = await uniquifyPath(filename);
+  filename = appendFileExtensionIfNotPresent(filename, ".ts");
   await Deno.writeTextFile(filename, contents);
   console.log(`${green("✔︎")} Successfully created new glue file: ${bold(filename)}`);
   console.log();
-  console.log(`Run locally using 'glue dev ${filename}':`);
+  console.log(`Run locally using 'glue dev ${filename}'`);
+  return filename;
+}
 
+function appendFileExtensionIfNotPresent(filename: string, extension: string): string {
+  if (!filename.endsWith(extension)) {
+    return filename + extension;
+  }
   return filename;
 }
 
