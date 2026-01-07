@@ -28,9 +28,7 @@ export const DeployUI = (
   }: DeployUIProps,
 ) => {
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
-  const needsAccountSetup = deployment &&
-    (deployment.triggers.some((t) => !!t.accountSetupUrl) ||
-      deployment.accountInjections.some((a) => !!a.accountSetupUrl));
+  const needsAccountSetup = deployment && deployment.accountsToSetup.length > 0;
   return (
     <>
       <ClientStepRow

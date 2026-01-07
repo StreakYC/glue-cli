@@ -52,9 +52,7 @@ export const DevUI = (
       props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success");
   }
 
-  const needsAccountSetup = deployment &&
-    (deployment.triggers.some((t) => !!t.accountSetupUrl) ||
-      deployment.accountInjections.some((a) => !!a.accountSetupUrl));
+  const needsAccountSetup = deployment && deployment.accountsToSetup.length > 0;
 
   return (
     <>
@@ -147,7 +145,7 @@ export const DevUI = (
               <Text>- replay {props.setupReplayResult.executionId}</Text>
             </Box>
           )}
-          {deployment && deployment.triggers.filter((t) => t.supportsSampleEvents).length > 0 && (
+          {deployment && deployment.triggers.some((t) => t.supportsSampleEvents) && (
             <Box paddingLeft={2}>
               <Text color="blue">s</Text>
               <Text>- generate a sample event</Text>

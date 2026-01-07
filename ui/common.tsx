@@ -68,7 +68,7 @@ export const RegistrationAccountSetupSection = (
         </Text>
       )}
       {accountsToSetup.map((ats) => (
-        <Box paddingLeft={2} key={ats.type}>
+        <Box paddingLeft={2} key={ats.type + ":" + ats.selector}>
           <Text>
             {ats.type} {ats.selector ? `(${ats.selector})` : ""}:{" "}
             <Text bold>{ats.accountSetupUrl}</Text>
