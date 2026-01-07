@@ -1,6 +1,6 @@
 {
   "name": "@streak-glue/cli",
-  "version": "0.1.66",
+  "version": "0.1.67",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
@@ -19,7 +19,9 @@
     "deploy": {
       "description": "Commits and pushes the current version to the remote",
       "command": "git commit -am 'bump version' && git push",
-      "dependencies": ["bump-patch"]
+      "dependencies": [
+        "bump-patch"
+      ]
     },
     "bump-patch": "deno run --allow-read --allow-write --allow-run jsr:@fcrozatier/bump patch"
   },
@@ -30,7 +32,10 @@
       "env": true
     }
   },
-  "unstable": ["kv", "temporal"],
+  "unstable": [
+    "kv",
+    "temporal"
+  ],
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
     "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.7",
@@ -68,7 +73,10 @@
   },
   "lint": {
     "rules": {
-      "exclude": ["no-unversioned-import", "no-import-prefix"]
+      "exclude": [
+        "no-unversioned-import",
+        "no-import-prefix"
+      ]
     }
   }
 }
