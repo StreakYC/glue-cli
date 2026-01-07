@@ -306,6 +306,15 @@ export interface DeploymentDTO {
   triggers: TriggerDTO[];
   accountInjections: AccountInjectionDTO[];
   buildSteps: BuildStepDTO[];
+  accountsToSetup: AccountToSetup[];
+}
+
+export interface AccountToSetup {
+  type: string;
+  selector?: string;
+  accountSetupUrl: string;
+  triggerIds: string[];
+  accountInjectionIds: string[];
 }
 
 export type StepStatus = "success" | "failure" | "in_progress" | "not_started" | "skipped";

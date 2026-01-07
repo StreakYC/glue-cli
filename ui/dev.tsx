@@ -112,6 +112,7 @@ export const DevUI = (
               <RegistrationAccountSetupSection
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
+                accountsToSetup={deployment.accountsToSetup}
               />
             )}
           {step.name === "registrationSetup" && step.status === "success" && (
@@ -146,12 +147,12 @@ export const DevUI = (
               <Text>- replay {props.setupReplayResult.executionId}</Text>
             </Box>
           )}
-
-          <Box paddingLeft={2}>
-            <Text color="blue">s</Text>
-            <Text>- generate a sample event</Text>
-          </Box>
-
+          {deployment && deployment.triggers.filter((t) => t.supportsSampleEvents).length > 0 && (
+            <Box paddingLeft={2}>
+              <Text color="blue">s</Text>
+              <Text>- generate a sample event</Text>
+            </Box>
+          )}
           <Box paddingLeft={2}>
             <Text color="red">q</Text>
             <Text>- quit</Text>

@@ -52,6 +52,7 @@ export const DeployUI = (
               <RegistrationAccountSetupSection
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
+                accountsToSetup={deployment.accountsToSetup}
               />
             )}
             {step.name === "registrationSetup" && step.status === "success" && (
