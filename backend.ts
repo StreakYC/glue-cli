@@ -197,6 +197,9 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   if (!equal(a.triggers, b.triggers) || !equal(a.accountInjections, b.accountInjections)) {
     return false;
   }
+  if (!equal(a.accountsToSetup, b.accountsToSetup)) {
+    return false;
+  }
   return true;
 }
 
@@ -306,6 +309,15 @@ export interface DeploymentDTO {
   triggers: TriggerDTO[];
   accountInjections: AccountInjectionDTO[];
   buildSteps: BuildStepDTO[];
+  accountsToSetup: AccountToSetup[];
+}
+
+export interface AccountToSetup {
+  type: string;
+  selector?: string;
+  accountSetupUrl: string;
+  triggerIds: string[];
+  accountInjectionIds: string[];
 }
 
 export type StepStatus = "success" | "failure" | "in_progress" | "not_started" | "skipped";
