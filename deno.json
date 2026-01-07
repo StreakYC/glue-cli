@@ -18,7 +18,7 @@
     "fmt:watch": "deno fmt --watch",
     "deploy": {
       "description": "Commits and pushes the current version to the remote",
-      "command": "git push",
+      "command": "git push --follow-tags",
       "dependencies": [
         "bump-patch"
       ]
