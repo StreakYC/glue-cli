@@ -64,7 +64,7 @@ export const RegistrationAccountSetupSection = (
       {accountsToSetup.length > 0 && (
         <Text>
           {accountsToSetup.length} account{accountsToSetup.length > 1 ? "s" : ""}{" "}
-          needs authentication:
+          need authentication:
         </Text>
       )}
       {accountsToSetup.map((ats) => (
