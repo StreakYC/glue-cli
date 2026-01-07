@@ -1,6 +1,6 @@
 {
   "name": "@streak-glue/cli",
-  "version": "0.1.67",
+  "version": "0.1.68",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
@@ -18,7 +18,7 @@
     "fmt:watch": "deno fmt --watch",
     "deploy": {
       "description": "Commits and pushes the current version to the remote",
-      "command": "git commit -am 'bump version' && git push",
+      "command": "git push",
       "dependencies": [
         "bump-patch"
       ]
