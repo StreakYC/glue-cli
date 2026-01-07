@@ -19,7 +19,7 @@
     "deploy": {
       "description": "Commits and pushes the current version to the remote",
       "command": "git commit -am 'bump version' && git push",
-      "dependencies": ["bump"]
+      "dependencies": ["bump-patch"]
     },
     "bump-patch": "deno run --allow-read --allow-write --allow-run jsr:@fcrozatier/bump patch"
   },
