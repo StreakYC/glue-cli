@@ -24,7 +24,7 @@ const DeploymentContent = z.object({
 });
 export type DeploymentContent = z.infer<typeof DeploymentContent>;
 
-export const Runner = z.enum(["deno", "fly", "cloudflare"]);
+export const Runner = z.enum(["deno", "fly", "cloudflare", "sandbox"]);
 export type Runner = z.infer<typeof Runner>;
 
 const CreateDeploymentParams = z.object({
