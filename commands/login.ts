@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { setAuthToken } from "../auth.ts";
 import { GLUE_API_SERVER } from "../common.ts";
 import { open } from "@opensrc/deno-open";
+import * as mod from "@std/fmt/colors";
 
 export const login = async () => {
   const app = new Hono();
@@ -38,4 +39,5 @@ export const login = async () => {
   await open(loginUrl);
 
   await server.finished;
+  console.log(`\n💡 Run ${mod.italic(mod.green("glue create"))} to create your first glue`);
 };
