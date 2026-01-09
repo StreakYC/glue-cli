@@ -39,5 +39,5 @@ export const login = async () => {
   await open(loginUrl);
 
   await server.finished;
-  console.log(`\n💡 Run ${mod.italic(mod.green("glue create"))} to create your first glue`);
+  console.log(`\n💡 Run ${mod.green("glue create")} to create your first glue`);
 };
