@@ -53,20 +53,20 @@ interface Editor {
   name: string;
   command: string;
   installPage: string;
-  macOSZipeUrl: string;
+  macOSDownloadUrl: string;
 }
 
 const VSCode: Editor = {
   name: "VSCode",
   command: "code",
   installPage: "https://code.visualstudio.com/download",
-  macOSZipeUrl: "https://code.visualstudio.com/download",
+  macOSDownloadUrl: "https://code.visualstudio.com/download",
 };
 const Cursor: Editor = {
   name: "Cursor",
   command: "cursor",
   installPage: "https://cursor.com/download",
-  macOSZipeUrl: "https://cursor.sh",
+  macOSDownloadUrl: "https://cursor.sh",
 };
 
 async function openInEditorFlow(filename: string) {
