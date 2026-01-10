@@ -1,8 +1,11 @@
-import { bold, green } from "@std/fmt/colors";
+import { blue, bold, green } from "@std/fmt/colors";
 import { Select } from "@cliffy/prompt/select";
 import { Input } from "@cliffy/prompt/input";
 import { runStep } from "../ui/utils.ts";
 import * as path from "@std/path";
+import { Confirm } from "@cliffy/prompt/confirm";
+import { delay } from "@std/async/delay";
+import { Spinner } from "@std/cli/unstable-spinner";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
@@ -39,9 +42,109 @@ export async function create(_options: void) {
   filename = appendFileExtensionIfNotPresent(filename, ".ts");
   await Deno.writeTextFile(filename, contents);
   console.log(`${green("✔︎")} Successfully created new glue file: ${bold(filename)}`);
+
+  await openInEditorFlow(filename);
   console.log();
-  console.log(`Run locally using 'glue dev ${filename}'`);
+  console.log(`💡 Run locally using ${green("glue dev " + filename)}`);
   return filename;
+}
+
+interface Editor {
+  name: string;
+  command: string;
+  installPage: string;
+  macOSZipeUrl: string;
+}
+
+const VSCode: Editor = {
+  name: "VSCode",
+  command: "code",
+  installPage: "https://code.visualstudio.com/download",
+  macOSZipeUrl: "https://code.visualstudio.com/download",
+};
+const Cursor: Editor = {
+  name: "Cursor",
+  command: "cursor",
+  installPage: "https://cursor.com/download",
+  macOSZipeUrl: "https://cursor.sh",
+};
+
+async function openInEditorFlow(filename: string) {
+  console.log();
+  const openInEditor = await Confirm.prompt({
+    message: "Open created glue in editor?",
+    default: true,
+  });
+
+  if (openInEditor) {
+    let editor = await detectPreferredAndInstalledEditor();
+    if (!editor) {
+      const installCursor = await Confirm.prompt({
+        message: "No editors found, install Cursor (recommended)?",
+        default: true,
+      });
+      if (!installCursor) {
+        return;
+      }
+      await installEditor(Cursor);
+      editor = Cursor;
+    }
+    await openEditor(editor, filename);
+  }
+}
+
+async function detectPreferredAndInstalledEditor(): Promise<Editor | undefined> {
+  if (Deno.env.get("EDITOR") == VSCode.command) {
+    return VSCode;
+  }
+  if (Deno.env.get("EDITOR") == Cursor.command) {
+    return Cursor;
+  }
+
+  if (await isEditorInstalled(Cursor)) {
+    return Cursor;
+  }
+  if (await isEditorInstalled(VSCode)) {
+    return VSCode;
+  }
+  return undefined;
+}
+
+async function isEditorInstalled(editor: Editor): Promise<boolean> {
+  try {
+    await new Deno.Command(editor.command, { args: ["--version"] }).output();
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function installEditor(editor: Editor): Promise<void> {
+  if (Deno.build.os == "darwin") {
+    // TODO in the future we may install for the user
+    console.log(`Download and ${editor.name} install from: ${blue(bold(editor.installPage))}`);
+  } else {
+    console.log(`Download and ${editor.name} install from: ${blue(bold(editor.installPage))}`);
+  }
+
+  const spinner = new Spinner({
+    message: `Waiting for ${editor.name} to be installed...`,
+  });
+  spinner.start();
+
+  while (true) {
+    try {
+      await new Deno.Command(editor.command, { args: ["--version"] }).output();
+      break;
+    } catch (_e) {
+      await delay(1000);
+    }
+  }
+  spinner.stop();
+}
+
+async function openEditor(editor: Editor, filename: string): Promise<void> {
+  await new Deno.Command(editor.command, { args: [filename] }).output();
 }
 
 function appendFileExtensionIfNotPresent(filename: string, extension: string): string {
