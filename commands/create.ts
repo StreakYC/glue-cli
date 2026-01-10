@@ -94,10 +94,12 @@ async function openInEditorFlow(filename: string) {
 }
 
 async function detectPreferredAndInstalledEditor(): Promise<Editor | undefined> {
-  if (Deno.env.get("EDITOR") == VSCode.command) {
+  const editorEnv = Deno.env.get("EDITOR");
+  const firstTerm = editorEnv?.split(/\s+/)[0];
+  if (firstTerm === VSCode.command) {
     return VSCode;
   }
-  if (Deno.env.get("EDITOR") == Cursor.command) {
+  if (firstTerm === Cursor.command) {
     return Cursor;
   }
 
