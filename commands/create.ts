@@ -6,6 +6,7 @@ import * as path from "@std/path";
 import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
+import { writeGlue } from "../backend.ts";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
@@ -25,22 +26,21 @@ export async function create(_options: void) {
   });
 
   let filename: string;
-  let contents: string;
+  let code: string;
   if (creationType === "codegen") {
     const description = await Input.prompt("Enter the description for the new glue");
-    const codeGenResult = await runStep("Generating glue code...", () => doCodeGen(description));
-    filename = codeGenResult.filename;
-    contents = codeGenResult.fileContents;
+    const codeGenResult = await runStep("Generating glue code...", () => writeGlue(description));
+    ({ filename, code } = codeGenResult);
   } else {
     filename = await Input.prompt({
       message: "Enter the filename for the new glue",
       default: DEFAULT_FILENAME,
     });
-    contents = TEMPLATE_CONTENT;
+    code = TEMPLATE_CONTENT;
   }
   filename = await uniquifyPath(filename);
   filename = appendFileExtensionIfNotPresent(filename, ".ts");
-  await Deno.writeTextFile(filename, contents);
+  await Deno.writeTextFile(filename, code);
   console.log(`${green("✔︎")} Successfully created new glue file: ${bold(filename)}`);
 
   await openInEditorFlow(filename);
@@ -154,15 +154,6 @@ function appendFileExtensionIfNotPresent(filename: string, extension: string): s
     return filename + extension;
   }
   return filename;
-}
-
-interface CodeGenResult {
-  filename: string;
-  fileContents: string;
-}
-
-function doCodeGen(_prompt: string): Promise<CodeGenResult> {
-  return Promise.resolve({ filename: "myGlue.ts", fileContents: TEMPLATE_CONTENT });
 }
 
 /**
