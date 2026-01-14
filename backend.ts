@@ -88,6 +88,20 @@ export async function backendRequest<T>(
   return res.json() as Promise<T>;
 }
 
+const WriteGlueResponse = z.object({
+  filename: z.string(),
+  code: z.string(),
+});
+export type WriteGlueResponse = z.infer<typeof WriteGlueResponse>;
+
+export async function writeGlue(prompt: string): Promise<WriteGlueResponse> {
+  const res = await backendRequest<unknown>(`/glues/write`, {
+    method: "POST",
+    body: JSON.stringify({ prompt }),
+  });
+  return WriteGlueResponse.parse(res);
+}
+
 export async function getLoggedInUser(): Promise<UserDTO> {
   return await backendRequest<UserDTO>("/users/me");
 }
