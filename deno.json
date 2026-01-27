@@ -18,12 +18,12 @@
     "fmt:watch": "deno fmt --watch",
     "deploy": {
       "description": "Commits and pushes the current version to the remote",
-      "command": "git push --follow-tags",
+      "command": "git push && git push --tags",
       "dependencies": [
         "bump-patch"
       ]
     },
-    "bump-patch": "deno run --allow-read --allow-write --allow-run jsr:@fcrozatier/bump patch"
+    "bump-patch": "deno run --allow-read=deno.json --allow-write=deno.json --allow-run=git jsr:@kellnerd/bump@0.1.1 -c v -t v patch"
   },
   "test": {
     "permissions": {
