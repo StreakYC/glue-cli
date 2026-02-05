@@ -38,9 +38,9 @@
     "jsr:@std/path@~1.0.6": "1.0.9",
     "jsr:@std/streams@^1.0.9": "1.0.17",
     "jsr:@std/testing@^1.0.16": "1.0.17",
-    "jsr:@std/text@~1.0.7": "1.0.16",
-    "jsr:@streak-glue/runtime@*": "0.2.22",
-    "jsr:@streak-glue/runtime@~0.2.22": "0.2.22",
+    "jsr:@std/text@~1.0.7": "1.0.17",
+    "jsr:@streak-glue/runtime@*": "0.2.23",
+    "jsr:@streak-glue/runtime@~0.2.23": "0.2.23",
     "npm:@googleapis/drive@20": "20.1.0",
     "npm:@googleapis/gmail@14": "14.0.1",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
@@ -57,8 +57,7 @@
     "npm:react@^19.2.4": "19.2.4",
     "npm:stripe@^18.2.0": "18.5.0",
     "npm:typescript@^5.9.3": "5.9.3",
-    "npm:zod@^3.24.0": "3.25.76",
-    "npm:zod@^3.24.2": "3.25.76"
+    "npm:zod@^4.3.6": "4.3.6"
   },
   "jsr": {
     "@cliffy/ansi@1.0.0-rc.8": {
@@ -213,8 +212,11 @@
     "@std/text@1.0.16": {
       "integrity": "ddb9853b75119a2473857d691cf1ec02ad90793a2e8b4a4ac49d7354281a0cf8"
     },
-    "@streak-glue/runtime@0.2.22": {
-      "integrity": "f38a63d202dfc4f70e731656b5f78d4b2e1d8eadcb36360581786367c3da249a",
+    "@std/text@1.0.17": {
+      "integrity": "4b2c4ef67ae5b6c1dfd447c81c83a43718f52e3c7e748d8b33f694aba9895f95"
+    },
+    "@streak-glue/runtime@0.2.23": {
+      "integrity": "d8804398f6f953f5401f92c62f6db063f88ad8ae937fcb3b695cab0d0b60bb20",
       "dependencies": [
         "jsr:@hono/hono",
         "jsr:@std/async@^1.0.15",
@@ -223,7 +225,7 @@
         "npm:@slack/types",
         "npm:@slack/web-api",
         "npm:stripe",
-        "npm:zod@^3.24.2"
+        "npm:zod"
       ]
     }
   },
@@ -1321,8 +1323,8 @@
     "yoga-layout@3.2.1": {
       "integrity": "sha512-0LPOt3AxKqMdFBZA3HBAt/t/8vIKq7VaQYbuA8WxCgung+p9TVyKRYdpvCb80HcdTN2NkbIKbhNwKUfm3tQywQ=="
     },
-    "zod@3.25.76": {
-      "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
+    "zod@4.3.6": {
+      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="
     }
   },
   "workspace": {
@@ -1344,7 +1346,7 @@
       "jsr:@std/path@^1.0.8",
       "jsr:@std/streams@^1.0.9",
       "jsr:@std/testing@^1.0.16",
-      "jsr:@streak-glue/runtime@~0.2.22",
+      "jsr:@streak-glue/runtime@~0.2.23",
       "npm:@types/react@19",
       "npm:hono@^4.7.5",
       "npm:ink-spinner@5",
@@ -1352,7 +1354,7 @@
       "npm:it-pushable@^3.2.3",
       "npm:react@^19.2.4",
       "npm:typescript@^5.9.3",
-      "npm:zod@^3.24.0"
+      "npm:zod@^4.3.6"
     ]
   }
 }
