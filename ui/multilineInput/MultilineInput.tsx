@@ -133,30 +133,36 @@ export function MultilineInput({
   const { lines, cursorLine, cursorCol } = state;
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="blue" paddingX={1}>
-      <Box marginBottom={1}>
+    <Box flexDirection="column">
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderDimColor
+        borderLeft={false}
+        borderRight={false}
+      >
+        {lines.map((line, lineIndex) => (
+          <Box key={lineIndex}>
+            <Text>{lineIndex === 0 ? "❯ " : "  "}</Text>
+            {lineIndex === cursorLine
+              ? (
+                <Text>
+                  {line.slice(0, cursorCol)}
+                  <Text backgroundColor="white" color="black">
+                    {line[cursorCol] || " "}
+                  </Text>
+                  {line.slice(cursorCol + 1)}
+                </Text>
+              )
+              : <Text>{line}</Text>}
+          </Box>
+        ))}
+      </Box>
+      <Box>
         <Text color="gray" dimColor>
           {"(Enter: new line, Ctrl+D/Esc: submit)"}
         </Text>
       </Box>
-      {lines.map((line, lineIndex) => (
-        <Box key={lineIndex}>
-          <Text color="gray" dimColor>
-            {String(lineIndex + 1).padStart(2, " ")} │{" "}
-          </Text>
-          {lineIndex === cursorLine
-            ? (
-              <Text>
-                {line.slice(0, cursorCol)}
-                <Text backgroundColor="white" color="black">
-                  {line[cursorCol] || " "}
-                </Text>
-                {line.slice(cursorCol + 1)}
-              </Text>
-            )
-            : <Text>{line}</Text>}
-        </Box>
-      ))}
     </Box>
   );
 }

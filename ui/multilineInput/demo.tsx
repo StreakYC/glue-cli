@@ -34,13 +34,11 @@ export function MultilineInputDemo() {
   }
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column">
       <Text bold>Multiline Input Demo</Text>
-      <Box marginY={1}>
-        <MultilineInput
-          onSubmit={setSubmitted}
-        />
-      </Box>
+      <MultilineInput
+        onSubmit={setSubmitted}
+      />
     </Box>
   );
 }
