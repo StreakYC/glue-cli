@@ -39,7 +39,6 @@ export function MultilineInputDemo() {
       <Box marginY={1}>
         <MultilineInput
           onSubmit={setSubmitted}
-          placeholder="Type your message here..."
         />
       </Box>
     </Box>

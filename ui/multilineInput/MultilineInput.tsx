@@ -3,14 +3,12 @@ import { Box, Text, useInput } from "ink";
 
 export interface MultilineInputProps {
   onSubmit: (value: string) => void;
-  placeholder?: string;
   initialValue?: string;
   focus?: boolean;
 }
 
 export function MultilineInput({
   onSubmit,
-  placeholder = "Enter text...",
   initialValue = "",
   focus = true,
 }: MultilineInputProps) {
@@ -133,7 +131,6 @@ export function MultilineInput({
   }, { isActive: focus });
 
   const { lines, cursorLine, cursorCol } = state;
-  const isEmpty = lines.length === 1 && lines[0] === "";
 
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="blue" paddingX={1}>
@@ -142,26 +139,24 @@ export function MultilineInput({
           {"(Enter: new line, Ctrl+D/Esc: submit)"}
         </Text>
       </Box>
-      {isEmpty ? <Text color="gray">{placeholder}</Text> : (
-        lines.map((line, lineIndex) => (
-          <Box key={lineIndex}>
-            <Text color="gray" dimColor>
-              {String(lineIndex + 1).padStart(2, " ")} │{" "}
-            </Text>
-            {lineIndex === cursorLine
-              ? (
-                <Text>
-                  {line.slice(0, cursorCol)}
-                  <Text backgroundColor="white" color="black">
-                    {line[cursorCol] || " "}
-                  </Text>
-                  {line.slice(cursorCol + 1)}
+      {lines.map((line, lineIndex) => (
+        <Box key={lineIndex}>
+          <Text color="gray" dimColor>
+            {String(lineIndex + 1).padStart(2, " ")} │{" "}
+          </Text>
+          {lineIndex === cursorLine
+            ? (
+              <Text>
+                {line.slice(0, cursorCol)}
+                <Text backgroundColor="white" color="black">
+                  {line[cursorCol] || " "}
                 </Text>
-              )
-              : <Text>{line}</Text>}
-          </Box>
-        ))
-      )}
+                {line.slice(cursorCol + 1)}
+              </Text>
+            )
+            : <Text>{line}</Text>}
+        </Box>
+      ))}
     </Box>
   );
 }
