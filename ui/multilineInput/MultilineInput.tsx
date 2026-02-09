@@ -146,13 +146,17 @@ export function MultilineInput({
             <Text>{lineIndex === 0 ? "❯ " : "  "}</Text>
             {lineIndex === cursorLine
               ? (
-                <Text>
-                  {line.slice(0, cursorCol)}
+                <>
+                  <Text>
+                    {line.slice(0, cursorCol)}
+                  </Text>
                   <Text backgroundColor="white" color="black">
                     {line[cursorCol] || " "}
                   </Text>
-                  {line.slice(cursorCol + 1)}
-                </Text>
+                  <Text>
+                    {line.slice(cursorCol + 1)}
+                  </Text>
+                </>
               )
               : <Text>{line}</Text>}
           </Box>
