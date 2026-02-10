@@ -1,4 +1,11 @@
-import { useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type Ref,
+  useEffectEvent,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Box, Text, useInput } from "ink";
 import chalk from "chalk";
 
@@ -11,19 +18,47 @@ export interface MultilineInputProps {
    * @default false
    */
   isDisabled?: boolean;
+  ref?: Ref<MultilineInputRef>;
 }
 
+export interface MultilineInputRef {
+  reset(initialValue?: string): void;
+}
+
+/**
+ * Multiline text input component. Supports basic text editing keys (Enter,
+ * Backspace, Delete, Arrow keys) and submits on Enter (unless the Enter is
+ * escaped with a backslash). Pressing Escape clears the input.
+ *
+ * This is an uncontrolled component that manages its own state and only calls
+ * onSubmit when the user submits the input. The component is one-shot and does
+ * not support editing the input after submission. If you want to reset the
+ * input after submission, either render a MultilineInput with a different key
+ * or call the reset method on the ref.
+ */
 export function MultilineInput({
   onSubmit,
   initialValue = "",
   isDisabled = false,
+  ref,
 }: MultilineInputProps) {
-  const [state, setState] = useState({
+  const [state, setState] = useState(() => ({
     lines: initialValue ? initialValue.split("\n") : [""],
     cursorLine: 0,
     cursorCol: 0,
     submitting: false,
-  });
+  }));
+
+  useImperativeHandle(ref, () => ({
+    reset(initialValue?: string | undefined) {
+      setState({
+        lines: initialValue ? initialValue.split("\n") : [""],
+        cursorLine: 0,
+        cursorCol: 0,
+        submitting: false,
+      });
+    },
+  }), []);
 
   // Handle submission in an effect to ensure we have the latest state when
   // submitting. Otherwise, if we call onSubmit directly in the key handler, we
