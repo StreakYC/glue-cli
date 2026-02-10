@@ -42,6 +42,8 @@ export function MultilineInput({
       return;
     }
 
+    // Backspace is misinterpreted as delete by Ink, so we handle both here.
+    // https://github.com/vadimdemedes/ink/issues/634
     if (key.backspace || key.delete) {
       setState((prev) => {
         if (prev.cursorCol > 0) {
@@ -62,6 +64,26 @@ export function MultilineInput({
       });
       return;
     }
+
+    // if (key.delete) {
+    //   setState((prev) => {
+    //     const currentLine = prev.lines[prev.cursorLine] || "";
+    //     if (prev.cursorCol < currentLine.length) {
+    //       const newLines = [...prev.lines];
+    //       newLines[prev.cursorLine] = currentLine.slice(0, prev.cursorCol) +
+    //         currentLine.slice(prev.cursorCol + 1);
+    //       return { ...prev, lines: newLines };
+    //     } else if (prev.cursorLine < prev.lines.length - 1) {
+    //       const newLines = [...prev.lines];
+    //       const nextLine = newLines[prev.cursorLine + 1] || "";
+    //       newLines[prev.cursorLine] = currentLine + nextLine;
+    //       newLines.splice(prev.cursorLine + 1, 1);
+    //       return { ...prev, lines: newLines };
+    //     }
+    //     return prev;
+    //   });
+    //   return;
+    // }
 
     if (key.upArrow) {
       setState((prev) => {
