@@ -90,10 +90,14 @@ export function MultilineInput({
       setState((prev) => {
         if (prev.submitting) return prev;
         const currentLine = prev.lines[prev.cursorLine] || "";
-        if (currentLine[prev.cursorCol - 1] !== "\\") {
+
+        const isSoftReturn = key.shift || key.meta;
+        const isBackslashEscaped = !isSoftReturn && currentLine[prev.cursorCol - 1] === "\\";
+        if (!isSoftReturn && !isBackslashEscaped) {
           return { ...prev, submitting: true };
         }
-        const beforeCursor = currentLine.slice(0, prev.cursorCol - 1);
+
+        const beforeCursor = currentLine.slice(0, prev.cursorCol - (isBackslashEscaped ? 1 : 0));
         const afterCursor = currentLine.slice(prev.cursorCol);
         const newLines = [...prev.lines];
         newLines[prev.cursorLine] = beforeCursor;
