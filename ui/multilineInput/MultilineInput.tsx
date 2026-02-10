@@ -239,7 +239,7 @@ export function MultilineInput({
           </Box>
         ))}
       </Box>
-      <Box>
+      <Box paddingLeft={2}>
         <Text color="gray" dimColor>
           ⏎ to submit{" ".repeat(4)}\⏎ for newline
         </Text>
