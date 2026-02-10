@@ -43,6 +43,14 @@ export function MultilineInput({
   }
 
   useInput((input, key) => {
+    if (key.escape) {
+      setState((prev) => {
+        if (prev.submitting) return prev;
+        return { ...prev, lines: [""], cursorLine: 0, cursorCol: 0 };
+      });
+      return;
+    }
+
     if (key.return) {
       setState((prev) => {
         if (prev.submitting) return prev;
