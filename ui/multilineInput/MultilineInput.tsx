@@ -176,12 +176,28 @@ export function MultilineInput({
     if (input && !key.ctrl && !key.meta) {
       setState((prev) => {
         if (prev.submitting) return prev;
-        const cleanedInput = input.replace(/\r\n|\r/g, "\n");
-        const newLines = [...prev.lines];
-        const currentLine = newLines[prev.cursorLine] || "";
-        newLines[prev.cursorLine] = currentLine.slice(0, prev.cursorCol) + cleanedInput +
-          currentLine.slice(prev.cursorCol);
-        return { ...prev, lines: newLines, cursorCol: prev.cursorCol + cleanedInput.length };
+        const inputLines = input.split(/\r\n|\r|\n/g);
+        const currentLine = prev.lines[prev.cursorLine] ?? "";
+        const newLines = [
+          ...prev.lines.slice(0, prev.cursorLine),
+          ...inputLines.map((inputLine, i) => {
+            if (i === 0) {
+              inputLine = currentLine.slice(0, prev.cursorCol) + inputLine;
+            }
+            if (i === inputLines.length - 1) {
+              inputLine = inputLine + currentLine.slice(prev.cursorCol);
+            }
+            return inputLine;
+          }),
+          ...prev.lines.slice(prev.cursorLine + 1),
+        ];
+        return {
+          ...prev,
+          lines: newLines,
+          cursorCol: newLines[prev.cursorLine + inputLines.length - 1].length -
+            (currentLine.length - prev.cursorCol),
+          cursorLine: prev.cursorLine + inputLines.length - 1,
+        };
       });
     }
   }, { isActive: !isDisabled });
