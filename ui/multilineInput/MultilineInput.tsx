@@ -4,13 +4,18 @@ import { Box, Text, useInput } from "ink";
 export interface MultilineInputProps {
   onSubmit: (value: string) => void;
   initialValue?: string;
-  focus?: boolean;
+  /**
+   * When disabled, user input is ignored.
+   *
+   * @default false
+   */
+  isDisabled?: boolean;
 }
 
 export function MultilineInput({
   onSubmit,
   initialValue = "",
-  focus = true,
+  isDisabled = false,
 }: MultilineInputProps) {
   const [state, setState] = useState({
     lines: initialValue ? initialValue.split("\n") : [""],
@@ -19,8 +24,6 @@ export function MultilineInput({
   });
 
   useInput((input, key) => {
-    if (!focus) return;
-
     if ((key.ctrl && input === "d") || key.escape) {
       onSubmit(state.lines.join("\n"));
       return;
@@ -128,7 +131,7 @@ export function MultilineInput({
         return { ...prev, lines: newLines, cursorCol: prev.cursorCol + input.length };
       });
     }
-  }, { isActive: focus });
+  }, { isActive: !isDisabled });
 
   const { lines, cursorLine, cursorCol } = state;
 
