@@ -7,6 +7,7 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { writeGlue } from "../backend.ts";
+import { multilinePrompt } from "../ui/multilineInput/multilinePrompt.tsx";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
@@ -17,18 +18,20 @@ glue.webhook.onGet((_event) => {
 `;
 
 export async function create(_options: void) {
-  const creationType: string = await Select.prompt({
+  const creationType = await new Select({
     message: "How do you want to start your glue?",
     options: [
       { name: "Code generation", value: "codegen" },
       { name: "Blank scaffold", value: "blank" },
-    ],
-  });
+    ] as const,
+  }).prompt();
 
   let filename: string;
   let code: string;
   if (creationType === "codegen") {
-    const description = await Input.prompt("Enter the description for the new glue");
+    const description = await multilinePrompt({
+      message: "Enter the description for the new glue",
+    });
     const codeGenResult = await runStep("Generating glue code...", () => writeGlue(description));
     ({ filename, code } = codeGenResult);
   } else {
