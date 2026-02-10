@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 
 export interface MultilineInputProps {
@@ -21,23 +21,40 @@ export function MultilineInput({
     lines: initialValue ? initialValue.split("\n") : [""],
     cursorLine: 0,
     cursorCol: 0,
+    submitting: false,
   });
 
-  useInput((input, key) => {
-    if ((key.ctrl && input === "d") || key.escape) {
+  // Handle submission in an effect to ensure we have the latest state when
+  // submitting. Otherwise, if we call onSubmit directly in the key handler, we
+  // might have stale state if the user types something quickly and hits Enter
+  // before the state updates.
+  {
+    const onSubmitEffect = useEffectEvent(() => {
       onSubmit(state.lines.join("\n"));
-      return;
-    }
+    });
 
+    const didSubmit = useRef(false);
+    useLayoutEffect(() => {
+      if (didSubmit.current || !state.submitting) return;
+      didSubmit.current = true;
+      onSubmitEffect();
+    }, [state.submitting]);
+  }
+
+  useInput((input, key) => {
     if (key.return) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         const currentLine = prev.lines[prev.cursorLine] || "";
-        const beforeCursor = currentLine.slice(0, prev.cursorCol);
+        if (currentLine[prev.cursorCol - 1] !== "\\") {
+          return { ...prev, submitting: true };
+        }
+        const beforeCursor = currentLine.slice(0, prev.cursorCol - 1);
         const afterCursor = currentLine.slice(prev.cursorCol);
         const newLines = [...prev.lines];
         newLines[prev.cursorLine] = beforeCursor;
         newLines.splice(prev.cursorLine + 1, 0, afterCursor);
-        return { lines: newLines, cursorLine: prev.cursorLine + 1, cursorCol: 0 };
+        return { ...prev, lines: newLines, cursorLine: prev.cursorLine + 1, cursorCol: 0 };
       });
       return;
     }
@@ -46,6 +63,7 @@ export function MultilineInput({
     // https://github.com/vadimdemedes/ink/issues/634
     if (key.backspace || key.delete) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         if (prev.cursorCol > 0) {
           const newLines = [...prev.lines];
           const currentLine = newLines[prev.cursorLine] || "";
@@ -58,7 +76,12 @@ export function MultilineInput({
           const currentLine = newLines[prev.cursorLine] || "";
           newLines[prev.cursorLine - 1] = (newLines[prev.cursorLine - 1] || "") + currentLine;
           newLines.splice(prev.cursorLine, 1);
-          return { lines: newLines, cursorLine: prev.cursorLine - 1, cursorCol: prevLineLength };
+          return {
+            ...prev,
+            lines: newLines,
+            cursorLine: prev.cursorLine - 1,
+            cursorCol: prevLineLength,
+          };
         }
         return prev;
       });
@@ -67,6 +90,7 @@ export function MultilineInput({
 
     // if (key.delete) {
     //   setState((prev) => {
+    //     if (prev.submitting) return prev;
     //     const currentLine = prev.lines[prev.cursorLine] || "";
     //     if (prev.cursorCol < currentLine.length) {
     //       const newLines = [...prev.lines];
@@ -87,6 +111,7 @@ export function MultilineInput({
 
     if (key.upArrow) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         if (prev.cursorLine > 0) {
           const newLine = prev.cursorLine - 1;
           return {
@@ -102,6 +127,7 @@ export function MultilineInput({
 
     if (key.downArrow) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         if (prev.cursorLine < prev.lines.length - 1) {
           const newLine = prev.cursorLine + 1;
           return {
@@ -117,6 +143,7 @@ export function MultilineInput({
 
     if (key.leftArrow) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         if (prev.cursorCol > 0) {
           return { ...prev, cursorCol: prev.cursorCol - 1 };
         } else if (prev.cursorLine > 0) {
@@ -133,6 +160,7 @@ export function MultilineInput({
 
     if (key.rightArrow) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         const currentLineLength = prev.lines[prev.cursorLine]?.length || 0;
         if (prev.cursorCol < currentLineLength) {
           return { ...prev, cursorCol: prev.cursorCol + 1 };
@@ -146,6 +174,7 @@ export function MultilineInput({
 
     if (input && !key.ctrl && !key.meta) {
       setState((prev) => {
+        if (prev.submitting) return prev;
         const newLines = [...prev.lines];
         const currentLine = newLines[prev.cursorLine] || "";
         newLines[prev.cursorLine] = currentLine.slice(0, prev.cursorCol) + input +
@@ -189,7 +218,7 @@ export function MultilineInput({
       </Box>
       <Box>
         <Text color="gray" dimColor>
-          {"(Enter: new line, Ctrl+D/Esc: submit)"}
+          ⏎ to submit{" ".repeat(4)}\⏎ for newline
         </Text>
       </Box>
     </Box>
