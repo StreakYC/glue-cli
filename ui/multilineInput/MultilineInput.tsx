@@ -1,5 +1,6 @@
 import { useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
+import chalk from "chalk";
 
 export interface MultilineInputProps {
   onSubmit: (value: string) => void;
@@ -198,17 +199,14 @@ export function MultilineInput({
         {lines.map((line, lineIndex) => (
           <Box key={lineIndex}>
             <Text>{lineIndex === 0 ? "❯ " : "  "}</Text>
-            {lineIndex === cursorLine
+            {!state.submitting && lineIndex === cursorLine
               ? (
                 <>
                   <Text>
-                    {line.slice(0, cursorCol)}
-                  </Text>
-                  <Text backgroundColor="white" color="black">
-                    {line[cursorCol] || " "}
-                  </Text>
-                  <Text>
-                    {line.slice(cursorCol + 1)}
+                    {/* These strings have to be combined because of https://github.com/vadimdemedes/ink/issues/867 */}
+                    {line.slice(0, cursorCol) +
+                      chalk.inverse(line[cursorCol] || " ") +
+                      line.slice(cursorCol + 1)}
                   </Text>
                 </>
               )
