@@ -263,7 +263,9 @@ export function MultilineInput({
               ? (
                 <>
                   <Text>
-                    {/* These strings have to be combined because of https://github.com/vadimdemedes/ink/issues/867 */}
+                    {/* We use an inverted character to represent the cursor. */}
+                    {/* TODO use Ink's useCursor hook instead when it's released. */}
+                    {/* These strings have to be concatenated because of https://github.com/vadimdemedes/ink/issues/867 */}
                     {line.slice(0, cursorCol) +
                       chalk.inverse(line[cursorCol] || " ") +
                       line.slice(cursorCol + 1)}
