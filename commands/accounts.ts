@@ -37,15 +37,21 @@ export const accounts = async (options: AccountsOptions) => {
     new Table()
       .header(["Account ID", "Type", "Label", "Name", "Scopes", "API Key", "Created At"])
       .body(
-        accounts.map((account) => [
-          account.id,
-          account.type,
-          account.selector,
-          account.displayName,
-          account.scopes?.join(", "),
-          account.redactedApiKey,
-          formatEpochMillis(account.createdAt),
-        ]),
+        accounts
+          .sort((a, b) => {
+            const typeComp = a.type.localeCompare(b.type);
+            if (typeComp !== 0) return typeComp;
+            return a.selector.localeCompare(b.selector);
+          })
+          .map((account) => [
+            account.id,
+            account.type,
+            account.selector,
+            account.displayName,
+            account.scopes?.join(", "),
+            account.redactedApiKey,
+            formatEpochMillis(account.createdAt),
+          ]),
       )
       .padding(4)
       .render();
