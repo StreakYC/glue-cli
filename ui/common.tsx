@@ -1,5 +1,6 @@
 import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
+import Link from "ink-link";
 import type {
   AccountInjectionDTO,
   AccountToSetup,
@@ -71,7 +72,9 @@ export const RegistrationAccountSetupSection = (
         <Box paddingLeft={2} key={ats.type + ":" + ats.selector}>
           <Text>
             {ats.type} {ats.selector ? `(${ats.selector})` : ""}:{" "}
-            <Text bold>{ats.accountSetupUrl}</Text>
+            <Link url={ats.accountSetupUrl}>
+              <Text bold>{ats.accountSetupUrl}</Text>
+            </Link>
           </Text>
         </Box>
       ))}
