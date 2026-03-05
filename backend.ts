@@ -2,7 +2,6 @@ import { z } from "zod";
 import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken } from "./auth.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
-import { zip } from "@std/collections/zip";
 import { GLUE_API_SERVER } from "./common.ts";
 import { retry } from "@std/async/retry";
 import { Registrations } from "@streak-glue/runtime/backendTypes";
@@ -190,8 +189,15 @@ export async function createDeployment(
   return res;
 }
 
-export async function getDeploymentById(id: string): Promise<DeploymentDTO | undefined> {
-  return await backendRequest<DeploymentDTO>(`/deployments/${id}`);
+export async function getDeploymentById(
+  id: string,
+  includeBuildStepText = false,
+): Promise<DeploymentDTO | undefined> {
+  const params = new URLSearchParams();
+  if (includeBuildStepText) {
+    params.set("includeBuildStepText", "true");
+  }
+  return await backendRequest<DeploymentDTO>(`/deployments/${id}?${params.toString()}`);
 }
 
 export async function getDeployments(id: string): Promise<DeploymentDTO[]> {
@@ -199,13 +205,10 @@ export async function getDeployments(id: string): Promise<DeploymentDTO[]> {
 }
 
 function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
-  if (a.status !== b.status || a.buildSteps.length !== b.buildSteps.length) {
+  if (a.status !== b.status) {
     return false;
   }
-  if (
-    zip(a.buildSteps, b.buildSteps)
-      .some(([stepA, stepB]) => stepA.name !== stepB.name || stepA.status !== stepB.status)
-  ) {
+  if (!equal(a.buildSteps, b.buildSteps)) {
     return false;
   }
   if (!equal(a.triggers, b.triggers) || !equal(a.accountInjections, b.accountInjections)) {
@@ -222,7 +225,7 @@ export async function* streamChangesTillDeploymentReady(
 ): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
-    const deployment = await retry(() => getDeploymentById(deploymentId));
+    const deployment = await retry(() => getDeploymentById(deploymentId, true));
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }

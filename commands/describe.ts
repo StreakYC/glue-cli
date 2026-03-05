@@ -113,7 +113,7 @@ function createDeploymentTarget(deploymentId: string): DescribeTarget {
   return {
     kind: "deployment",
     load: async () => {
-      const deployment = await getDeploymentById(deploymentId);
+      const deployment = await getDeploymentById(deploymentId, true);
       if (!deployment) {
         throw new Error("Couldn't find a deployment with that id");
       }
