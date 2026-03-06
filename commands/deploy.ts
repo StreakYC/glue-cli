@@ -63,6 +63,10 @@ export async function deploy(options: DeployOptions, file: string) {
   const deploymentParams = await getCreateDeploymentParams(file, options.runner);
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
 
+  console.log("Writing deployment parameters...");
+  await Deno.writeTextFile("deploymentParams.json", JSON.stringify(deploymentParams, null, 2));
+  if (Math.random() > -1) Deno.exit(0);
+
   duration = performance.now();
   updateUI({ uploadingCodeState: "in_progress", uploadingCodeDuration: 0 });
   const absPath = resolve(file);
