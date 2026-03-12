@@ -93,7 +93,14 @@ export async function dev(options: DevOptions, filename: string) {
 
   const glueProcess = await runUIStep("bootingCode", async () => {
     const c = spawnLocalGlueProcess(filename, env, debugMode);
-    await lifelineFirstConnectionDeferred.promise;
+    const event = await Promise.race([
+      lifelineFirstConnectionDeferred.promise,
+      c.status.then((status) => ({ status })),
+    ]);
+    if (event) {
+      // Process exited before connecting to the lifeline websocket
+      throw new Error(`User glue process exited with code ${event.status.code}`);
+    }
     return c;
   });
   let registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
