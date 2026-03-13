@@ -327,6 +327,9 @@ export interface DeploymentDTO {
   accountInjections: AccountInjectionDTO[];
   buildSteps: BuildStepDTO[];
   accountsToSetup: AccountToSetup[];
+  totalExecutions: number;
+  totalFailedExecutions: number;
+  mostRecentExecution: number | null;
 }
 
 export interface AccountToSetup {
