@@ -22,7 +22,7 @@ export async function checkForAuthCredsOtherwiseExit() {
   }
 }
 
-export function exitBecauseNotLoggedIn() {
+export function exitBecauseNotLoggedIn(): never {
   console.error("You are not logged in. Try `glue login`.");
   Deno.exit(1);
 }
