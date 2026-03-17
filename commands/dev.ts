@@ -33,11 +33,12 @@ import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
-import { pushableV } from "it-pushable";
+import { pushable, pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
 
 import { getGlueName } from "../lib/glueNaming.ts";
+import { once } from "node:events";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -50,6 +51,11 @@ let lastMessage: ServerWebsocketMessage | undefined;
 // ------------------------------------------------------------------------------------------------
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
+
+  // Used so if the local glue process dies, we can put the error in the abort
+  // controller and have this function skip forward to the cleanup and exit
+  // logic.
+  const abortController = new AbortController();
 
   let lifelineHasConnected = false;
   const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
@@ -92,33 +98,40 @@ export async function dev(options: DevOptions, filename: string) {
   }
 
   const glueProcess = await runUIStep("bootingCode", async () => {
-    const c = spawnLocalGlueProcess(filename, env, debugMode);
-    const event = await Promise.race([
-      lifelineFirstConnectionDeferred.promise,
-      c.status.then((status) => ({ status })),
-    ]);
-    if (event) {
-      // Process exited before connecting to the lifeline websocket
-      throw new Error(`User glue process exited with code ${event.status.code}`);
+    const c = spawnLocalGlueProcess(filename, env, debugMode, abortController);
+
+    const unsub = new AbortController();
+    try {
+      await Promise.race([
+        lifelineFirstConnectionDeferred.promise,
+        once(abortController.signal, "abort", { signal: unsub.signal }),
+      ]);
+    } finally {
+      unsub.abort();
     }
+    abortController.signal.throwIfAborted();
+
     return c;
   });
-  let registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
+  let registrations = await runUIStep(
+    "discoveringTriggers",
+    () => discoverRegistrations(abortController.signal),
+  );
 
   let setupReplayResult = options.replay
     ? await runUIStep(
       "gettingExecutionToReplay",
-      () => setupReplay(options.replay!, registrations.triggers),
+      () => setupReplay(options.replay!, registrations.triggers, abortController.signal),
     )
     : undefined;
   devProgressProps.setupReplayResult = setupReplayResult;
 
   let { glue, deployment } = await runUIStep(
     "registeringGlue",
-    async () => await createDeploymentAndMaybeGlue(glueName, registrations),
+    async () => await createDeploymentAndMaybeGlue(glueName, registrations, abortController.signal),
   );
 
-  await monitorDeploymentAndRenderChangesTillReady(deployment.id);
+  await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
   if (devProgressProps.deployment?.status !== "success") {
     // we've already rendered the failed deployment UI, so we just need to exit here
     renderUI();
@@ -136,7 +149,15 @@ export async function dev(options: DevOptions, filename: string) {
   );
   await unmountUI();
 
+  abortController.signal.throwIfAborted();
+
+  const abortPushable = pushable<never>({ objectMode: true });
+  abortController.signal.addEventListener("abort", () => {
+    abortPushable.throw(abortController.signal.reason);
+  });
+
   const mux = new MuxAsyncIterator<KeyPressEvent | void[]>();
+  mux.add(abortPushable);
   mux.add(lifelineReconnectionEvents);
   mux.add(keypressWatcher);
   for await (const event of mux) {
@@ -196,11 +217,14 @@ export async function dev(options: DevOptions, filename: string) {
 
     renderUI();
 
-    const newRegistrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
+    const newRegistrations = await runUIStep(
+      "discoveringTriggers",
+      () => discoverRegistrations(abortController.signal),
+    );
     setupReplayResult = options.replay
       ? await runUIStep(
         "gettingExecutionToReplay",
-        () => setupReplay(options.replay!, newRegistrations.triggers),
+        () => setupReplay(options.replay!, newRegistrations.triggers, abortController.signal),
       )
       : undefined;
 
@@ -217,10 +241,15 @@ export async function dev(options: DevOptions, filename: string) {
       renderUI();
       deployment = await runUIStep(
         "registeringGlue",
-        async () => await createDeployment(glue.id, { optimisticRegistrations: registrations }),
+        async () =>
+          await createDeployment(
+            glue.id,
+            { optimisticRegistrations: registrations },
+            abortController.signal,
+          ),
       );
       devProgressProps.deployment = deployment;
-      await monitorDeploymentAndRenderChangesTillReady(deployment.id);
+      await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
       if (devProgressProps.deployment?.status !== "success") {
         // we've already rendered the failed deployment UI, so we just need to exit here
         renderUI();
@@ -327,8 +356,11 @@ export interface SetupReplayResult {
 async function setupReplay(
   executionId: string,
   triggersToCheckCompatibilityWith: TriggerRegistration[],
+  signal?: AbortSignal,
 ): Promise<SetupReplayResult> {
-  const execution = await getExecutionByIdNoThrow(executionId);
+  signal?.throwIfAborted();
+
+  const execution = await getExecutionByIdNoThrow(executionId, signal);
   if (!execution) {
     return { executionId, execution: undefined, compatible: false };
   }
@@ -351,7 +383,10 @@ async function deliverTriggerEvent(
   deployment: DeploymentDTO,
   message: ServerWebsocketMessage,
   isReplay: boolean = false,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
+
   const trigger = deployment.triggers.find((t) =>
     t.label === message.event.label && t.type === message.event.type
   );
@@ -377,16 +412,18 @@ async function deliverTriggerEvent(
       "X-Glue-API-Auth-Header": `Bearer ${authToken}`,
     },
     body: JSON.stringify(message.event satisfies TriggerEvent),
+    signal,
   });
   if (!isReplay) {
     lastMessage = message;
   }
 }
 
-async function shutdownGlue(glueId: string) {
+async function shutdownGlue(glueId: string, signal?: AbortSignal) {
+  signal?.throwIfAborted();
   if (glueId) {
     console.log("Stopping glue...");
-    await stopGlue(glueId);
+    await stopGlue(glueId, signal);
   } else {
     console.log("No glue to stop");
   }
@@ -395,10 +432,13 @@ async function shutdownGlue(glueId: string) {
 async function createDeploymentAndMaybeGlue(
   glueName: string,
   registrations: Registrations,
+  signal?: AbortSignal,
 ): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
-  const existingGlue = await getGlueByName(glueName, "dev");
+  const existingGlue = await getGlueByName(glueName, "dev", signal);
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, { optimisticRegistrations: registrations }, "dev");
+    const newGlue = await createGlue(glueName, { optimisticRegistrations: registrations }, "dev", {
+      signal,
+    });
     if (!newGlue.pendingDeployment) {
       throw new Error("No pending deployment");
     }
@@ -406,7 +446,7 @@ async function createDeploymentAndMaybeGlue(
   } else {
     const newDeployment = await createDeployment(existingGlue.id, {
       optimisticRegistrations: registrations,
-    });
+    }, signal);
     return { glue: existingGlue, deployment: newDeployment };
   }
 }
@@ -437,9 +477,11 @@ function analyzeCode(_filename: string): AnalysisResult {
   return { errors: [] };
 }
 
-async function discoverRegistrations(): Promise<Registrations> {
+async function discoverRegistrations(signal?: AbortSignal): Promise<Registrations> {
+  signal?.throwIfAborted();
   const res = await fetch(
     `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegistrations`,
+    { signal },
   );
   if (!res.ok) {
     throw new Error(`Failed to get registrations: ${res.statusText}`);
@@ -450,7 +492,12 @@ async function discoverRegistrations(): Promise<Registrations> {
 
 export type DebugMode = "inspect" | "inspect-wait" | "no-debug";
 
-function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugMode: DebugMode) {
+function spawnLocalGlueProcess(
+  file: string,
+  env: Record<string, string>,
+  debugMode: DebugMode,
+  abortController: AbortController,
+) {
   const flags = [
     "--watch",
     "--quiet",
@@ -479,7 +526,14 @@ function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugM
   });
 
   const child = command.spawn();
+  child.status.then((status) => {
+    abortController.abort(new Error(`User glue process exited with code ${status.code}`));
+  });
 
+  // TODO check for "Watcher Process failed. Restarting on file change..."
+  // message and fire the abortController in that case. Maybe only if the
+  // initial lifeline connection hasn't been established yet, so we only treat
+  // errors on the initial startup as fatal.
   (async () => {
     for await (const line of toLines(child.stdout)) {
       console.log(line);
@@ -637,8 +691,11 @@ async function runUIStep<R>(
   return retVal;
 }
 
-async function monitorDeploymentAndRenderChangesTillReady(deploymentId: string) {
-  for await (const d of streamChangesTillDeploymentReady(deploymentId)) {
+async function monitorDeploymentAndRenderChangesTillReady(
+  deploymentId: string,
+  signal?: AbortSignal,
+) {
+  for await (const d of streamChangesTillDeploymentReady(deploymentId, signal)) {
     devProgressProps.deployment = d;
     renderUI();
   }
