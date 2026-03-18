@@ -17,6 +17,7 @@ import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import { Hono } from "hono";
 import { timingSafeEqual } from "node:crypto";
+import { stripVTControlCharacters } from "node:util";
 import { HTTPException } from "hono/http-exception";
 import { upgradeWebSocket } from "hono/deno";
 import React from "react";
@@ -577,8 +578,20 @@ function spawnLocalGlueProcess(
   })();
 
   (async () => {
+    let isFirstLine = true;
     for await (const line of toLines(child.stderr)) {
       console.error(line);
+
+      // The user glue process run's in deno's --watch mode, so errors aren't
+      // fatal and it patiently waits for user to edit the code. However, it's a
+      // bit confusing if an error happens on the first start because glue dev
+      // is waiting on it. Detect this and abort early.
+      if (isFirstLine) {
+        if (/^error:/i.test(stripVTControlCharacters(line))) {
+          abortController.abort(new Error("User glue process failed to start due to error"));
+        }
+        isFirstLine = false;
+      }
     }
   })();
 
