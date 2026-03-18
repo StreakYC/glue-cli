@@ -57,7 +57,9 @@ export async function dev(options: DevOptions, filename: string) {
    * Functions that need to be called and waited on before we can exit the
    * process. (Used for issuing the stop call on the glue after it's created.)
    */
-  const cleanupFns: (() => Promise<void>)[] = [];
+  const cleanupFns: (() => Promise<void>)[] = [
+    () => unmountUI(),
+  ];
 
   /**
    * Used so if the user glue process dies, we can put the error in the abort
