@@ -362,7 +362,7 @@ async function wsListen(onConnection: () => void): Promise<string> {
 
 function isPortAvailable(port: number): boolean {
   try {
-    const listener = Deno.listen({ port });
+    const listener = Deno.listen({ hostname: "127.0.0.1", port });
     listener.close();
     return true;
   } catch (error) {
