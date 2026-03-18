@@ -17,6 +17,7 @@ import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import { Hono } from "hono";
 import { timingSafeEqual } from "node:crypto";
+import { stripVTControlCharacters } from "node:util";
 import { HTTPException } from "hono/http-exception";
 import { upgradeWebSocket } from "hono/deno";
 import React from "react";
@@ -33,11 +34,12 @@ import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
-import { pushableV } from "it-pushable";
+import { pushable, pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
 
 import { getGlueName } from "../lib/glueNaming.ts";
+import { once } from "node:events";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -51,134 +53,47 @@ let lastMessage: ServerWebsocketMessage | undefined;
 export async function dev(options: DevOptions, filename: string) {
   await checkForAuthCredsOtherwiseExit();
 
-  let lifelineHasConnected = false;
-  const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
-  const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
+  /**
+   * Functions that need to be called and waited on before we can exit the
+   * process. (Used for issuing the stop call on the glue after it's created.)
+   */
+  const cleanupFns: (() => Promise<void>)[] = [
+    () => unmountUI(),
+  ];
 
-  const glueName = await getGlueName(filename, options.name);
+  /**
+   * Used so if the user glue process dies, we can put the error in the abort
+   * controller and have this function skip forward to the cleanup and exit
+   * logic. Also signals resources like the user glue process and websocket
+   * connection to shut down.
+   */
+  const abortController = new AbortController();
+  try {
+    let lifelineHasConnected = false;
+    const lifelineFirstConnectionDeferred = Promise.withResolvers<void>();
+    const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
-  const glueCliWebsocketAddr = await wsListen(() => {
-    if (!lifelineHasConnected) {
-      lifelineHasConnected = true;
-      lifelineFirstConnectionDeferred.resolve();
-    } else {
-      lifelineReconnectionEvents.push();
-    }
-  });
+    const glueName = await getGlueName(filename, options.name);
 
-  const env = await getEnv(glueName, filename, glueCliWebsocketAddr);
-  let debugMode: DebugMode = options.inspectWait
-    ? "inspect-wait"
-    : (options.debug ? "inspect" : "no-debug");
-  if (debugMode !== "no-debug") {
-    if (!isPortAvailable(DEFAULT_DEBUG_PORT)) {
-      console.warn(`Debugger port ${DEFAULT_DEBUG_PORT} is already in use, disabling debugger.`);
-      debugMode = "no-debug";
-    }
-  }
-  devProgressProps.debugMode = debugMode;
-  if (options.replay) {
-    devProgressProps.steps.gettingExecutionToReplay = {
-      state: `not_started`,
-      duration: 0,
-    };
-  }
-
-  const keypressWatcher = keypress();
-
-  const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
-  if (codeAnalysisResult.errors.length > 0) {
-    throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
-  }
-
-  const glueProcess = await runUIStep("bootingCode", async () => {
-    const c = spawnLocalGlueProcess(filename, env, debugMode);
-    await lifelineFirstConnectionDeferred.promise;
-    return c;
-  });
-  let registrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
-
-  let setupReplayResult = options.replay
-    ? await runUIStep(
-      "gettingExecutionToReplay",
-      () => setupReplay(options.replay!, registrations.triggers),
-    )
-    : undefined;
-  devProgressProps.setupReplayResult = setupReplayResult;
-
-  let { glue, deployment } = await runUIStep(
-    "registeringGlue",
-    async () => await createDeploymentAndMaybeGlue(glueName, registrations),
-  );
-
-  await monitorDeploymentAndRenderChangesTillReady(deployment.id);
-  if (devProgressProps.deployment?.status !== "success") {
-    // we've already rendered the failed deployment UI, so we just need to exit here
-    renderUI();
-    glueProcess.kill();
-    Deno.exit(1);
-  }
-
-  const ws = await runUIStep(
-    "connectingToTunnel",
-    () =>
-      connectToDevEventsWebsocketAndHandleTriggerEvents(
-        glue.devEventsWebsocketUrl!,
-        async (message) => await deliverTriggerEvent(deployment, message),
-      ),
-  );
-  await unmountUI();
-
-  const mux = new MuxAsyncIterator<KeyPressEvent | void[]>();
-  mux.add(lifelineReconnectionEvents);
-  mux.add(keypressWatcher);
-  for await (const event of mux) {
-    // handle keypress events
-    if (!Array.isArray(event)) {
-      const keyPressEvent = event as KeyPressEvent;
-      if (keyPressEvent.key === "q" || keyPressEvent.key === "Q") {
-        break;
-      } else if (keyPressEvent.ctrlKey && keyPressEvent.key === "c") {
-        break;
-      } else if (keyPressEvent.key === "r" && lastMessage) {
-        await deliverTriggerEvent(deployment, lastMessage, true);
-      } else if (
-        keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible &&
-        setupReplayResult.execution
-      ) {
-        const triggerEvent: TriggerEvent = {
-          type: setupReplayResult.execution.trigger.type,
-          label: setupReplayResult.execution.trigger.label,
-          data: setupReplayResult.execution.inputData,
-        };
-        const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
-        await deliverTriggerEvent(deployment, message, true);
-      } else if (keyPressEvent.key === "s") {
-        const samplableTriggers = toSortedByTypeThenLabel(deployment.triggers
-          .filter((t) => t.supportsSampleEvents));
-        if (samplableTriggers.length === 0) {
-          console.log("None of your triggers support sample events");
-          continue;
-        }
-        const trigger = await Select.prompt({
-          message: "Choose a trigger to sample:",
-          options: samplableTriggers.map((t) => ({
-            name: `${t.type}(${t.label}) ${t.description}`,
-            value: t,
-          })),
-        });
-        console.log(
-          "Generating a sample event for:",
-          `${trigger.type}(${trigger.label}) ${trigger.description}`,
-        );
-        await sampleTrigger(trigger.id);
+    const glueCliWebsocketAddr = await wsListen(() => {
+      if (!lifelineHasConnected) {
+        lifelineHasConnected = true;
+        lifelineFirstConnectionDeferred.resolve();
+      } else {
+        lifelineReconnectionEvents.push();
       }
+    });
 
-      continue;
+    const env = await getEnv(glueName, filename, glueCliWebsocketAddr);
+    let debugMode: DebugMode = options.inspectWait
+      ? "inspect-wait"
+      : (options.debug ? "inspect" : "no-debug");
+    if (debugMode !== "no-debug") {
+      if (!isPortAvailable(DEFAULT_DEBUG_PORT)) {
+        console.warn(`Debugger port ${DEFAULT_DEBUG_PORT} is already in use, disabling debugger.`);
+        debugMode = "no-debug";
+      }
     }
-    // handle restart events
-
-    devProgressProps = defaultRestartingUIProps();
     devProgressProps.debugMode = debugMode;
     if (options.replay) {
       devProgressProps.steps.gettingExecutionToReplay = {
@@ -187,51 +102,204 @@ export async function dev(options: DevOptions, filename: string) {
       };
     }
 
-    renderUI();
+    const keypressWatcher = keypress();
 
-    const newRegistrations = await runUIStep("discoveringTriggers", () => discoverRegistrations());
-    setupReplayResult = options.replay
+    const codeAnalysisResult = await runUIStep("codeAnalysis", () => analyzeCode(filename));
+    if (codeAnalysisResult.errors.length > 0) {
+      throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
+    }
+
+    await runUIStep("bootingCode", async () => {
+      const c = spawnLocalGlueProcess(filename, env, debugMode, abortController);
+
+      const unsub = new AbortController();
+      try {
+        await Promise.race([
+          lifelineFirstConnectionDeferred.promise,
+          once(abortController.signal, "abort", { signal: unsub.signal }),
+        ]);
+      } finally {
+        unsub.abort();
+      }
+      abortController.signal.throwIfAborted();
+
+      return c;
+    });
+    let registrations = await runUIStep(
+      "discoveringTriggers",
+      () => discoverRegistrations(abortController.signal),
+    );
+
+    let setupReplayResult = options.replay
       ? await runUIStep(
         "gettingExecutionToReplay",
-        () => setupReplay(options.replay!, newRegistrations.triggers),
+        () => setupReplay(options.replay!, registrations.triggers, abortController.signal),
       )
       : undefined;
-
     devProgressProps.setupReplayResult = setupReplayResult;
-    renderUI();
 
-    if (!equal(registrations, newRegistrations)) {
-      registrations = newRegistrations;
+    let { glue, deployment } = await runUIStep(
+      "registeringGlue",
+      async () =>
+        await createDeploymentAndMaybeGlue(glueName, registrations, abortController.signal),
+    );
+    cleanupFns.push(async () =>
+      // not passing abort signal because this needs to run after we abort
+      await shutdownGlue(glue.id)
+    );
 
-      devProgressProps.steps.registeringGlue = {
-        state: "in_progress",
-        duration: 0,
-      };
+    await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
+    if (devProgressProps.deployment?.status !== "success") {
+      // we've already rendered the failed deployment UI, so we just need to exit here
       renderUI();
-      deployment = await runUIStep(
-        "registeringGlue",
-        async () => await createDeployment(glue.id, { optimisticRegistrations: registrations }),
-      );
-      devProgressProps.deployment = deployment;
-      await monitorDeploymentAndRenderChangesTillReady(deployment.id);
-      if (devProgressProps.deployment?.status !== "success") {
-        // we've already rendered the failed deployment UI, so we just need to exit here
-        renderUI();
-        glueProcess.kill();
-        Deno.exit(1);
-      }
+      throw new Error("Deployment failed, exiting dev process.");
     }
-    await unmountUI();
-  }
-  // loop ended, time to exit
 
-  ws.close();
-  try {
-    glueProcess.kill();
-  } catch {
-    // ignore
+    await runUIStep(
+      "connectingToTunnel",
+      () =>
+        connectToDevEventsWebsocketAndHandleTriggerEvents(
+          glue.devEventsWebsocketUrl!,
+          async (message) => await deliverTriggerEvent(deployment, message),
+          abortController.signal,
+        ),
+    );
+    await unmountUI();
+
+    // Setup is done, now prepare to enter main loop where we wait for incoming
+    // events and keypresses.
+
+    abortController.signal.throwIfAborted();
+
+    const abortPushable = pushable<never>({ objectMode: true });
+    const pushableAbortHandler = () => {
+      abortPushable.throw(abortController.signal.reason);
+    };
+    abortController.signal.addEventListener("abort", pushableAbortHandler, { once: true });
+    try {
+      const mux = new MuxAsyncIterator<KeyPressEvent | void[]>();
+      mux.add(abortPushable);
+      mux.add(lifelineReconnectionEvents);
+      mux.add(keypressWatcher);
+      for await (const event of mux) {
+        abortController.signal.throwIfAborted();
+
+        // handle keypress events
+        if (!Array.isArray(event)) {
+          const keyPressEvent = event as KeyPressEvent;
+          if (keyPressEvent.key === "q" || keyPressEvent.key === "Q") {
+            break;
+          } else if (keyPressEvent.ctrlKey && keyPressEvent.key === "c") {
+            break;
+          } else if (keyPressEvent.key === "r" && lastMessage) {
+            await deliverTriggerEvent(deployment, lastMessage, true);
+          } else if (
+            keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible &&
+            setupReplayResult.execution
+          ) {
+            const triggerEvent: TriggerEvent = {
+              type: setupReplayResult.execution.trigger.type,
+              label: setupReplayResult.execution.trigger.label,
+              data: setupReplayResult.execution.inputData,
+            };
+            const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
+            await deliverTriggerEvent(deployment, message, true);
+          } else if (keyPressEvent.key === "s") {
+            const samplableTriggers = toSortedByTypeThenLabel(deployment.triggers
+              .filter((t) => t.supportsSampleEvents));
+            if (samplableTriggers.length === 0) {
+              console.log("None of your triggers support sample events");
+              continue;
+            }
+            const trigger = await Select.prompt({
+              message: "Choose a trigger to sample:",
+              options: samplableTriggers.map((t) => ({
+                name: `${t.type}(${t.label}) ${t.description}`,
+                value: t,
+              })),
+            });
+            console.log(
+              "Generating a sample event for:",
+              `${trigger.type}(${trigger.label}) ${trigger.description}`,
+            );
+            await sampleTrigger(trigger.id);
+          }
+
+          continue;
+        }
+
+        // handle restart events (user glue process restarted because of file
+        // edits and we know because it reconnected to the lifeline).
+
+        devProgressProps = defaultRestartingUIProps();
+        devProgressProps.debugMode = debugMode;
+        if (options.replay) {
+          devProgressProps.steps.gettingExecutionToReplay = {
+            state: `not_started`,
+            duration: 0,
+          };
+        }
+
+        renderUI();
+
+        const newRegistrations = await runUIStep(
+          "discoveringTriggers",
+          () => discoverRegistrations(abortController.signal),
+        );
+        setupReplayResult = options.replay
+          ? await runUIStep(
+            "gettingExecutionToReplay",
+            () => setupReplay(options.replay!, newRegistrations.triggers, abortController.signal),
+          )
+          : undefined;
+
+        devProgressProps.setupReplayResult = setupReplayResult;
+        renderUI();
+
+        if (!equal(registrations, newRegistrations)) {
+          registrations = newRegistrations;
+
+          devProgressProps.steps.registeringGlue = {
+            state: "in_progress",
+            duration: 0,
+          };
+          renderUI();
+          deployment = await runUIStep(
+            "registeringGlue",
+            async () =>
+              await createDeployment(
+                glue.id,
+                { optimisticRegistrations: registrations },
+                abortController.signal,
+              ),
+          );
+          devProgressProps.deployment = deployment;
+          await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
+          if (devProgressProps.deployment?.status !== "success") {
+            // we've already rendered the failed deployment UI, so we just need to exit here
+            renderUI();
+            throw new Error("Deployment failed, exiting dev process.");
+          }
+        }
+        await unmountUI();
+      }
+      // loop ended, time to exit.
+    } finally {
+      abortController.signal.removeEventListener("abort", pushableAbortHandler);
+    }
+
+    // Kill everything still listening to the abort signal (websocket and user
+    // glue process).
+    abortController.abort(new Error("Glue dev process exited by user"));
+  } catch (e) {
+    // Signal to all abort signal listeners we've errored.
+    abortController.abort(e);
+    console.error(e);
+    await Promise.all(cleanupFns.map((fn) => fn()));
+    Deno.exit(1);
   }
-  await shutdownGlue(glue.id);
+
+  await Promise.all(cleanupFns.map((fn) => fn()));
   Deno.exit(0);
 }
 
@@ -301,7 +369,7 @@ async function wsListen(onConnection: () => void): Promise<string> {
 
 function isPortAvailable(port: number): boolean {
   try {
-    const listener = Deno.listen({ port });
+    const listener = Deno.listen({ hostname: "127.0.0.1", port });
     listener.close();
     return true;
   } catch (error) {
@@ -320,8 +388,11 @@ export interface SetupReplayResult {
 async function setupReplay(
   executionId: string,
   triggersToCheckCompatibilityWith: TriggerRegistration[],
+  signal?: AbortSignal,
 ): Promise<SetupReplayResult> {
-  const execution = await getExecutionByIdNoThrow(executionId);
+  signal?.throwIfAborted();
+
+  const execution = await getExecutionByIdNoThrow(executionId, signal);
   if (!execution) {
     return { executionId, execution: undefined, compatible: false };
   }
@@ -344,7 +415,10 @@ async function deliverTriggerEvent(
   deployment: DeploymentDTO,
   message: ServerWebsocketMessage,
   isReplay: boolean = false,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
+
   const trigger = deployment.triggers.find((t) =>
     t.label === message.event.label && t.type === message.event.type
   );
@@ -370,16 +444,18 @@ async function deliverTriggerEvent(
       "X-Glue-API-Auth-Header": `Bearer ${authToken}`,
     },
     body: JSON.stringify(message.event satisfies TriggerEvent),
+    signal,
   });
   if (!isReplay) {
     lastMessage = message;
   }
 }
 
-async function shutdownGlue(glueId: string) {
+async function shutdownGlue(glueId: string, signal?: AbortSignal) {
+  signal?.throwIfAborted();
   if (glueId) {
     console.log("Stopping glue...");
-    await stopGlue(glueId);
+    await stopGlue(glueId, signal);
   } else {
     console.log("No glue to stop");
   }
@@ -388,10 +464,13 @@ async function shutdownGlue(glueId: string) {
 async function createDeploymentAndMaybeGlue(
   glueName: string,
   registrations: Registrations,
+  signal?: AbortSignal,
 ): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
-  const existingGlue = await getGlueByName(glueName, "dev");
+  const existingGlue = await getGlueByName(glueName, "dev", signal);
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, { optimisticRegistrations: registrations }, "dev");
+    const newGlue = await createGlue(glueName, { optimisticRegistrations: registrations }, "dev", {
+      signal,
+    });
     if (!newGlue.pendingDeployment) {
       throw new Error("No pending deployment");
     }
@@ -399,7 +478,7 @@ async function createDeploymentAndMaybeGlue(
   } else {
     const newDeployment = await createDeployment(existingGlue.id, {
       optimisticRegistrations: registrations,
-    });
+    }, signal);
     return { glue: existingGlue, deployment: newDeployment };
   }
 }
@@ -430,9 +509,11 @@ function analyzeCode(_filename: string): AnalysisResult {
   return { errors: [] };
 }
 
-async function discoverRegistrations(): Promise<Registrations> {
+async function discoverRegistrations(signal?: AbortSignal): Promise<Registrations> {
+  signal?.throwIfAborted();
   const res = await fetch(
     `http://127.0.0.1:${GLUE_DEV_PORT}/__glue__/getRegistrations`,
+    { signal },
   );
   if (!res.ok) {
     throw new Error(`Failed to get registrations: ${res.statusText}`);
@@ -443,7 +524,14 @@ async function discoverRegistrations(): Promise<Registrations> {
 
 export type DebugMode = "inspect" | "inspect-wait" | "no-debug";
 
-function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugMode: DebugMode) {
+function spawnLocalGlueProcess(
+  file: string,
+  env: Record<string, string>,
+  debugMode: DebugMode,
+  abortController: AbortController,
+) {
+  abortController.signal.throwIfAborted();
+
   const flags = [
     "--watch",
     "--quiet",
@@ -473,6 +561,21 @@ function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugM
 
   const child = command.spawn();
 
+  function cleanup() {
+    try {
+      child.kill();
+    } catch {
+      // ignore
+    }
+  }
+
+  abortController.signal.addEventListener("abort", cleanup, { once: true });
+
+  child.status.then((status) => {
+    abortController.signal.removeEventListener("abort", cleanup);
+    abortController.abort(new Error(`User glue process exited with code ${status.code}`));
+  });
+
   (async () => {
     for await (const line of toLines(child.stdout)) {
       console.log(line);
@@ -480,8 +583,20 @@ function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugM
   })();
 
   (async () => {
+    let isFirstLine = true;
     for await (const line of toLines(child.stderr)) {
       console.error(line);
+
+      // The user glue process run's in deno's --watch mode, so errors aren't
+      // fatal and it patiently waits for user to edit the code. However, it's a
+      // bit confusing if an error happens on the first start because glue dev
+      // is waiting on it. Detect this and abort early.
+      if (isFirstLine) {
+        if (/^error:/i.test(stripVTControlCharacters(line))) {
+          abortController.abort(new Error("User glue process failed to start due to error"));
+        }
+        isFirstLine = false;
+      }
     }
   })();
 
@@ -491,8 +606,16 @@ function spawnLocalGlueProcess(file: string, env: Record<string, string>, debugM
 function connectToDevEventsWebsocketAndHandleTriggerEvents(
   devEventsWebsocketUrl: string,
   triggerFn: (message: ServerWebsocketMessage) => Promise<void>,
+  abortSignal: AbortSignal,
 ): WebSocket {
+  abortSignal.throwIfAborted();
+
   const ws = new WebSocket(devEventsWebsocketUrl);
+
+  abortSignal.addEventListener("abort", () => {
+    ws.close();
+  }, { once: true });
+
   ws.addEventListener("open", () => {
     // console.log("Websocket connected.");
   });
@@ -630,8 +753,11 @@ async function runUIStep<R>(
   return retVal;
 }
 
-async function monitorDeploymentAndRenderChangesTillReady(deploymentId: string) {
-  for await (const d of streamChangesTillDeploymentReady(deploymentId)) {
+async function monitorDeploymentAndRenderChangesTillReady(
+  deploymentId: string,
+  signal?: AbortSignal,
+) {
+  for await (const d of streamChangesTillDeploymentReady(deploymentId, signal)) {
     devProgressProps.deployment = d;
     renderUI();
   }

@@ -57,6 +57,8 @@ export async function backendRequest<T>(
   options: RequestInit = {},
   forceTrace = true,
 ): Promise<T> {
+  options.signal?.throwIfAborted();
+
   const authToken = await getAuthToken();
   const headers: Record<string, string> = {
     "Authorization": `Bearer ${authToken}`,
@@ -93,24 +95,26 @@ const WriteGlueResponse = z.object({
 });
 export type WriteGlueResponse = z.infer<typeof WriteGlueResponse>;
 
-export async function writeGlue(prompt: string): Promise<WriteGlueResponse> {
+export async function writeGlue(prompt: string, signal?: AbortSignal): Promise<WriteGlueResponse> {
   const res = await backendRequest<unknown>(`/glues/write`, {
     method: "POST",
     body: JSON.stringify({ prompt }),
+    signal,
   });
   return WriteGlueResponse.parse(res);
 }
 
-export async function getLoggedInUser(): Promise<UserDTO> {
-  return await backendRequest<UserDTO>("/users/me");
+export async function getLoggedInUser(signal?: AbortSignal): Promise<UserDTO> {
+  return await backendRequest<UserDTO>("/users/me", { signal });
 }
 
 export async function getGlueByName(
   name: string,
   environment: GlueEnvironment,
+  signal?: AbortSignal,
 ): Promise<GlueDTO | undefined> {
   const params = new URLSearchParams({ name, environment });
-  const glues = await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
+  const glues = await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`, { signal });
   return glues[0];
 }
 
@@ -122,6 +126,7 @@ export interface GetGluesFilters {
 }
 export async function getGlues(
   filters: GetGluesFilters = { environment: "deploy", excludeTags: ["archived"] },
+  signal?: AbortSignal,
 ): Promise<GlueDTO[]> {
   const params = new URLSearchParams({ environment: filters.environment });
   if (filters?.name) {
@@ -133,16 +138,17 @@ export async function getGlues(
   if (filters?.excludeTags) {
     params.set("excludeTags", filters.excludeTags.join(","));
   }
-  return await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`);
+  return await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`, { signal });
 }
 
-export async function getGlueById(id: string): Promise<GlueDTO | undefined> {
-  return await backendRequest<GlueDTO>(`/glues/${id}`);
+export async function getGlueById(id: string, signal?: AbortSignal): Promise<GlueDTO | undefined> {
+  return await backendRequest<GlueDTO>(`/glues/${id}`, { signal });
 }
 
-export async function stopGlue(id: string) {
+export async function stopGlue(id: string, signal?: AbortSignal) {
   await backendRequest<void>(`/glues/${id}/stop`, {
     method: "POST",
+    signal,
   });
 }
 
@@ -150,7 +156,7 @@ export async function createGlue(
   name: string,
   deployment: CreateDeploymentParams,
   environment: GlueEnvironment,
-  options?: { description?: string | null; tags?: string[] },
+  options?: { description?: string | null; tags?: string[]; signal?: AbortSignal },
 ): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues`, {
     method: "POST",
@@ -163,14 +169,20 @@ export async function createGlue(
         tags: options?.tags,
       } satisfies CreateGlueParams,
     ),
+    signal: options?.signal,
   });
   return res;
 }
 
-export async function updateGlue(id: string, params: UpdateGlueParams): Promise<GlueDTO> {
+export async function updateGlue(
+  id: string,
+  params: UpdateGlueParams,
+  signal?: AbortSignal,
+): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues/${id}`, {
     method: "POST",
     body: JSON.stringify(params satisfies UpdateGlueParams),
+    signal,
   });
   return res;
 }
@@ -178,12 +190,14 @@ export async function updateGlue(id: string, params: UpdateGlueParams): Promise<
 export async function createDeployment(
   glueId: string,
   deployment: CreateDeploymentParams,
+  signal?: AbortSignal,
 ): Promise<DeploymentDTO> {
   const res = await backendRequest<DeploymentDTO>(
     `/glues/${glueId}/deployments`,
     {
       method: "POST",
       body: JSON.stringify(deployment),
+      signal,
     },
   );
   return res;
@@ -192,16 +206,17 @@ export async function createDeployment(
 export async function getDeploymentById(
   id: string,
   includeBuildStepText = false,
+  signal?: AbortSignal,
 ): Promise<DeploymentDTO | undefined> {
   const params = new URLSearchParams();
   if (includeBuildStepText) {
     params.set("includeBuildStepText", "true");
   }
-  return await backendRequest<DeploymentDTO>(`/deployments/${id}?${params.toString()}`);
+  return await backendRequest<DeploymentDTO>(`/deployments/${id}?${params.toString()}`, { signal });
 }
 
-export async function getDeployments(id: string): Promise<DeploymentDTO[]> {
-  return await backendRequest<DeploymentDTO[]>(`/glues/${id}/deployments`);
+export async function getDeployments(id: string, signal?: AbortSignal): Promise<DeploymentDTO[]> {
+  return await backendRequest<DeploymentDTO[]>(`/glues/${id}/deployments`, { signal });
 }
 
 function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
@@ -222,10 +237,13 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
 
 export async function* streamChangesTillDeploymentReady(
   deploymentId: string,
+  signal?: AbortSignal,
 ): AsyncIterable<DeploymentDTO> {
   let lastDeployment: DeploymentDTO | undefined;
   while (true) {
-    const deployment = await retry(() => getDeploymentById(deploymentId, true));
+    signal?.throwIfAborted();
+
+    const deployment = await retry(() => getDeploymentById(deploymentId, true, signal), { signal });
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }
@@ -236,7 +254,7 @@ export async function* streamChangesTillDeploymentReady(
         return;
       }
     }
-    await delay(2_000);
+    await delay(2_000, { signal });
   }
 }
 
@@ -249,6 +267,7 @@ export async function getExecutions(
   search: string | undefined = undefined,
   glueId?: string,
   deploymentId?: string,
+  signal?: AbortSignal,
 ): Promise<ExecutionDTO[]> {
   const params = new URLSearchParams({
     limit: limit.toString(),
@@ -263,36 +282,45 @@ export async function getExecutions(
     params.set("search", search);
   }
   if (glueId) {
-    return await backendRequest<ExecutionDTO[]>(`/glues/${glueId}/executions?${params.toString()}`);
+    return await backendRequest<ExecutionDTO[]>(
+      `/glues/${glueId}/executions?${params.toString()}`,
+      { signal },
+    );
   } else if (deploymentId) {
     return await backendRequest<ExecutionDTO[]>(
       `/deployments/${deploymentId}/executions?${params.toString()}`,
+      { signal },
     );
   }
   throw new Error("Either glueId or deploymentId must be provided");
 }
 
-export async function getExecutionById(id: string): Promise<ExecutionDTO> {
-  return await backendRequest<ExecutionDTO>(`/executions/${id}`);
+export async function getExecutionById(id: string, signal?: AbortSignal): Promise<ExecutionDTO> {
+  return await backendRequest<ExecutionDTO>(`/executions/${id}`, { signal });
 }
 
-export async function getExecutionByIdNoThrow(id: string): Promise<ExecutionDTO | undefined> {
+export async function getExecutionByIdNoThrow(
+  id: string,
+  signal?: AbortSignal,
+): Promise<ExecutionDTO | undefined> {
   try {
-    return await backendRequest<ExecutionDTO>(`/executions/${id}`);
+    return await backendRequest<ExecutionDTO>(`/executions/${id}`, { signal });
   } catch (_e) {
     return undefined;
   }
 }
 
-export async function replayExecution(executionId: string) {
+export async function replayExecution(executionId: string, signal?: AbortSignal) {
   await backendRequest<void>(`/executions/${executionId}/replay`, {
     method: "POST",
+    signal,
   });
 }
 
-export async function sampleTrigger(triggerId: string) {
+export async function sampleTrigger(triggerId: string, signal?: AbortSignal) {
   await backendRequest<void>(`/triggers/${triggerId}/sample`, {
     method: "POST",
+    signal,
   });
 }
 
