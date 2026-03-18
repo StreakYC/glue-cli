@@ -578,10 +578,6 @@ function spawnLocalGlueProcess(
     abortController.abort(new Error(`User glue process exited with code ${status.code}`));
   });
 
-  // TODO check for "Watcher Process failed. Restarting on file change..."
-  // message and fire the abortController in that case. Maybe only if the
-  // initial lifeline connection hasn't been established yet, so we only treat
-  // errors on the initial startup as fatal.
   (async () => {
     for await (const line of toLines(child.stdout)) {
       console.log(line);
