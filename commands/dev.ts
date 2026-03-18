@@ -109,7 +109,7 @@ export async function dev(options: DevOptions, filename: string) {
       throw new Error("Code analysis failed: " + codeAnalysisResult.errors.join("\n"));
     }
 
-    const glueProcess = await runUIStep("bootingCode", async () => {
+    await runUIStep("bootingCode", async () => {
       const c = spawnLocalGlueProcess(filename, env, debugMode, abortController);
 
       const unsub = new AbortController();
