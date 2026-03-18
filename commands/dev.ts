@@ -152,8 +152,7 @@ export async function dev(options: DevOptions, filename: string) {
     if (devProgressProps.deployment?.status !== "success") {
       // we've already rendered the failed deployment UI, so we just need to exit here
       renderUI();
-      glueProcess.kill();
-      Deno.exit(1);
+      throw new Error("Deployment failed, exiting dev process.");
     }
 
     await runUIStep(
@@ -279,8 +278,7 @@ export async function dev(options: DevOptions, filename: string) {
           if (devProgressProps.deployment?.status !== "success") {
             // we've already rendered the failed deployment UI, so we just need to exit here
             renderUI();
-            glueProcess.kill();
-            Deno.exit(1);
+            throw new Error("Deployment failed, exiting dev process.");
           }
         }
         await unmountUI();
