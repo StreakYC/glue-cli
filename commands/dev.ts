@@ -143,7 +143,10 @@ export async function dev(options: DevOptions, filename: string) {
       async () =>
         await createDeploymentAndMaybeGlue(glueName, registrations, abortController.signal),
     );
-    cleanupFns.push(async () => await shutdownGlue(glue.id, abortController.signal));
+    cleanupFns.push(async () =>
+      // not passing abort signal because this needs to run after we abort
+      await shutdownGlue(glue.id)
+    );
 
     await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
     if (devProgressProps.deployment?.status !== "success") {
@@ -170,116 +173,122 @@ export async function dev(options: DevOptions, filename: string) {
     abortController.signal.throwIfAborted();
 
     const abortPushable = pushable<never>({ objectMode: true });
-    abortController.signal.addEventListener("abort", () => {
+    const pushableAbortHandler = () => {
       abortPushable.throw(abortController.signal.reason);
-    }, { once: true });
+    };
+    abortController.signal.addEventListener("abort", pushableAbortHandler, { once: true });
+    try {
+      const mux = new MuxAsyncIterator<KeyPressEvent | void[]>();
+      mux.add(abortPushable);
+      mux.add(lifelineReconnectionEvents);
+      mux.add(keypressWatcher);
+      for await (const event of mux) {
+        abortController.signal.throwIfAborted();
 
-    const mux = new MuxAsyncIterator<KeyPressEvent | void[]>();
-    mux.add(abortPushable);
-    mux.add(lifelineReconnectionEvents);
-    mux.add(keypressWatcher);
-    for await (const event of mux) {
-      // handle keypress events
-      if (!Array.isArray(event)) {
-        const keyPressEvent = event as KeyPressEvent;
-        if (keyPressEvent.key === "q" || keyPressEvent.key === "Q") {
-          break;
-        } else if (keyPressEvent.ctrlKey && keyPressEvent.key === "c") {
-          break;
-        } else if (keyPressEvent.key === "r" && lastMessage) {
-          await deliverTriggerEvent(deployment, lastMessage, true);
-        } else if (
-          keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible &&
-          setupReplayResult.execution
-        ) {
-          const triggerEvent: TriggerEvent = {
-            type: setupReplayResult.execution.trigger.type,
-            label: setupReplayResult.execution.trigger.label,
-            data: setupReplayResult.execution.inputData,
-          };
-          const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
-          await deliverTriggerEvent(deployment, message, true);
-        } else if (keyPressEvent.key === "s") {
-          const samplableTriggers = toSortedByTypeThenLabel(deployment.triggers
-            .filter((t) => t.supportsSampleEvents));
-          if (samplableTriggers.length === 0) {
-            console.log("None of your triggers support sample events");
-            continue;
+        // handle keypress events
+        if (!Array.isArray(event)) {
+          const keyPressEvent = event as KeyPressEvent;
+          if (keyPressEvent.key === "q" || keyPressEvent.key === "Q") {
+            break;
+          } else if (keyPressEvent.ctrlKey && keyPressEvent.key === "c") {
+            break;
+          } else if (keyPressEvent.key === "r" && lastMessage) {
+            await deliverTriggerEvent(deployment, lastMessage, true);
+          } else if (
+            keyPressEvent.key === "e" && setupReplayResult && setupReplayResult.compatible &&
+            setupReplayResult.execution
+          ) {
+            const triggerEvent: TriggerEvent = {
+              type: setupReplayResult.execution.trigger.type,
+              label: setupReplayResult.execution.trigger.label,
+              data: setupReplayResult.execution.inputData,
+            };
+            const message: ServerWebsocketMessage = { type: "trigger", event: triggerEvent };
+            await deliverTriggerEvent(deployment, message, true);
+          } else if (keyPressEvent.key === "s") {
+            const samplableTriggers = toSortedByTypeThenLabel(deployment.triggers
+              .filter((t) => t.supportsSampleEvents));
+            if (samplableTriggers.length === 0) {
+              console.log("None of your triggers support sample events");
+              continue;
+            }
+            const trigger = await Select.prompt({
+              message: "Choose a trigger to sample:",
+              options: samplableTriggers.map((t) => ({
+                name: `${t.type}(${t.label}) ${t.description}`,
+                value: t,
+              })),
+            });
+            console.log(
+              "Generating a sample event for:",
+              `${trigger.type}(${trigger.label}) ${trigger.description}`,
+            );
+            await sampleTrigger(trigger.id);
           }
-          const trigger = await Select.prompt({
-            message: "Choose a trigger to sample:",
-            options: samplableTriggers.map((t) => ({
-              name: `${t.type}(${t.label}) ${t.description}`,
-              value: t,
-            })),
-          });
-          console.log(
-            "Generating a sample event for:",
-            `${trigger.type}(${trigger.label}) ${trigger.description}`,
-          );
-          await sampleTrigger(trigger.id);
+
+          continue;
         }
 
-        continue;
-      }
+        // handle restart events (user glue process restarted because of file
+        // edits and we know because it reconnected to the lifeline).
 
-      // handle restart events (user glue process restarted because of file
-      // edits and we know because it reconnected to the lifeline).
+        devProgressProps = defaultRestartingUIProps();
+        devProgressProps.debugMode = debugMode;
+        if (options.replay) {
+          devProgressProps.steps.gettingExecutionToReplay = {
+            state: `not_started`,
+            duration: 0,
+          };
+        }
 
-      devProgressProps = defaultRestartingUIProps();
-      devProgressProps.debugMode = debugMode;
-      if (options.replay) {
-        devProgressProps.steps.gettingExecutionToReplay = {
-          state: `not_started`,
-          duration: 0,
-        };
-      }
-
-      renderUI();
-
-      const newRegistrations = await runUIStep(
-        "discoveringTriggers",
-        () => discoverRegistrations(abortController.signal),
-      );
-      setupReplayResult = options.replay
-        ? await runUIStep(
-          "gettingExecutionToReplay",
-          () => setupReplay(options.replay!, newRegistrations.triggers, abortController.signal),
-        )
-        : undefined;
-
-      devProgressProps.setupReplayResult = setupReplayResult;
-      renderUI();
-
-      if (!equal(registrations, newRegistrations)) {
-        registrations = newRegistrations;
-
-        devProgressProps.steps.registeringGlue = {
-          state: "in_progress",
-          duration: 0,
-        };
         renderUI();
-        deployment = await runUIStep(
-          "registeringGlue",
-          async () =>
-            await createDeployment(
-              glue.id,
-              { optimisticRegistrations: registrations },
-              abortController.signal,
-            ),
+
+        const newRegistrations = await runUIStep(
+          "discoveringTriggers",
+          () => discoverRegistrations(abortController.signal),
         );
-        devProgressProps.deployment = deployment;
-        await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
-        if (devProgressProps.deployment?.status !== "success") {
-          // we've already rendered the failed deployment UI, so we just need to exit here
+        setupReplayResult = options.replay
+          ? await runUIStep(
+            "gettingExecutionToReplay",
+            () => setupReplay(options.replay!, newRegistrations.triggers, abortController.signal),
+          )
+          : undefined;
+
+        devProgressProps.setupReplayResult = setupReplayResult;
+        renderUI();
+
+        if (!equal(registrations, newRegistrations)) {
+          registrations = newRegistrations;
+
+          devProgressProps.steps.registeringGlue = {
+            state: "in_progress",
+            duration: 0,
+          };
           renderUI();
-          glueProcess.kill();
-          Deno.exit(1);
+          deployment = await runUIStep(
+            "registeringGlue",
+            async () =>
+              await createDeployment(
+                glue.id,
+                { optimisticRegistrations: registrations },
+                abortController.signal,
+              ),
+          );
+          devProgressProps.deployment = deployment;
+          await monitorDeploymentAndRenderChangesTillReady(deployment.id, abortController.signal);
+          if (devProgressProps.deployment?.status !== "success") {
+            // we've already rendered the failed deployment UI, so we just need to exit here
+            renderUI();
+            glueProcess.kill();
+            Deno.exit(1);
+          }
         }
+        await unmountUI();
       }
-      await unmountUI();
+      // loop ended, time to exit.
+    } finally {
+      abortController.signal.removeEventListener("abort", pushableAbortHandler);
     }
-    // loop ended, time to exit.
 
     // Kill everything still listening to the abort signal (websocket and user
     // glue process).
