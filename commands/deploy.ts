@@ -22,6 +22,7 @@ interface DeployOptions {
   name?: string;
   runner: Runner;
   tags?: string[];
+  debugWriteCreateDeploymentParams?: string;
 }
 
 export async function deploy(options: DeployOptions, file: string) {
@@ -62,6 +63,16 @@ export async function deploy(options: DeployOptions, file: string) {
 
   const deploymentParams = await getCreateDeploymentParams(file, options.runner);
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
+
+  if (options.debugWriteCreateDeploymentParams) {
+    unmountUI();
+    await Deno.writeTextFile(
+      options.debugWriteCreateDeploymentParams,
+      JSON.stringify(deploymentParams, null, 2) + "\n",
+    );
+    console.log(`Wrote create deployment params to ${options.debugWriteCreateDeploymentParams}`);
+    return;
+  }
 
   duration = performance.now();
   updateUI({ uploadingCodeState: "in_progress", uploadingCodeDuration: 0 });

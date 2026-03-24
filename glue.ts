@@ -1,3 +1,4 @@
+#!/usr/bin/env -S deno run --allow-all
 import { type ArgumentValue, Command, ValidationError } from "@cliffy/command";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
@@ -64,6 +65,11 @@ const cmd = new Command()
     { default: "deno" },
   )
   .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
+  .option(
+    "--debug-write-create-deployment-params <path:string>",
+    "Write the output of getCreateDeploymentParams to a JSON file for debugging",
+    { hidden: true },
+  )
   .arguments("<file:string>")
   .action(deploy)
   // CREATE ----------------------------

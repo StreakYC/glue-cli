@@ -143,7 +143,7 @@ function defaultCompareFn(a: string, b: string) {
 
 /** Generator that yields a directory and its parent directories */
 function* parentDirectories(startDir: string): Generator<string> {
-  let currentDir = startDir;
+  let currentDir = path.resolve(startDir);
   while (true) {
     yield currentDir;
     const parentDir = path.dirname(currentDir);
