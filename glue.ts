@@ -135,7 +135,7 @@ const cmd = new Command()
     "Number of log lines to print for each execution. Set to 0 to hide log lines",
     { default: 10 },
   )
-  .option("-t, --tail", "Live follow the executions as they happen", { default: false })
+  .option("-f, --follow", "Live follow the executions as they happen", { default: false })
   .option(
     "-F, --full-log-lines",
     "Don't clip log lines to the width of the terminal, wrap the full log line. Has no effect in json mode",

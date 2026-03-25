@@ -16,7 +16,7 @@ interface LogsOptions {
   all?: boolean;
   json?: boolean;
   number: number;
-  tail?: boolean;
+  follow?: boolean;
   logLines: number;
   fullLogLines?: boolean;
   filter?: string;
@@ -98,8 +98,9 @@ export const logs = async (options: LogsOptions, query?: string) => {
     !!options.json,
   );
 
-  // we requested the executions in descending order, so we need to reverse them to get them to get the
-  // most recent executions printed out last which is necessary if the user wants to tail the executions.
+  // we requested the executions in descending order, so we need to reverse them
+  // to get them to get the most recent executions printed out last which is
+  // necessary if the user wants to follow the executions.
   historicalExecutions.reverse();
 
   if (options.json) {
@@ -111,7 +112,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
 
   renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
-  if (options.tail) {
+  if (options.follow) {
     const lastExecutionEndedAt = historicalExecutions.at(-1)?.endedAt;
     let since = lastExecutionEndedAt ? new Date(lastExecutionEndedAt) : commandStartTime;
 
