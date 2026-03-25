@@ -142,7 +142,7 @@ const cmd = new Command()
     { default: false },
   )
   .option(
-    "-f, --filter <filter:string>",
+    "--filter <filter:string>",
     "Filter executions by state. Only show executions with this state. Valid values are: success, failure, running",
   )
   .option(
