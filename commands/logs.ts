@@ -111,27 +111,32 @@ export const logs = async (options: LogsOptions, query?: string) => {
 
   renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
-  let startingPoint = commandStartTime;
-  const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
-  while (options.tail) {
-    pollingSpinner.start();
-    const executions = await getExecutions(
-      10,
-      startingPoint,
-      "asc",
-      false,
-      options.filter,
-      options.search,
-      glueId,
-      deploymentId,
-    );
-    if (executions.length > 0) {
-      pollingSpinner.stop();
-      renderExecutions(executions, options.logLines, !!options.fullLogLines);
-      startingPoint = new Date(executions[executions.length - 1].endedAt!);
+  if (options.tail) {
+    let startingPoint = commandStartTime;
+    const pollingSpinner = new Spinner({
+      message: "Waiting for new executions...",
+      color: "green",
+    });
+    while (true) {
       pollingSpinner.start();
+      const executions = await getExecutions(
+        10,
+        startingPoint,
+        "asc",
+        false,
+        options.filter,
+        options.search,
+        glueId,
+        deploymentId,
+      );
+      if (executions.length > 0) {
+        pollingSpinner.stop();
+        renderExecutions(executions, options.logLines, !!options.fullLogLines);
+        startingPoint = new Date(executions[executions.length - 1].endedAt!);
+        pollingSpinner.start();
+      }
+      await delay(1000);
     }
-    await delay(1000);
   }
 };
 
