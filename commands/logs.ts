@@ -16,7 +16,7 @@ interface LogsOptions {
   all?: boolean;
   json?: boolean;
   number: number;
-  tail?: boolean;
+  follow?: boolean;
   logLines: number;
   fullLogLines?: boolean;
   filter?: string;
@@ -86,7 +86,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
     () =>
       getExecutions(
         options.number,
-        commandStartTime,
+        undefined,
         "desc",
         !!options.json,
         options.filter,
@@ -98,8 +98,9 @@ export const logs = async (options: LogsOptions, query?: string) => {
     !!options.json,
   );
 
-  // we requested the executions in descending order, so we need to reverse them to get them to get the
-  // most recent executions printed out last which is necessary if the user wants to tail the executions.
+  // we requested the executions in descending order, so we need to reverse them
+  // to get them to get the most recent executions printed out last which is
+  // necessary if the user wants to follow the executions.
   historicalExecutions.reverse();
 
   if (options.json) {
@@ -111,27 +112,34 @@ export const logs = async (options: LogsOptions, query?: string) => {
 
   renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
-  let startingPoint = commandStartTime;
-  const pollingSpinner = new Spinner({ message: "Waiting for new executions...", color: "green" });
-  while (options.tail) {
-    pollingSpinner.start();
-    const executions = await getExecutions(
-      10,
-      startingPoint,
-      "asc",
-      false,
-      options.filter,
-      options.search,
-      glueId,
-      deploymentId,
-    );
-    if (executions.length > 0) {
-      pollingSpinner.stop();
-      renderExecutions(executions, options.logLines, !!options.fullLogLines);
-      startingPoint = new Date(executions[executions.length - 1].endedAt!);
+  if (options.follow) {
+    const lastExecutionEndedAt = historicalExecutions.at(-1)?.endedAt;
+    let since = lastExecutionEndedAt ? new Date(lastExecutionEndedAt) : commandStartTime;
+
+    const pollingSpinner = new Spinner({
+      message: "Waiting for new executions...",
+      color: "green",
+    });
+    while (true) {
       pollingSpinner.start();
+      const executions = await getExecutions(
+        10,
+        since,
+        "asc",
+        false,
+        options.filter,
+        options.search,
+        glueId,
+        deploymentId,
+      );
+      if (executions.length > 0) {
+        pollingSpinner.stop();
+        renderExecutions(executions, options.logLines, !!options.fullLogLines);
+        since = new Date(executions.at(-1)!.endedAt!);
+        pollingSpinner.start();
+      }
+      await delay(1000);
     }
-    await delay(1000);
   }
 };
 
