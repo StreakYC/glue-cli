@@ -86,7 +86,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
     () =>
       getExecutions(
         options.number,
-        commandStartTime,
+        undefined,
         "desc",
         !!options.json,
         options.filter,
@@ -112,7 +112,9 @@ export const logs = async (options: LogsOptions, query?: string) => {
   renderExecutions(historicalExecutions, options.logLines, !!options.fullLogLines);
 
   if (options.tail) {
-    let startingPoint = commandStartTime;
+    const lastExecutionEndedAt = historicalExecutions.at(-1)?.endedAt;
+    let since = lastExecutionEndedAt ? new Date(lastExecutionEndedAt) : commandStartTime;
+
     const pollingSpinner = new Spinner({
       message: "Waiting for new executions...",
       color: "green",
@@ -121,7 +123,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
       pollingSpinner.start();
       const executions = await getExecutions(
         10,
-        startingPoint,
+        since,
         "asc",
         false,
         options.filter,
@@ -132,7 +134,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
       if (executions.length > 0) {
         pollingSpinner.stop();
         renderExecutions(executions, options.logLines, !!options.fullLogLines);
-        startingPoint = new Date(executions[executions.length - 1].endedAt!);
+        since = new Date(executions.at(-1)!.endedAt!);
         pollingSpinner.start();
       }
       await delay(1000);

@@ -260,7 +260,7 @@ export async function* streamChangesTillDeploymentReady(
 
 export async function getExecutions(
   limit: number,
-  startingPoint: Date,
+  since: Date | undefined,
   direction: "asc" | "desc" = "desc",
   includeInputData: boolean = false,
   filter: string | undefined = undefined,
@@ -271,10 +271,12 @@ export async function getExecutions(
 ): Promise<ExecutionDTO[]> {
   const params = new URLSearchParams({
     limit: limit.toString(),
-    startingPoint: startingPoint.getTime().toString(),
     direction: direction,
     includeInputData: includeInputData.toString(),
   });
+  if (since) {
+    params.set("since", since.getTime().toString());
+  }
   if (filter) {
     params.set("filter", filter);
   }
