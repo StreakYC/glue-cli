@@ -103,10 +103,8 @@ function requireHomeDirectory(): string {
   return home;
 }
 
-function detectSkillTargets(home: string): Promise<Agent[]> {
-  return Promise.all(AGENTS.filter((agent) => {
-    return exists(join(home, agent.dir), { isDirectory: true });
-  }));
+function detectSkillTargets(home: string): Agent[] {
+  return AGENTS.filter(async (agent) => await exists(join(home, agent.dir), { isDirectory: true }));
 }
 
 function getSkillInstallDir(home: string, target: Agent): string {
