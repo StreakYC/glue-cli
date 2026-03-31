@@ -82,10 +82,8 @@ const cmd = new Command()
   // INSTALL SKILLS ----------------------------
   .command(
     "install-skills",
-    "Install the Glue related skills for Codex and Claude Code if you have installed them",
+    "Install the Glue related skills for Codex and Claude Code and other agents if you have them installed",
   )
-  .option("--codex", "Install the Glue skill for Codex only")
-  .option("--claude", "Install the Glue skill for Claude Code only")
   .action(installSkills)
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
