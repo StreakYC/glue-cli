@@ -2,9 +2,9 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { ensureDir, exists } from "@std/fs";
 import { bold, green, red, yellow } from "@std/fmt/colors";
 import { join } from "@std/path";
-import { GLUE_API_SERVER } from "./common.ts";
-import { kv } from "./db.ts";
-import { runStep } from "./ui/utils.ts";
+import { GLUE_API_SERVER } from "../common.ts";
+import { kv } from "../db.ts";
+import { runStep } from "../ui/utils.ts";
 
 const GLUE_SKILL_URL =
   "https://raw.githubusercontent.com/StreakYC/glue-skills/master/skills/glue/SKILL.md";

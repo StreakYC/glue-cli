@@ -7,7 +7,7 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { writeGlue } from "../backend.ts";
-import { promptToInstallSkills } from "../skills.ts";
+import { promptToInstallSkills } from "./skills.ts";
 import { multilinePrompt } from "../ui/multilineInput/multilinePrompt.tsx";
 
 const DEFAULT_FILENAME = "myGlue.ts";

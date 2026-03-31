@@ -21,7 +21,7 @@ import { Runner } from "./backend.ts";
 import type z from "zod";
 import { archive } from "./commands/archive.ts";
 import { unarchive } from "./commands/unarchive.ts";
-import { installSkills } from "./skills.ts";
+import { installSkills } from "./commands/skills.ts";
 
 const cmd = new Command()
   .name("glue")
