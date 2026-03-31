@@ -36,6 +36,12 @@
     "kv",
     "temporal"
   ],
+  "minimumDependencyAge": {
+    "age": "P3D",
+    "exclude": [
+      "jsr:@streak-glue/runtime"
+    ]
+  },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0",
     "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0",
