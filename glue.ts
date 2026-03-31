@@ -21,6 +21,7 @@ import { Runner } from "./backend.ts";
 import type z from "zod";
 import { archive } from "./commands/archive.ts";
 import { unarchive } from "./commands/unarchive.ts";
+import { installSkills } from "./skills.ts";
 
 const cmd = new Command()
   .name("glue")
@@ -78,6 +79,14 @@ const cmd = new Command()
     "Create a new glue from a basic template or from a natural language description",
   )
   .action(create)
+  // INSTALL SKILLS ----------------------------
+  .command(
+    "install-skills",
+    "Install the Glue related skills for Codex and Claude Code if you have installed them",
+  )
+  .option("--codex", "Install the Glue skill for Codex only")
+  .option("--claude", "Install the Glue skill for Claude Code only")
+  .action(installSkills)
   // LIST ----------------------------
   .command("list", "List all of your deployed glues")
   .option("-n, --name <name:string>", "Filter glues by name")
