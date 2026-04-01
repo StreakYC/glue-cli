@@ -76,7 +76,7 @@ const cmd = new Command()
   // CREATE ----------------------------
   .command(
     "create",
-    "Create a new glue from a basic template or from a natural language description",
+    "Create a new glue from a basic template",
   )
   .action(create)
   // INSTALL SKILLS ----------------------------

@@ -1,14 +1,10 @@
 import { blue, bold, green } from "@std/fmt/colors";
-import { Select } from "@cliffy/prompt/select";
 import { Input } from "@cliffy/prompt/input";
-import { runStep } from "../ui/utils.ts";
 import * as path from "@std/path";
 import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
-import { writeGlue } from "../backend.ts";
 import { promptToInstallSkills } from "./skills.ts";
-import { multilinePrompt } from "../ui/multilineInput/multilinePrompt.tsx";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
@@ -21,29 +17,11 @@ glue.webhook.onGet((_event) => {
 export async function create(_options: void) {
   await promptToInstallSkills();
 
-  const creationType = await new Select({
-    message: "How do you want to start your glue?",
-    options: [
-      { name: "Code generation", value: "codegen" },
-      { name: "Blank scaffold", value: "blank" },
-    ] as const,
-  }).prompt();
-
-  let filename: string;
-  let code: string;
-  if (creationType === "codegen") {
-    const description = await multilinePrompt({
-      message: "Enter the description for the new glue",
-    });
-    const codeGenResult = await runStep("Generating glue code...", () => writeGlue(description));
-    ({ filename, code } = codeGenResult);
-  } else {
-    filename = await Input.prompt({
-      message: "Enter the filename for the new glue",
-      default: DEFAULT_FILENAME,
-    });
-    code = TEMPLATE_CONTENT;
-  }
+  let filename = await Input.prompt({
+    message: "Enter the filename for the new glue",
+    default: DEFAULT_FILENAME,
+  });
+  const code = TEMPLATE_CONTENT;
   filename = await uniquifyPath(filename);
   filename = appendFileExtensionIfNotPresent(filename, ".ts");
   await Deno.writeTextFile(filename, code);
