@@ -70,10 +70,20 @@ export async function installSkills(): Promise<void> {
 }
 
 export async function promptToInstallSkills(): Promise<void> {
+  const home = requireHomeDirectory();
+
   if (!Deno.stdin.isTerminal()) {
     return;
   }
   if (await hasShownSkillInstallPrompt()) {
+    return;
+  }
+
+  if ((await detectInstalledAgents(home)).length === 0) {
+    return;
+  }
+
+  if (await anyAgentSkillsInstalled(home)) {
     return;
   }
 
