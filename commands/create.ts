@@ -7,6 +7,7 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { writeGlue } from "../backend.ts";
+import { promptToInstallSkills } from "./skills.ts";
 import { multilinePrompt } from "../ui/multilineInput/multilinePrompt.tsx";
 
 const DEFAULT_FILENAME = "myGlue.ts";
@@ -18,6 +19,8 @@ glue.webhook.onGet((_event) => {
 `;
 
 export async function create(_options: void) {
+  await promptToInstallSkills();
+
   const creationType = await new Select({
     message: "How do you want to start your glue?",
     options: [

@@ -158,6 +158,7 @@
     "@std/fs@1.0.23": {
       "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
+        "jsr:@std/internal",
         "jsr:@std/path@^1.1.4"
       ]
     },
