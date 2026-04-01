@@ -37,7 +37,7 @@ const AGENTS: Agent[] = [
 
 export async function installSkills(): Promise<void> {
   const home = requireHomeDirectory();
-  const targets = await detectSkillTargets(home);
+  const targets = await detectInstalledAgents(home);
 
   if (targets.length === 0) {
     console.log(yellow("!"), "No Codex or Claude Code installation detected.");
@@ -103,12 +103,23 @@ function requireHomeDirectory(): string {
   return home;
 }
 
-function detectSkillTargets(home: string): Agent[] {
-  return AGENTS.filter(async (agent) => await exists(join(home, agent.dir), { isDirectory: true }));
+async function detectInstalledAgents(home: string): Promise<Agent[]> {
+  const agentsExist = await Promise.all(
+    AGENTS.map(async (agent) => await exists(join(home, agent.dir), { isDirectory: true })),
+  );
+  return AGENTS.filter((_, index) => agentsExist[index]);
 }
 
 function getSkillInstallDir(home: string, target: Agent): string {
   return join(home, target.dir, "skills", GLUE_SKILL_NAME);
+}
+
+export async function isSkillInstalled(home: string, agent: Agent): Promise<boolean> {
+  return await exists(getSkillInstallDir(home, agent), { isDirectory: true });
+}
+
+export async function anyAgentSkillsInstalled(home: string): Promise<boolean> {
+  return await Promise.any(AGENTS.map(async (agent) => await isSkillInstalled(home, agent)));
 }
 
 async function downloadGlueSkillMarkdown(): Promise<string> {
