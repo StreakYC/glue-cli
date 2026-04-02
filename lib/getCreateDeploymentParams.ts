@@ -18,7 +18,7 @@ import { parseImports } from "./parseImports.ts";
  */
 export async function getCreateDeploymentParams(
   file: string,
-  runner: Runner = "deno",
+  runner: Runner = "deno-v2",
 ): Promise<CreateDeploymentParams> {
   const fileDir = path.dirname(file);
   let entryPointUrl = path.relative(fileDir, file);

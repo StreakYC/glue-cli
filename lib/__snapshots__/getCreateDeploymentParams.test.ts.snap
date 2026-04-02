@@ -313,7 +313,7 @@ console.log(glue, b);
       BEST_ENV_VAR: "best_value",
     },
   },
-  runner: "deno",
+  runner: "deno-v2",
 }
 `;
 
@@ -630,7 +630,7 @@ console.log(glue, b);
       BEST_ENV_VAR: "best_value",
     },
   },
-  runner: "deno",
+  runner: "deno-v2",
 }
 `;
 
@@ -947,6 +947,6 @@ console.log(glue, b);
       BEST_ENV_VAR: "best_value",
     },
   },
-  runner: "deno",
+  runner: "deno-v2",
 }
 `;

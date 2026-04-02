@@ -62,8 +62,8 @@ const cmd = new Command()
   .type("runner", validateWithZodEnum(Runner))
   .option(
     "-r, --runner <runner:runner>",
-    "Use a specific runner to host the glue. Valid values are: deno, fly, cloudflare, sandbox.",
-    { default: "deno" },
+    "Use a specific runner to host the glue. Valid values are: deno, deno-v2, fly, cloudflare, sandbox.",
+    { default: "deno-v2" },
   )
   .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
   .option(
