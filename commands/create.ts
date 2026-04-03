@@ -5,7 +5,7 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { promptToInstallSkills } from "./skills.ts";
-import type { CommonCommandOptions } from "../common.ts";
+import type { CommonCommandOptions } from "./common.ts";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";

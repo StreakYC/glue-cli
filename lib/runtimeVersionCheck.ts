@@ -1,8 +1,8 @@
 import * as path from "@std/path";
-import { findDenoConfigPaths } from "./denoConfig.ts";
 import z from "zod";
+import { findDenoConfigPaths } from "./denoConfig.ts";
+import { GLUE_RUNTIME_PACKAGE } from "../common.ts";
 
-const GLUE_RUNTIME_PACKAGE = "@streak-glue/runtime";
 const GLUE_RUNTIME_JSR_SPECIFIER = `jsr:${GLUE_RUNTIME_PACKAGE}`;
 const GLUE_RUNTIME_META_URL = `https://jsr.io/${GLUE_RUNTIME_PACKAGE}/meta.json`;
 
@@ -73,12 +73,4 @@ async function fetchLatestStreakRuntimeVersion(
   }
   const payload = JsrPackageMeta.parse(await response.json());
   return payload.latest;
-}
-
-export function logOutdatedStreakRuntimeMessage(info: OutdatedRuntimeInfo) {
-  console.warn(
-    `A newer ${GLUE_RUNTIME_PACKAGE} version is available (${info.currentVersion} -> ${info.latestVersion}).\n` +
-      `Update it with: %cdeno update --latest ${GLUE_RUNTIME_PACKAGE}`,
-    "color: yellow;",
-  );
 }

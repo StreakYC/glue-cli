@@ -9,6 +9,4 @@ export function isPrefixId(query: string, prefix: string) {
   return regex.test(query);
 }
 
-export interface CommonCommandOptions {
-  verbose: boolean;
-}
+export const GLUE_RUNTIME_PACKAGE = "@streak-glue/runtime";

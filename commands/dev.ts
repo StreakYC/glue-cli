@@ -38,12 +38,9 @@ import { pushable, pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
 import { getGlueName } from "../lib/glueNaming.ts";
-import {
-  getOutdatedStreakRuntimeVersion,
-  logOutdatedStreakRuntimeMessage,
-} from "../lib/runtimeVersionCheck.ts";
+import { getOutdatedStreakRuntimeVersion } from "../lib/runtimeVersionCheck.ts";
 import { once } from "node:events";
-import type { CommonCommandOptions } from "../common.ts";
+import type { CommonCommandOptions } from "./common.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -520,7 +517,8 @@ async function warnIfStreakRuntimeIsOutdated(filename: string, verbose: boolean)
     if (!outdatedRuntime) {
       return;
     }
-    logOutdatedStreakRuntimeMessage(outdatedRuntime);
+    devProgressProps.outdatedRuntimeWarningInfo = outdatedRuntime;
+    renderUI();
   } catch (e) {
     if (verbose) {
       console.error("Caught error:", e);
