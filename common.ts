@@ -8,3 +8,7 @@ export function isPrefixId(query: string, prefix: string) {
   const regex = new RegExp(`^${prefix}_[0-9a-f]{1,}$`);
   return regex.test(query);
 }
+
+export interface CommonCommandOptions {
+  verbose: boolean;
+}

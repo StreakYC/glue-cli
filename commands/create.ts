@@ -5,6 +5,7 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { promptToInstallSkills } from "./skills.ts";
+import type { CommonCommandOptions } from "../common.ts";
 
 const DEFAULT_FILENAME = "myGlue.ts";
 const TEMPLATE_CONTENT = `import { glue } from "jsr:@streak-glue/runtime";
@@ -14,7 +15,7 @@ glue.webhook.onGet((_event) => {
 });
 `;
 
-export async function create(_options: void) {
+export async function create(_options: CommonCommandOptions) {
   await promptToInstallSkills();
 
   let filename = await Input.prompt({
