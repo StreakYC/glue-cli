@@ -66,8 +66,10 @@ Deno.test("getOutdatedStreakRuntimeVersion returns latest mismatch and formats w
       },
     }),
   );
+  const denoConfigPaths = await findDenoConfigPaths(sourceDir);
   const outdatedInfo = await getOutdatedStreakRuntimeVersion(
     filename,
+    denoConfigPaths,
     () =>
       Promise.resolve(
         new Response(JSON.stringify({ scope: "@streak-glue", name: "runtime", latest: "0.2.33" }), {
