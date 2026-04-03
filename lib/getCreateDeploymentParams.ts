@@ -1,8 +1,8 @@
 import { load as dotenvLoad } from "@std/dotenv";
-import { exists } from "@std/fs/exists";
 import * as path from "@std/path";
 import { join as posixPathJoin } from "@std/path/posix/join";
 import type { CreateDeploymentParams, DeploymentAsset, Runner } from "../backend.ts";
+import { findDenoConfigPaths } from "./denoConfig.ts";
 import { parseImports } from "./parseImports.ts";
 
 /**
@@ -83,12 +83,11 @@ export async function getCreateDeploymentParams(
   const entryPointPromise = addAsset(entryPointUrl, true);
 
   // Find deno.json if present
-  const denoJsonPath = await findFileInDirectoryOrAbove(fileDir, ["deno.json", "deno.jsonc"]);
+  const { denoJsonPath, denoLockPath } = await findDenoConfigPaths(fileDir);
   if (denoJsonPath) {
     await addAsset(path.relative(fileDir, denoJsonPath), false);
 
-    const denoLockPath = path.join(path.dirname(denoJsonPath), "deno.lock");
-    if (await exists(denoLockPath)) {
+    if (denoLockPath) {
       await addAsset(path.relative(fileDir, denoLockPath), false);
     }
   }
@@ -139,44 +138,6 @@ function defaultCompareFn(a: string, b: string) {
   if (a < b) return -1;
   if (a > b) return 1;
   return 0;
-}
-
-/** Generator that yields a directory and its parent directories */
-function* parentDirectories(startDir: string): Generator<string> {
-  let currentDir = path.resolve(startDir);
-  while (true) {
-    yield currentDir;
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) {
-      break;
-    }
-    currentDir = parentDir;
-  }
-}
-
-/** Find any of the `searchNames` files in fileDir or its parent directories */
-async function findFileInDirectoryOrAbove(
-  fileDir: string,
-  searchNames: string[],
-): Promise<string | undefined> {
-  try {
-    for (const currentDir of parentDirectories(fileDir)) {
-      for (const searchName of searchNames) {
-        const currentPath = path.join(currentDir, searchName);
-        if (await exists(currentPath)) {
-          return currentPath;
-        }
-      }
-    }
-  } catch (err) {
-    if (globalThis.Deno?.errors?.NotCapable && err instanceof Deno.errors.NotCapable) {
-      // If we only have permissions to a specific directory, then we may hit
-      // this error when trying to access parent directories. Assume we're not
-      // meant to access them and stop searching.
-    } else {
-      throw err;
-    }
-  }
 }
 
 /**

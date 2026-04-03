@@ -3,6 +3,10 @@ import { Checkbox } from "@cliffy/prompt/checkbox";
 import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui/utils.ts";
 
+export interface CommonCommandOptions {
+  verbose: boolean;
+}
+
 export async function askUserForGlue(): Promise<GlueDTO | undefined> {
   const glues = await runStep("Loading glues...", () => getGlues());
   if (!glues.length) {

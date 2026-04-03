@@ -37,9 +37,10 @@ import { toLines } from "@std/streams/unstable-to-lines";
 import { pushable, pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
-
 import { getGlueName } from "../lib/glueNaming.ts";
+import { getOutdatedStreakRuntimeVersion } from "../lib/runtimeVersionCheck.ts";
 import { once } from "node:events";
+import type { CommonCommandOptions } from "./common.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -74,6 +75,7 @@ export async function dev(options: DevOptions, filename: string) {
     const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
     const glueName = await getGlueName(filename, options.name);
+    await warnIfStreakRuntimeIsOutdated(filename, options.verbose);
 
     const glueCliWebsocketAddr = await wsListen(() => {
       if (!lifelineHasConnected) {
@@ -509,6 +511,21 @@ function analyzeCode(_filename: string): AnalysisResult {
   return { errors: [] };
 }
 
+async function warnIfStreakRuntimeIsOutdated(filename: string, verbose: boolean): Promise<void> {
+  try {
+    const outdatedRuntime = await getOutdatedStreakRuntimeVersion(filename);
+    if (!outdatedRuntime) {
+      return;
+    }
+    devProgressProps.outdatedRuntimeWarningInfo = outdatedRuntime;
+    renderUI();
+  } catch (e) {
+    if (verbose) {
+      console.error("Caught error:", e);
+    }
+  }
+}
+
 async function discoverRegistrations(signal?: AbortSignal): Promise<Registrations> {
   signal?.throwIfAborted();
   const res = await fetch(
@@ -650,7 +667,7 @@ const ServerWebsocketMessage = z.object({
 });
 type ServerWebsocketMessage = z.infer<typeof ServerWebsocketMessage>;
 
-interface DevOptions {
+interface DevOptions extends CommonCommandOptions {
   name?: string;
   debug?: boolean;
   inspectWait?: boolean;

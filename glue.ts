@@ -30,6 +30,7 @@ const cmd = new Command()
   .action(() => {
     cmd.showHelp();
   })
+  .globalOption("--verbose", "Enable verbose logging for debugging purposes", { default: false })
   .command(
     "upgrade",
     new UpgradeCommand({
