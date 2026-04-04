@@ -1,6 +1,5 @@
-import * as path from "@std/path";
 import z from "zod";
-import { findDenoConfigPaths } from "./denoConfig.ts";
+import type { DenoConfigPaths } from "./denoConfig.ts";
 import { GLUE_RUNTIME_PACKAGE } from "../common.ts";
 
 const GLUE_RUNTIME_JSR_SPECIFIER = `jsr:${GLUE_RUNTIME_PACKAGE}`;
@@ -12,15 +11,15 @@ export interface OutdatedRuntimeInfo {
 }
 
 export async function getOutdatedStreakRuntimeVersion(
-  filename: string,
+  _filename: string,
+  denoConfigPaths: DenoConfigPaths,
   fetchImpl: typeof fetch = fetch,
 ): Promise<OutdatedRuntimeInfo | undefined> {
-  const { denoLockPath } = await findDenoConfigPaths(path.dirname(filename));
-  if (!denoLockPath) {
+  if (!denoConfigPaths.denoLockPath) {
     return undefined;
   }
   const currentVersion = extractStreakRuntimeVersionFromDenoLockText(
-    await Deno.readTextFile(denoLockPath),
+    await Deno.readTextFile(denoConfigPaths.denoLockPath),
   );
   if (!currentVersion) {
     return undefined;
