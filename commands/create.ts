@@ -21,7 +21,7 @@ export async function create(_options: CommonCommandOptions) {
   const code = TEMPLATE_CONTENT;
   filename = await uniquifyPath(filename);
   filename = appendFileExtensionIfNotPresent(filename, ".ts");
-  await Deno.writeTextFile(filename, code);
+  await Deno.writeTextFile(filename, code, { createNew: true });
   console.log(`${green("✔︎")} Successfully created new glue file: ${bold(filename)}`);
 
   await promptToInstallSkills();
