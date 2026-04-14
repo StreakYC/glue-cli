@@ -87,6 +87,10 @@ export async function promptToInstallSkills(): Promise<void> {
     return;
   }
 
+  console.log();
+  console.log(
+    "We noticed you have Codex or Claude Code installed but don't have the Glue skill installed for them.",
+  );
   const shouldInstall = await Confirm.prompt({
     message: "Install the Glue agent skill for Codex or Claude Code now?",
     default: true,

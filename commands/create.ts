@@ -14,8 +14,6 @@ glue.webhook.onGet((_event) => {
 `;
 
 export async function create(_options: CommonCommandOptions) {
-  await promptToInstallSkills();
-
   let filename = await Input.prompt({
     message: "Enter the filename for the new glue",
     default: DEFAULT_FILENAME,
@@ -25,6 +23,8 @@ export async function create(_options: CommonCommandOptions) {
   filename = appendFileExtensionIfNotPresent(filename, ".ts");
   await Deno.writeTextFile(filename, code);
   console.log(`${green("✔︎")} Successfully created new glue file: ${bold(filename)}`);
+
+  await promptToInstallSkills();
 
   await openInEditorFlow(filename);
   console.log();
