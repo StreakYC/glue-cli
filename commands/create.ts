@@ -37,6 +37,12 @@ const defaultEditors = ["cursor", "code", "zed"];
 async function openInEditorFlow(filename: string) {
   const editor = await detectPreferredAndInstalledEditor();
   if (!editor) {
+    console.log();
+    console.log("Couldn't detect a preferred IDE installed on your system.");
+    console.log("You may open the created glue file in any text editor.");
+    console.log(
+      "We recommend using an IDE such as Cursor (https://cursor.com/) or\nVisual Studio Code (https://code.visualstudio.com/).",
+    );
     return;
   }
 
