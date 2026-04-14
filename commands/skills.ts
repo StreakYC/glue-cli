@@ -69,6 +69,10 @@ export async function installSkills(): Promise<void> {
   );
 }
 
+/**
+ * Called at the end of `glue create` to offer to install the Glue skill if we
+ * detect a supported agent is installed.
+ */
 export async function promptToInstallSkills(): Promise<void> {
   const home = requireHomeDirectory();
 

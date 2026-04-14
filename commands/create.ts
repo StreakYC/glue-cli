@@ -32,25 +32,7 @@ export async function create(_options: CommonCommandOptions) {
   return filename;
 }
 
-interface Editor {
-  name: string;
-  command: string;
-  installPage: string;
-  macOSDownloadUrl: string;
-}
-
-const VSCode: Editor = {
-  name: "VSCode",
-  command: "code",
-  installPage: "https://code.visualstudio.com/download",
-  macOSDownloadUrl: "https://code.visualstudio.com/download",
-};
-const Cursor: Editor = {
-  name: "Cursor",
-  command: "cursor",
-  installPage: "https://cursor.com/download",
-  macOSDownloadUrl: "https://cursor.sh",
-};
+const defaultEditors = ["cursor", "code", "zed"];
 
 async function openInEditorFlow(filename: string) {
   const editor = await detectPreferredAndInstalledEditor();
@@ -60,7 +42,7 @@ async function openInEditorFlow(filename: string) {
 
   console.log();
   const openInEditor = await Confirm.prompt({
-    message: "Open created glue in editor?",
+    message: `Open created glue in editor? (Detected: ${editor})`,
     default: true,
   });
 
@@ -69,36 +51,31 @@ async function openInEditorFlow(filename: string) {
   }
 }
 
-async function detectPreferredAndInstalledEditor(): Promise<Editor | undefined> {
+async function detectPreferredAndInstalledEditor(): Promise<string | undefined> {
   const editorEnv = Deno.env.get("EDITOR");
   const firstTerm = editorEnv?.split(/\s+/)[0];
-  if (firstTerm === VSCode.command) {
-    return VSCode;
+  if (firstTerm && defaultEditors.includes(firstTerm)) {
+    return firstTerm;
   }
-  if (firstTerm === Cursor.command) {
-    return Cursor;
-  }
-
-  if (await isEditorInstalled(Cursor)) {
-    return Cursor;
-  }
-  if (await isEditorInstalled(VSCode)) {
-    return VSCode;
+  for (const cmd of defaultEditors) {
+    if (await isEditorInstalled(cmd)) {
+      return cmd;
+    }
   }
   return undefined;
 }
 
-async function isEditorInstalled(editor: Editor): Promise<boolean> {
+async function isEditorInstalled(editorCommand: string): Promise<boolean> {
   try {
-    await new Deno.Command(editor.command, { args: ["--version"] }).output();
+    await new Deno.Command(editorCommand, { args: ["--version"] }).output();
     return true;
   } catch (_error) {
     return false;
   }
 }
 
-async function openEditor(editor: Editor, filename: string): Promise<void> {
-  await new Deno.Command(editor.command, { args: [filename] }).output();
+async function openEditor(editorCommand: string, filename: string): Promise<void> {
+  await new Deno.Command(editorCommand, { args: [filename] }).output();
 }
 
 function appendFileExtensionIfNotPresent(filename: string, extension: string): string {
