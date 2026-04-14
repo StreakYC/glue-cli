@@ -1,9 +1,7 @@
-import { blue, bold, green } from "@std/fmt/colors";
+import { bold, green } from "@std/fmt/colors";
 import { Input } from "@cliffy/prompt/input";
 import * as path from "@std/path";
 import { Confirm } from "@cliffy/prompt/confirm";
-import { delay } from "@std/async/delay";
-import { Spinner } from "@std/cli/unstable-spinner";
 import { promptToInstallSkills } from "./skills.ts";
 import type { CommonCommandOptions } from "./common.ts";
 
@@ -55,6 +53,11 @@ const Cursor: Editor = {
 };
 
 async function openInEditorFlow(filename: string) {
+  const editor = await detectPreferredAndInstalledEditor();
+  if (!editor) {
+    return;
+  }
+
   console.log();
   const openInEditor = await Confirm.prompt({
     message: "Open created glue in editor?",
@@ -62,18 +65,6 @@ async function openInEditorFlow(filename: string) {
   });
 
   if (openInEditor) {
-    let editor = await detectPreferredAndInstalledEditor();
-    if (!editor) {
-      const installCursor = await Confirm.prompt({
-        message: "No editors found, install Cursor (recommended)?",
-        default: true,
-      });
-      if (!installCursor) {
-        return;
-      }
-      await installEditor(Cursor);
-      editor = Cursor;
-    }
     await openEditor(editor, filename);
   }
 }
@@ -104,30 +95,6 @@ async function isEditorInstalled(editor: Editor): Promise<boolean> {
   } catch (_error) {
     return false;
   }
-}
-
-async function installEditor(editor: Editor): Promise<void> {
-  if (Deno.build.os == "darwin") {
-    // TODO in the future we may install for the user
-    console.log(`Download and ${editor.name} install from: ${blue(bold(editor.installPage))}`);
-  } else {
-    console.log(`Download and ${editor.name} install from: ${blue(bold(editor.installPage))}`);
-  }
-
-  const spinner = new Spinner({
-    message: `Waiting for ${editor.name} to be installed...`,
-  });
-  spinner.start();
-
-  while (true) {
-    try {
-      await new Deno.Command(editor.command, { args: ["--version"] }).output();
-      break;
-    } catch (_e) {
-      await delay(1000);
-    }
-  }
-  spinner.stop();
 }
 
 async function openEditor(editor: Editor, filename: string): Promise<void> {
