@@ -137,7 +137,10 @@ export async function isSkillInstalled(home: string, agent: Agent): Promise<bool
 }
 
 export async function anyAgentSkillsInstalled(home: string): Promise<boolean> {
-  return await Promise.any(AGENTS.map(async (agent) => await isSkillInstalled(home, agent)));
+  const installedStates = await Promise.all(
+    AGENTS.map(async (agent) => await isSkillInstalled(home, agent)),
+  );
+  return installedStates.some(Boolean);
 }
 
 async function downloadGlueSkillMarkdown(): Promise<string> {
