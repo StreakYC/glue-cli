@@ -73,9 +73,13 @@ async function detectPreferredAndInstalledEditor(): Promise<string | undefined> 
 
 async function isEditorInstalled(editorCommand: string): Promise<boolean> {
   try {
-    await new Deno.Command(editorCommand, { args: ["--version"] }).output();
-    return true;
-  } catch (_error) {
+    const cmd = new Deno.Command(
+      Deno.build.os === "windows" ? "where" : "which",
+      { args: [editorCommand], stdout: "null", stderr: "null" },
+    );
+    const { success } = await cmd.output();
+    return success;
+  } catch {
     return false;
   }
 }
