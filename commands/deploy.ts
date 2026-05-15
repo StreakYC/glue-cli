@@ -139,4 +139,8 @@ export async function deploy(options: DeployOptions, file: string) {
     // looks to the user like we're done prematurely
     updateUI({ deployment, uploadingCodeState: "success", uploadingCodeDuration });
   }
+  // Sometimes client libraries keep connections alive or something, preventing
+  // the process from naturally exiting immediately, so we explicitly exit here.
+  unmountUI();
+  Deno.exit();
 }
