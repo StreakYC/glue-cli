@@ -75,14 +75,12 @@ export const describe = async (options: DescribeOptions, query?: string) => {
 
   try {
     renderTarget(initialLoadResult.toReactElement(), !!options.watch);
-    if (!options.watch) {
-      return;
-    }
-
-    while (true) {
-      await delay(WATCH_INTERVAL_MS);
-      const loadResult = await target.load();
-      renderTarget(loadResult.toReactElement(), options.watch);
+    if (options.watch) {
+      while (true) {
+        await delay(WATCH_INTERVAL_MS);
+        const loadResult = await target.load();
+        renderTarget(loadResult.toReactElement(), options.watch);
+      }
     }
   } finally {
     if (describeInkInstance) {
@@ -91,6 +89,7 @@ export const describe = async (options: DescribeOptions, query?: string) => {
       await delay(1);
     }
   }
+  Deno.exit();
 };
 
 function createDescribeTarget(query: string): DescribeTarget {
