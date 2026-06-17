@@ -6,6 +6,7 @@ import type {
   AccountToSetup,
   BuildStepDTO,
   BuildStepName,
+  SecretInjectionDTO,
   StepStatus,
   TriggerDTO,
 } from "../backend.ts";
@@ -54,12 +55,16 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
 // will use triggers and account injections later when we want to show more detailed info about the accounts needing auth
 export const RegistrationAccountSetupSection = (
   // deno-lint-ignore no-unused-vars
-  { triggers, accountInjections, accountsToSetup }: {
+  { triggers, accountInjections, secretInjections, accountsToSetup }: {
     triggers: TriggerDTO[];
     accountInjections: AccountInjectionDTO[];
+    secretInjections: SecretInjectionDTO[];
     accountsToSetup: AccountToSetup[];
   },
 ) => {
+  const secretsToSetup = secretInjections.filter((secretInjection) =>
+    !secretInjection.secretId && secretInjection.secretSetupUrl
+  );
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {accountsToSetup.length > 0 && (
@@ -78,18 +83,40 @@ export const RegistrationAccountSetupSection = (
           </Text>
         </Box>
       ))}
+      {secretsToSetup.length > 0 && (
+        <Text>
+          {secretsToSetup.length} secret{secretsToSetup.length > 1 ? "s" : ""}{" "}
+          need{secretsToSetup.length > 1 ? "" : "s"} configuration:
+        </Text>
+      )}
+      {secretsToSetup.map((secretInjection) => (
+        <Box paddingLeft={2} key={secretInjection.id}>
+          <Text>
+            {secretInjection.name} ({secretInjection.label}):{" "}
+            <Link url={secretInjection.secretSetupUrl!}>
+              <Text bold>{secretInjection.secretSetupUrl}</Text>
+            </Link>
+          </Text>
+        </Box>
+      ))}
     </Box>
   );
 };
 
 export const CompletedRegistrationList = (
-  { triggers, accountInjections }: {
+  { triggers, accountInjections, secretInjections }: {
     triggers: TriggerDTO[];
     accountInjections: AccountInjectionDTO[];
+    secretInjections: SecretInjectionDTO[];
   },
 ) => {
   const sortedTriggers = toSortedByTypeThenLabel(triggers);
   const sortedAccountInjections = toSortedByTypeThenLabel(accountInjections);
+  const sortedSecretInjections = secretInjections.toSorted((a, b) => {
+    const nameCmp = a.name.localeCompare(b.name);
+    if (nameCmp !== 0) return nameCmp;
+    return a.label.localeCompare(b.label, undefined, { numeric: true });
+  });
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
       {sortedTriggers.length > 0 && <Text>Triggers:</Text>}
@@ -105,6 +132,14 @@ export const CompletedRegistrationList = (
         <Box paddingLeft={2} key={a.id}>
           <Text>
             {a.type}({a.description ?? a.label})
+          </Text>
+        </Box>
+      ))}
+      {sortedSecretInjections.length > 0 && <Text>Secrets:</Text>}
+      {sortedSecretInjections.map((secretInjection) => (
+        <Box paddingLeft={2} key={secretInjection.id}>
+          <Text>
+            {secretInjection.name}({secretInjection.description ?? secretInjection.label})
           </Text>
         </Box>
       ))}
