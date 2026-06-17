@@ -211,7 +211,10 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   if (!equal(a.buildSteps, b.buildSteps)) {
     return false;
   }
-  if (!equal(a.triggers, b.triggers) || !equal(a.accountInjections, b.accountInjections)) {
+  if (
+    !equal(a.triggers, b.triggers) || !equal(a.accountInjections, b.accountInjections) ||
+    !equal(a.secretInjections, b.secretInjections)
+  ) {
     return false;
   }
   if (!equal(a.accountsToSetup, b.accountsToSetup)) {
@@ -340,6 +343,7 @@ export interface DeploymentDTO {
   updatedAt: number; // milliseconds since epoch
   triggers: TriggerDTO[];
   accountInjections: AccountInjectionDTO[];
+  secretInjections: SecretInjectionDTO[];
   buildSteps: BuildStepDTO[];
   accountsToSetup: AccountToSetup[];
   totalExecutions: number;
@@ -402,6 +406,20 @@ export interface AccountInjectionDTO {
   updatedAt: number;
 
   accountSetupUrl?: string;
+  description?: string;
+}
+
+export interface SecretInjectionDTO {
+  id: string;
+  deploymentId: string;
+  label: string;
+  name: string;
+  secretId?: string;
+
+  createdAt: number;
+  updatedAt: number;
+
+  secretSetupUrl?: string;
   description?: string;
 }
 

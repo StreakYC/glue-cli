@@ -58,13 +58,15 @@ export const DescribeDeploymentUI = ({ deployment }: DescribeDeploymentUIProps) 
         </>
       )}
 
-      {(deployment.triggers.length > 0 || deployment.accountInjections.length > 0) && (
+      {(deployment.triggers.length > 0 || deployment.accountInjections.length > 0 ||
+        deployment.secretInjections.length > 0) && (
         <>
           <Newline />
           <Text>Triggers and credential fetchers:</Text>
           <CompletedRegistrationList
             triggers={deployment.triggers}
             accountInjections={deployment.accountInjections}
+            secretInjections={deployment.secretInjections}
           />
         </>
       )}
@@ -119,13 +121,15 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
         <>
           <Text>Last deployed: {formatEpochMillis(glue.currentDeployment.createdAt)}</Text>
           {(glue.currentDeployment.triggers.length > 0 ||
-            glue.currentDeployment.accountInjections.length > 0) && (
+            glue.currentDeployment.accountInjections.length > 0 ||
+            glue.currentDeployment.secretInjections.length > 0) && (
             <>
               <Newline />
               <Text>Triggers and credential fetchers:</Text>
               <CompletedRegistrationList
                 triggers={glue.currentDeployment.triggers}
                 accountInjections={glue.currentDeployment.accountInjections}
+                secretInjections={glue.currentDeployment.secretInjections}
               />
             </>
           )}
