@@ -23,7 +23,13 @@
         "bump-patch"
       ]
     },
-    "bump-patch": "deno run --allow-read=deno.json --allow-write=deno.json --allow-run=git jsr:@kellnerd/bump@0.1.1 -c v -t v patch"
+    "check-clean-git": "git diff --quiet HEAD || (echo 'Error: You have uncommitted changes to git-tracked files. Please commit or stash them before deploying.' && exit 1)",
+    "bump-patch": {
+      "command": "deno run --allow-read=deno.json --allow-write=deno.json --allow-run=git jsr:@kellnerd/bump@0.1.1 -c v -t v patch",
+      "dependencies": [
+        "check-clean-git"
+      ]
+    }
   },
   "test": {
     "permissions": {
