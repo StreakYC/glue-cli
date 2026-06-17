@@ -30,7 +30,9 @@ export const DeployUI = (
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
   const needsRegistrationSetup = deployment &&
     (deployment.accountsToSetup.length > 0 ||
-      deployment.secretInjections.some((secretInjection) => !secretInjection.secretId));
+      deployment.secretInjections.some((secretInjection) =>
+        !secretInjection.secretId && secretInjection.secretSetupUrl != null
+      ));
   return (
     <>
       <ClientStepRow

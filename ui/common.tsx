@@ -62,8 +62,10 @@ export const RegistrationAccountSetupSection = (
     accountsToSetup: AccountToSetup[];
   },
 ) => {
-  const secretsToSetup = secretInjections.filter((secretInjection) =>
-    !secretInjection.secretId && secretInjection.secretSetupUrl
+  const secretsToSetup = secretInjections.filter((
+    secretInjection,
+  ): secretInjection is SecretInjectionDTO & { secretSetupUrl: string } =>
+    !secretInjection.secretId && secretInjection.secretSetupUrl != null
   );
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
@@ -93,7 +95,7 @@ export const RegistrationAccountSetupSection = (
         <Box paddingLeft={2} key={secretInjection.id}>
           <Text>
             {secretInjection.name} ({secretInjection.label}):{" "}
-            <Link url={secretInjection.secretSetupUrl!}>
+            <Link url={secretInjection.secretSetupUrl}>
               <Text bold>{secretInjection.secretSetupUrl}</Text>
             </Link>
           </Text>
