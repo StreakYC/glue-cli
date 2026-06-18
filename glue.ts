@@ -180,7 +180,8 @@ const cmd = new Command()
   .command(
     "accounts",
     new Command()
-      .description("List all accounts")
+      .description("Manage accounts")
+      .command("list", "List all accounts")
       .option("-j, --json", "Output in JSON format")
       .action(accounts)
       .command("delete", "Delete an account")
