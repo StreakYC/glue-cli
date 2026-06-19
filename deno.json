@@ -1,6 +1,7 @@
 {
   "name": "@streak-glue/cli",
-  "version": "0.1.98",
+
+  "version": "0.1.99",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
@@ -62,6 +63,7 @@
     "@std/fs": "jsr:@std/fs@^1.0.22",
     "@std/net": "jsr:@std/net@^1.0.6",
     "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/semver": "jsr:@std/semver@^1.0.8",
     "@std/streams": "jsr:@std/streams@^1.0.17",
     "@std/testing": "jsr:@std/testing@^1.0.17",
     "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.2.37",

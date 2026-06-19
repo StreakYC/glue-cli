@@ -22,24 +22,27 @@ import type z from "zod";
 import { archive } from "./commands/archive.ts";
 import { unarchive } from "./commands/unarchive.ts";
 import { installSkills } from "./commands/skills.ts";
+import { maybeShowUpdateNotice } from "./lib/updateCheck.ts";
+
+const upgradeCommand = new UpgradeCommand({
+  provider: [
+    new JsrProvider({ scope: "streak-glue", name: "cli" }),
+  ],
+  args: ["--unstable-kv", "--unstable-temporal", "--allow-all"],
+});
 
 const cmd = new Command()
   .name("glue")
   .version(denoJson.version)
   .description("Glue CLI utility")
+  .globalAction(async (options) => {
+    await maybeShowUpdateNotice(denoJson.version, upgradeCommand, isJsonOutput(options));
+  })
   .action(() => {
     cmd.showHelp();
   })
   .globalOption("--verbose", "Enable verbose logging for debugging purposes", { default: false })
-  .command(
-    "upgrade",
-    new UpgradeCommand({
-      provider: [
-        new JsrProvider({ scope: "streak-glue", name: "cli" }),
-      ],
-      args: ["--unstable-kv", "--unstable-temporal", "--allow-all"],
-    }),
-  )
+  .command("upgrade", upgradeCommand)
   // DEV ----------------------------
   .command(
     "dev",
@@ -185,6 +188,7 @@ const cmd = new Command()
       .action(deleteAccountCmd),
   );
 await cmd.parse(Deno.args);
+Deno.exit(0);
 
 // HELPERS --------------------------------
 // deno-lint-ignore no-explicit-any
@@ -198,4 +202,8 @@ function validateWithZodEnum(zodEnum: z.ZodEnum<any>) {
     }
     return parsed.data;
   };
+}
+
+function isJsonOutput(options: unknown): boolean {
+  return !!options && typeof options === "object" && "json" in options && options.json === true;
 }
