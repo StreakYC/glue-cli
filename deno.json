@@ -1,7 +1,6 @@
 {
   "name": "@streak-glue/cli",
-
-  "version": "0.1.99",
+  "version": "0.1.100",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
