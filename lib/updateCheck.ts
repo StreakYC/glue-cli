@@ -6,29 +6,22 @@ import { compare, parse } from "@std/semver";
 export const UPDATE_CHECK_KEY = ["update-check", "@streak-glue/cli"] as const;
 export const CHANGELOG_URL = "https://github.com/StreakYC/glue-cli/releases";
 
-interface UpdateNotice {
-  currentVersion: string;
+interface CachedVersionCheck {
   latestVersion: string;
   checkedAt: number;
 }
 
-function startBackgroundUpdateCheck(
-  currentVersion: string,
-  upgradeCommand: UpgradeCommand,
-): void {
+function startBackgroundUpdateCheck(upgradeCommand: UpgradeCommand): void {
   void (async () => {
     try {
       if (!await upgradeCommand.hasRequiredPermissions()) {
         return;
       }
       const latestVersion = await upgradeCommand.getLatestVersion();
-      if (latestVersion !== currentVersion) {
-        await kv.set(UPDATE_CHECK_KEY, {
-          currentVersion,
-          latestVersion,
-          checkedAt: Date.now(),
-        });
-      }
+      await kv.set(UPDATE_CHECK_KEY, {
+        latestVersion,
+        checkedAt: Date.now(),
+      });
     } catch {
       // Update checks should never affect the command that triggered them.
     }
@@ -41,28 +34,23 @@ export async function maybeShowUpdateNotice(
   isJsonOutput: boolean,
 ): Promise<void> {
   try {
-    startBackgroundUpdateCheck(currentVersion, upgradeCommand);
+    startBackgroundUpdateCheck(upgradeCommand);
     if (!Deno.stderr.isTerminal() || isJsonOutput) {
       return;
     }
 
-    const notice = (await kv.get<UpdateNotice>(UPDATE_CHECK_KEY)).value;
+    const cachedVersionCheck = (await kv.get<CachedVersionCheck>(UPDATE_CHECK_KEY)).value;
 
-    if (!notice) {
+    if (!cachedVersionCheck) {
       return;
     }
 
-    if (notice.currentVersion !== currentVersion) {
-      await kv.delete(UPDATE_CHECK_KEY);
+    if (compare(parse(cachedVersionCheck.latestVersion), parse(currentVersion)) <= 0) {
       return;
     }
 
-    if (compare(parse(notice.latestVersion), parse(notice.currentVersion)) <= 0) {
-      return;
-    }
-
-    const message = `Update available: ${mod.bold(notice.latestVersion)} (current ${
-      mod.bold(notice.currentVersion)
+    const message = `Update available: ${mod.bold(cachedVersionCheck.latestVersion)} (current ${
+      mod.bold(currentVersion)
     })
       Run \`glue upgrade\` to update. Changelog: ${mod.bold(CHANGELOG_URL)}
   `;
