@@ -1,7 +1,7 @@
 import type { UpgradeCommand } from "@cliffy/command/upgrade";
 import { kv } from "../db.ts";
 import * as mod from "@std/fmt/colors";
-import { compare, parse } from "jsr:@std/semver";
+import { compare, parse } from "jsr:@std/semver@^1.0.3";
 
 export const UPDATE_CHECK_KEY = ["update-check", "@streak-glue/cli"] as const;
 export const CHANGELOG_URL = "https://github.com/StreakYC/glue-cli/releases";
@@ -47,14 +47,12 @@ export async function maybeShowUpdateNotice(
     }
 
     const notice = (await kv.get<UpdateNotice>(UPDATE_CHECK_KEY)).value;
-    const hasNotice = !!notice;
-    const noticeIsForCurrentVersion = notice?.currentVersion === currentVersion;
 
-    if (!hasNotice) {
+    if (!notice) {
       return;
     }
 
-    if (!noticeIsForCurrentVersion) {
+    if (notice.currentVersion !== currentVersion) {
       await kv.delete(UPDATE_CHECK_KEY);
       return;
     }
