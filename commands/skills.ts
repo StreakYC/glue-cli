@@ -69,6 +69,10 @@ export async function installSkills(): Promise<void> {
   );
 }
 
+/**
+ * Called at the end of `glue create` to offer to install the Glue skill if we
+ * detect a supported agent is installed.
+ */
 export async function promptToInstallSkills(): Promise<void> {
   const home = requireHomeDirectory();
 
@@ -87,6 +91,10 @@ export async function promptToInstallSkills(): Promise<void> {
     return;
   }
 
+  console.log();
+  console.log(
+    "We noticed you have Codex or Claude Code installed but don't have the Glue skill installed for them.",
+  );
   const shouldInstall = await Confirm.prompt({
     message: "Install the Glue agent skill for Codex or Claude Code now?",
     default: true,
@@ -129,7 +137,10 @@ export async function isSkillInstalled(home: string, agent: Agent): Promise<bool
 }
 
 export async function anyAgentSkillsInstalled(home: string): Promise<boolean> {
-  return await Promise.any(AGENTS.map(async (agent) => await isSkillInstalled(home, agent)));
+  const installedStates = await Promise.all(
+    AGENTS.map(async (agent) => await isSkillInstalled(home, agent)),
+  );
+  return installedStates.some(Boolean);
 }
 
 async function downloadGlueSkillMarkdown(): Promise<string> {

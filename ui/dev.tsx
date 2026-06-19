@@ -9,13 +9,16 @@ import {
 import { Box, Text } from "ink";
 import { Newline } from "ink";
 import type { DebugMode, SetupReplayResult } from "../commands/dev.ts";
+import type { OutdatedRuntimeInfo } from "../lib/runtimeVersionCheck.ts";
+import { GLUE_RUNTIME_PACKAGE } from "../common.ts";
 
-export type Step = {
+export interface Step {
   state: StepStatus;
   duration: number;
-};
+}
 
-export type DevUIProps = {
+export interface DevUIProps {
+  outdatedRuntimeWarningInfo?: OutdatedRuntimeInfo;
   steps: {
     codeAnalysis?: Step;
     bootingCode: Step;
@@ -28,7 +31,7 @@ export type DevUIProps = {
   deployment?: DeploymentDTO;
   debugMode: DebugMode;
   setupReplayResult?: SetupReplayResult;
-};
+}
 
 export const DevUI = (
   props: DevUIProps,
@@ -52,10 +55,18 @@ export const DevUI = (
       props.deployment.buildSteps.every((step: BuildStepDTO) => step.status === "success");
   }
 
-  const needsAccountSetup = deployment && deployment.accountsToSetup.length > 0;
+  const needsRegistrationSetup = deployment &&
+    (deployment.accountsToSetup.length > 0 ||
+      deployment.secretInjections.some((secretInjection) => !secretInjection.secretId));
 
   return (
     <>
+      {props.outdatedRuntimeWarningInfo && (
+        <Box>
+          <OutdatedRuntimeWarning info={props.outdatedRuntimeWarningInfo} />
+        </Box>
+      )}
+
       {props.restarting && (
         <>
           <Newline />
@@ -105,11 +116,13 @@ export const DevUI = (
       {deployment && deployment.buildSteps.map((step) => (
         <React.Fragment key={step.name}>
           <BuildStepStatusRow step={step} />
-          {step.name === "registrationAuth" && step.status === "in_progress" && needsAccountSetup &&
+          {step.name === "registrationAuth" && step.status === "in_progress" &&
+            needsRegistrationSetup &&
             (
               <RegistrationAccountSetupSection
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
+                secretInjections={deployment.secretInjections}
                 accountsToSetup={deployment.accountsToSetup}
               />
             )}
@@ -117,6 +130,7 @@ export const DevUI = (
             <CompletedRegistrationList
               triggers={deployment.triggers}
               accountInjections={deployment.accountInjections}
+              secretInjections={deployment.secretInjections}
             />
           )}
         </React.Fragment>
@@ -163,6 +177,16 @@ export const DevUI = (
     </>
   );
 };
+
+export function OutdatedRuntimeWarning({ info }: { info: OutdatedRuntimeInfo }) {
+  return (
+    <Text>
+      A newer {GLUE_RUNTIME_PACKAGE} version is available ({info.currentVersion} {"->"}{" "}
+      {info.latestVersion}).<Newline />
+      Update it with: <Text color="yellow">deno update --latest {GLUE_RUNTIME_PACKAGE}</Text>
+    </Text>
+  );
+}
 
 export function ReplayResultRow({ execution, compatible }: SetupReplayResult) {
   return (

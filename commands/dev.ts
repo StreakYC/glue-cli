@@ -29,7 +29,7 @@ import {
   TriggerEvent,
   type TriggerRegistration,
 } from "@streak-glue/runtime/backendTypes";
-import { type Awaitable, GLUE_API_SERVER } from "../common.ts";
+import { type Awaitable, GLUE_API_SERVER, GLUE_RUNTIME_PACKAGE } from "../common.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
@@ -37,9 +37,11 @@ import { toLines } from "@std/streams/unstable-to-lines";
 import { pushable, pushableV } from "it-pushable";
 import { Select } from "@cliffy/prompt/select";
 import { toSortedByTypeThenLabel } from "../ui/utils.ts";
-
 import { getGlueName } from "../lib/glueNaming.ts";
+import { getOutdatedStreakRuntimeVersion } from "../lib/runtimeVersionCheck.ts";
 import { once } from "node:events";
+import type { CommonCommandOptions } from "./common.ts";
+import { findDenoConfigPaths } from "../lib/denoConfig.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -74,6 +76,7 @@ export async function dev(options: DevOptions, filename: string) {
     const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
     const glueName = await getGlueName(filename, options.name);
+    const reloadStreakRuntime = await streakRuntimeUpdateChecks(filename, options.verbose);
 
     const glueCliWebsocketAddr = await wsListen(() => {
       if (!lifelineHasConnected) {
@@ -110,7 +113,13 @@ export async function dev(options: DevOptions, filename: string) {
     }
 
     await runUIStep("bootingCode", async () => {
-      const c = spawnLocalGlueProcess(filename, env, debugMode, abortController);
+      const c = spawnLocalGlueProcess(
+        filename,
+        env,
+        debugMode,
+        abortController,
+        reloadStreakRuntime,
+      );
 
       const unsub = new AbortController();
       try {
@@ -509,6 +518,40 @@ function analyzeCode(_filename: string): AnalysisResult {
   return { errors: [] };
 }
 
+/**
+ * @returns true if the glue process should be started with the `--reload` flag
+ * to ensure the latest version of the streak runtime is used, false otherwise.
+ */
+async function streakRuntimeUpdateChecks(filename: string, verbose: boolean): Promise<boolean> {
+  try {
+    const denoConfigPaths = await findDenoConfigPaths(path.dirname(filename));
+    if (!denoConfigPaths.denoJsonPath) {
+      // When not using deno.json/deno.lock, we want to make sure unversioned
+      // imports for "jsr:@streak-glue/runtime" get the latest version. We could
+      // issue some Deno command to update the cache with the latest version
+      // before we run the user's glue, but instead we'll just pass "--reload"
+      // to the user's glue Deno process.
+      return true;
+    } else {
+      // When using deno.json+deno.lock, check if the @streak-glue/runtime
+      // version is outdated and warn the user if so.
+      const outdatedRuntime = await getOutdatedStreakRuntimeVersion(filename, denoConfigPaths);
+      if (!outdatedRuntime) {
+        return false;
+      }
+      devProgressProps.outdatedRuntimeWarningInfo = outdatedRuntime;
+      renderUI();
+      return false;
+    }
+  } catch (e) {
+    if (verbose) {
+      console.error("Caught error:", e);
+    }
+  }
+
+  return false;
+}
+
 async function discoverRegistrations(signal?: AbortSignal): Promise<Registrations> {
   signal?.throwIfAborted();
   const res = await fetch(
@@ -529,6 +572,7 @@ function spawnLocalGlueProcess(
   env: Record<string, string>,
   debugMode: DebugMode,
   abortController: AbortController,
+  reloadStreakRuntime: boolean,
 ) {
   abortController.signal.throwIfAborted();
 
@@ -540,10 +584,12 @@ function spawnLocalGlueProcess(
     "--allow-env",
     "--allow-net",
     "--allow-sys",
-    "--unstable-kv",
   ];
   if (debugMode !== "no-debug") {
     flags.push("--" + debugMode);
+  }
+  if (reloadStreakRuntime) {
+    flags.push(`--reload=jsr:${GLUE_RUNTIME_PACKAGE}`);
   }
 
   const command = new Deno.Command(Deno.execPath(), {
@@ -650,7 +696,7 @@ const ServerWebsocketMessage = z.object({
 });
 type ServerWebsocketMessage = z.infer<typeof ServerWebsocketMessage>;
 
-interface DevOptions {
+interface DevOptions extends CommonCommandOptions {
   name?: string;
   debug?: boolean;
   inspectWait?: boolean;

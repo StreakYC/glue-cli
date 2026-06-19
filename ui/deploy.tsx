@@ -28,7 +28,11 @@ export const DeployUI = (
   }: DeployUIProps,
 ) => {
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
-  const needsAccountSetup = deployment && deployment.accountsToSetup.length > 0;
+  const needsRegistrationSetup = deployment &&
+    (deployment.accountsToSetup.length > 0 ||
+      deployment.secretInjections.some((secretInjection) =>
+        !secretInjection.secretId && secretInjection.secretSetupUrl != null
+      ));
   return (
     <>
       <ClientStepRow
@@ -46,10 +50,11 @@ export const DeployUI = (
           <React.Fragment key={step.name}>
             <BuildStepStatusRow step={step} />
             {step.name === "registrationAuth" && step.status === "in_progress" &&
-              needsAccountSetup && (
+              needsRegistrationSetup && (
               <RegistrationAccountSetupSection
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
+                secretInjections={deployment.secretInjections}
                 accountsToSetup={deployment.accountsToSetup}
               />
             )}
@@ -57,6 +62,7 @@ export const DeployUI = (
               <CompletedRegistrationList
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
+                secretInjections={deployment.secretInjections}
               />
             )}
           </React.Fragment>

@@ -41,6 +41,7 @@ const cmd = new Command()
   .action(() => {
     cmd.showHelp();
   })
+  .globalOption("--verbose", "Enable verbose logging for debugging purposes", { default: false })
   .command("upgrade", upgradeCommand)
   // DEV ----------------------------
   .command(
@@ -66,7 +67,7 @@ const cmd = new Command()
   .option(
     "-r, --runner <runner:runner>",
     "Use a specific runner to host the glue. Valid values are: deno, deno-v2, fly, cloudflare, sandbox.",
-    { default: "deno-v2" },
+    { default: "deno-v2", hidden: true },
   )
   .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
   .option(
