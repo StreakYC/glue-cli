@@ -1,7 +1,7 @@
 import type { UpgradeCommand } from "@cliffy/command/upgrade";
 import { kv } from "../db.ts";
 import * as mod from "@std/fmt/colors";
-import { compare, parse } from "jsr:@std/semver@^1.0.3";
+import { compare, parse } from "jsr:@std/semver";
 
 export const UPDATE_CHECK_KEY = ["update-check", "@streak-glue/cli"] as const;
 export const CHANGELOG_URL = "https://github.com/StreakYC/glue-cli/releases";
