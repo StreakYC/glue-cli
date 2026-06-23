@@ -39,8 +39,7 @@
     }
   },
   "unstable": [
-    "kv",
-    "temporal"
+    "kv"
   ],
   "minimumDependencyAge": {
     "age": "P3D",
