@@ -21,6 +21,7 @@ import { Runner } from "./backend.ts";
 import type z from "zod";
 import { archive } from "./commands/archive.ts";
 import { unarchive } from "./commands/unarchive.ts";
+import { deleteSecretCmd, listSecrets, setSecret } from "./commands/secrets.ts";
 import { installSkills } from "./commands/skills.ts";
 import { maybeShowUpdateNotice } from "./lib/updateCheck.ts";
 
@@ -187,6 +188,32 @@ const cmd = new Command()
       .command("delete", "Delete an account")
       .arguments("[id:string]")
       .action(deleteAccountCmd),
+  )
+  // SECRETS ----------------------------
+  .command(
+    "secrets",
+    new Command()
+      .description(
+        "Manage secrets that can be accessed by Glue scripts. Secrets can be used like environment variables.",
+      )
+      .command(
+        "set",
+        "Set a secret value for use by Glue scripts.",
+      )
+      .arguments("<key:string> <value:string>")
+      .action(setSecret)
+      .command(
+        "list",
+        "List all secrets",
+      )
+      .option("-j, --json", "Output in JSON format")
+      .action(listSecrets)
+      .command(
+        "delete",
+        "Delete a secret",
+      )
+      .arguments("<key:string>")
+      .action(deleteSecretCmd),
   );
 await cmd.parse(Deno.args);
 Deno.exit(0);

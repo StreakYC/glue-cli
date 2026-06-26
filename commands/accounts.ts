@@ -81,7 +81,7 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
       .join(",");
     console.log(glueNames);
     const confirm = await Confirm.prompt({
-      message: `Stop these glues`,
+      message: `Stop these glues?`,
       default: false,
     });
     if (!confirm) {
@@ -97,7 +97,7 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
   const confirm = await Confirm.prompt({
     message: `Are you sure you want to delete the ${
       displayNameForAccount(accountToDelete)
-    } account`,
+    } account?`,
     default: false,
   });
 
