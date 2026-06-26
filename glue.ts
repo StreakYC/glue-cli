@@ -29,7 +29,13 @@ const upgradeCommand = new UpgradeCommand({
   provider: [
     new JsrProvider({ scope: "streak-glue", name: "cli" }),
   ],
-  args: ["--unstable-kv", "--allow-all"],
+  args: [
+    "--no-config",
+    "--reload",
+    "--minimum-dependency-age=0",
+    "--unstable-kv",
+    "--allow-all",
+  ],
 });
 
 const cmd = new Command()
