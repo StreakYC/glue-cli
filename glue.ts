@@ -31,7 +31,6 @@ const upgradeCommand = new UpgradeCommand({
   ],
   args: [
     "--no-config",
-    "--reload",
     "--minimum-dependency-age=0",
     "--unstable-kv",
     "--allow-all",
