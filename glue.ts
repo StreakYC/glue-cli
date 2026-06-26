@@ -21,10 +21,31 @@ import { Runner } from "./backend.ts";
 import type z from "zod";
 import { archive } from "./commands/archive.ts";
 import { unarchive } from "./commands/unarchive.ts";
-import { installSkills } from "./commands/skills.ts";
+import { installSkills, updateInstalledSkills } from "./commands/skills.ts";
 import { maybeShowUpdateNotice } from "./lib/updateCheck.ts";
 
-const upgradeCommand = new UpgradeCommand({
+class GlueUpgradeCommand extends UpgradeCommand {
+  constructor(options: ConstructorParameters<typeof UpgradeCommand>[0]) {
+    super(options);
+
+    const originalAction = this.settings.actionHandler;
+    if (!originalAction) {
+      throw new Error("Unable to configure upgrade command");
+    }
+
+    this.action(async function (options, ...args) {
+      await originalAction.call(this, options, ...args);
+      try {
+        await updateInstalledSkills();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to update Glue skill: ${message}`);
+      }
+    });
+  }
+}
+
+const upgradeCommand = new GlueUpgradeCommand({
   provider: [
     new JsrProvider({ scope: "streak-glue", name: "cli" }),
   ],
