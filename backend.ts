@@ -59,15 +59,33 @@ export async function backendRequest<T>(
 ): Promise<T> {
   options.signal?.throwIfAborted();
 
+  const res = await backendFetch(path, options, forceTrace);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(
+      `Failed request: ${path} (${
+        options.method ?? "GET"
+      }): ${res.status} ${res.statusText} ${body}`,
+    );
+  }
+  return res.json() as Promise<T>;
+}
+
+async function backendFetch(
+  path: string,
+  options: RequestInit = {},
+  forceTrace = true,
+): Promise<Response> {
+  options.signal?.throwIfAborted();
+
   const authToken = await getAuthToken();
-  const headers: Record<string, string> = {
-    "Authorization": `Bearer ${authToken}`,
-    "User-Agent": "glue-cli",
-    "X-Glue-Set-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-  };
+  const headers = new Headers(options.headers);
+  headers.set("Authorization", `Bearer ${authToken}`);
+  headers.set("User-Agent", "glue-cli");
+  headers.set("X-Glue-Set-Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   if (forceTrace) {
-    headers["X-Cloud-Trace-Context"] = `00000000000000000000000000000000/0;o=1`;
+    headers.set("X-Cloud-Trace-Context", `00000000000000000000000000000000/0;o=1`);
   }
 
   const res = await fetch(`${GLUE_API_SERVER}${path}`, {
@@ -78,15 +96,7 @@ export async function backendRequest<T>(
     await clearAuthToken();
     exitBecauseNotLoggedIn();
   }
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(
-      `Failed request: ${path} (${
-        options.method ?? "GET"
-      }): ${res.status} ${res.statusText} ${body}`,
-    );
-  }
-  return res.json() as Promise<T>;
+  return res;
 }
 
 export async function getLoggedInUser(signal?: AbortSignal): Promise<UserDTO> {
@@ -474,6 +484,20 @@ export interface AccountDTO {
   liveGlues: GlueDTO[];
 }
 
+export interface SecretDTO {
+  name: string;
+  /** milliseconds since epoch */
+  createdAt: number;
+  /** milliseconds since epoch */
+  updatedAt: number;
+}
+
+export interface DeleteSecretResult {
+  success: boolean;
+  error?: string;
+  gluesNeedingStopping: GlueDTO[];
+}
+
 export async function getAccounts(): Promise<AccountDTO[]> {
   return await backendRequest<AccountDTO[]>(`/accounts`);
 }
@@ -486,4 +510,31 @@ export async function deleteAccount(id: string): Promise<void> {
   await backendRequest<void>(`/accounts/${id}`, {
     method: "DELETE",
   });
+}
+
+export async function getSecrets(): Promise<SecretDTO[]> {
+  return await backendRequest<SecretDTO[]>(`/secrets`);
+}
+
+export async function setSecret(name: string, value: string): Promise<void> {
+  await backendRequest<unknown>(`/secrets/${encodeURIComponent(name)}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ value }),
+  });
+}
+
+export async function deleteSecret(name: string): Promise<DeleteSecretResult> {
+  const path = `/secrets/${encodeURIComponent(name)}`;
+  const res = await backendFetch(path, { method: "DELETE" });
+  if (res.status === 409 && res.headers.get("Content-Type")?.includes("application/json")) {
+    return await res.json() as DeleteSecretResult;
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`);
+  }
+  return await res.json() as DeleteSecretResult;
 }
