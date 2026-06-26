@@ -44,26 +44,6 @@ export async function installSkills(): Promise<void> {
     return;
   }
 
-  await installGlueSkillForTargets(home, targets, "Installing", "Installed");
-}
-
-export async function updateInstalledSkills(): Promise<void> {
-  const home = requireHomeDirectory();
-  const targets = await detectAgentsWithInstalledSkill(home);
-
-  if (targets.length === 0) {
-    return;
-  }
-
-  await installGlueSkillForTargets(home, targets, "Updating", "Updated");
-}
-
-async function installGlueSkillForTargets(
-  home: string,
-  targets: Agent[],
-  progressVerb: "Installing" | "Updating",
-  successVerb: "Installed" | "Updated",
-): Promise<void> {
   const skillMarkdown = await runStep(
     "Downloading Glue skill...",
     () => downloadGlueSkillMarkdown(),
@@ -72,7 +52,7 @@ async function installGlueSkillForTargets(
 
   const installedPaths: string[] = [];
   await runStep(
-    `${progressVerb} Glue skill for ${targets.map((t) => t.label).join(", ")}...`,
+    `Installing Glue skill for ${targets.map((t) => t.label).join(", ")}...`,
     async () => {
       for (const target of targets) {
         const skillDir = getSkillInstallDir(home, target);
@@ -85,9 +65,7 @@ async function installGlueSkillForTargets(
   );
 
   console.log(
-    `${green("✔︎")} ${successVerb} Glue skill in ${
-      installedPaths.map((path) => bold(path)).join(", ")
-    }`,
+    `${green("✔︎")} Installed Glue skill in ${installedPaths.map((path) => bold(path)).join(", ")}`,
   );
 }
 
@@ -148,16 +126,6 @@ async function detectInstalledAgents(home: string): Promise<Agent[]> {
     AGENTS.map(async (agent) => await exists(join(home, agent.dir), { isDirectory: true })),
   );
   return AGENTS.filter((_, index) => agentsExist[index]);
-}
-
-async function detectAgentsWithInstalledSkill(home: string): Promise<Agent[]> {
-  const targets: Agent[] = [];
-  for (const agent of AGENTS) {
-    if (await isSkillInstalled(home, agent)) {
-      targets.push(agent);
-    }
-  }
-  return targets;
 }
 
 function getSkillInstallDir(home: string, target: Agent): string {
