@@ -529,7 +529,7 @@ export async function setSecret(name: string, value: string): Promise<void> {
 export async function deleteSecret(name: string): Promise<DeleteSecretResult> {
   const path = `/secrets/${encodeURIComponent(name)}`;
   const res = await backendFetch(path, { method: "DELETE" });
-  if (res.status === 400 && res.headers.get("Content-Type")?.includes("application/json")) {
+  if (res.status === 409 && res.headers.get("Content-Type")?.includes("application/json")) {
     return await res.json() as DeleteSecretResult;
   }
   if (!res.ok) {
