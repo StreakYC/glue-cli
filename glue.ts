@@ -9,8 +9,6 @@ import { list } from "./commands/list.ts";
 import { describe } from "./commands/describe.ts";
 import denoJson from "./deno.json" with { type: "json" };
 import { logs } from "./commands/logs.ts";
-import { JsrProvider } from "@cliffy/command/upgrade/provider/jsr";
-import { UpgradeCommand } from "@cliffy/command/upgrade";
 import { stop } from "./commands/stop.ts";
 import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
@@ -22,41 +20,9 @@ import type z from "zod";
 import { archive } from "./commands/archive.ts";
 import { unarchive } from "./commands/unarchive.ts";
 import { deleteSecretCmd, listSecrets, setSecret } from "./commands/secrets.ts";
-import { installSkills, updateInstalledSkills } from "./commands/skills.ts";
+import { installSkills } from "./commands/skills.ts";
 import { maybeShowUpdateNotice } from "./lib/updateCheck.ts";
-
-class GlueUpgradeCommand extends UpgradeCommand {
-  constructor(options: ConstructorParameters<typeof UpgradeCommand>[0]) {
-    super(options);
-
-    const originalAction = this.settings.actionHandler;
-    if (!originalAction) {
-      throw new Error("Unable to configure upgrade command");
-    }
-
-    this.action(async function (options, ...args) {
-      await originalAction.call(this, options, ...args);
-      try {
-        await updateInstalledSkills();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to update Glue skill: ${message}`);
-      }
-    });
-  }
-}
-
-const upgradeCommand = new GlueUpgradeCommand({
-  provider: [
-    new JsrProvider({ scope: "streak-glue", name: "cli" }),
-  ],
-  args: [
-    "--no-config",
-    "--minimum-dependency-age=0",
-    "--unstable-kv",
-    "--allow-all",
-  ],
-});
+import { upgradeCommand } from "./commands/upgrade.ts";
 
 const cmd = new Command()
   .name("glue")
