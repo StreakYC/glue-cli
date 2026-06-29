@@ -23,11 +23,19 @@ import { deleteSecretCmd, listSecrets, setSecret } from "./commands/secrets.ts";
 import { installSkills } from "./commands/skills.ts";
 import { maybeShowUpdateNotice } from "./lib/updateCheck.ts";
 import { upgradeCommand } from "./commands/upgrade.ts";
+import { setColorEnabled } from "@std/fmt/colors";
+
+const useColors = !Deno.noColor && Deno.stdout.isTerminal();
+setColorEnabled(useColors);
 
 const cmd = new Command()
   .name("glue")
   .version(denoJson.version)
   .description("Glue CLI utility")
+  .help({
+    // work around https://github.com/c4spar/cliffy/issues/695
+    colors: useColors,
+  })
   .globalAction(async (options) => {
     await maybeShowUpdateNotice(denoJson.version, upgradeCommand, isJsonOutput(options));
   })
