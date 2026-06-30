@@ -42,6 +42,7 @@ import { getOutdatedStreakRuntimeVersion } from "../lib/runtimeVersionCheck.ts";
 import { once } from "node:events";
 import type { CommonCommandOptions } from "./common.ts";
 import { findDenoConfigPaths } from "../lib/denoConfig.ts";
+import { UserFacingError } from "../lib/UserFacingError.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -125,8 +126,24 @@ export async function dev(options: DevOptions, filename: string) {
       try {
         await Promise.race([
           lifelineFirstConnectionDeferred.promise,
-          once(abortController.signal, "abort", { signal: unsub.signal }),
+          once(
+            AbortSignal.any([
+              abortController.signal,
+              AbortSignal.timeout(15_000),
+            ]),
+            "abort",
+            { signal: unsub.signal },
+          ).then(([event]) => {
+            throw event.target.reason;
+          }),
         ]);
+      } catch (e) {
+        if (e instanceof Error && e.name === "TimeoutError") {
+          throw new UserFacingError(
+            "Timed out waiting for glue script to initialize. (This may happen if the glue script does not import the runtime and register any triggers.)",
+          );
+        }
+        throw e;
       } finally {
         unsub.abort();
       }
@@ -303,7 +320,11 @@ export async function dev(options: DevOptions, filename: string) {
   } catch (e) {
     // Signal to all abort signal listeners we've errored.
     abortController.abort(e);
-    console.error(e);
+    if (e instanceof UserFacingError) {
+      console.error(e.message);
+    } else {
+      console.error(e);
+    }
     await Promise.all(cleanupFns.map((fn) => fn()));
     Deno.exit(1);
   }
