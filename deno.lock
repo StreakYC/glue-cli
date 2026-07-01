@@ -37,6 +37,7 @@
     "jsr:@std/streams@^1.0.17": "1.1.1",
     "jsr:@std/testing@^1.0.17": "1.0.19",
     "jsr:@std/text@^1.0.19": "1.0.19",
+    "jsr:@streak-glue/runtime@*": "0.2.39",
     "jsr:@streak-glue/runtime@~0.2.39": "0.2.39",
     "npm:@googleapis/gmail@14": "14.0.1",
     "npm:@slack/web-api@^7.11.0": "7.17.0",
