@@ -64,7 +64,7 @@
     "@std/semver": "jsr:@std/semver@^1.0.8",
     "@std/streams": "jsr:@std/streams@^1.0.17",
     "@std/testing": "jsr:@std/testing@^1.0.17",
-    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.2.37",
+    "@streak-glue/runtime": "jsr:@streak-glue/runtime@^0.2.39",
     "chalk": "npm:chalk@^5.6.2",
     "hono": "npm:hono@^4.12.25",
     "ink": "npm:ink@^7.1.0",

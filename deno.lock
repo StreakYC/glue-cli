@@ -29,7 +29,6 @@
     "jsr:@std/fs@^1.0.24": "1.0.24",
     "jsr:@std/internal@^1.0.12": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
-    "jsr:@std/io@~0.225.3": "0.225.3",
     "jsr:@std/net@^1.0.6": "1.0.6",
     "jsr:@std/path@^1.1.4": "1.1.5",
     "jsr:@std/path@^1.1.5": "1.1.5",
@@ -38,12 +37,8 @@
     "jsr:@std/streams@^1.0.17": "1.1.1",
     "jsr:@std/testing@^1.0.17": "1.0.19",
     "jsr:@std/text@^1.0.19": "1.0.19",
-    "jsr:@streak-glue/runtime@*": "0.2.38",
-    "jsr:@streak-glue/runtime@~0.2.37": "0.2.38",
-    "npm:@googleapis/drive@20": "20.2.0",
+    "jsr:@streak-glue/runtime@~0.2.39": "0.2.39",
     "npm:@googleapis/gmail@14": "14.0.1",
-    "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
-    "npm:@slack/types@^2.17.0": "2.21.1",
     "npm:@slack/web-api@^7.11.0": "7.17.0",
     "npm:@types/react@19": "19.2.17",
     "npm:chalk@^5.6.2": "5.6.2",
@@ -53,11 +48,9 @@
     "npm:ink-link@5": "5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_@types+react@19.2.17_react@19.2.7",
     "npm:ink-spinner@5": "5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_react@19.2.7_@types+react@19.2.17",
     "npm:ink@^7.1.0": "7.1.0_@types+react@19.2.17_react@19.2.7",
-    "npm:intercom-client@^7.0.3": "7.0.3",
     "npm:it-pushable@^3.2.3": "3.2.4",
     "npm:octokit@*": "5.0.5",
     "npm:react@^19.2.4": "19.2.7",
-    "npm:stripe@^18.2.0": "18.5.0",
     "npm:typescript@^6.0.3": "6.0.3",
     "npm:zod@^4.3.6": "4.4.3"
   },
@@ -66,8 +59,7 @@
       "integrity": "b8702def9c0110b6eeb2b3b71e0b26cbe0a427facbb4f9c0189da0ba19feb549",
       "dependencies": [
         "jsr:@cliffy/internal",
-        "jsr:@std/encoding",
-        "jsr:@std/io"
+        "jsr:@std/encoding"
       ]
     },
     "@cliffy/command@1.2.1": {
@@ -109,7 +101,6 @@
         "jsr:@cliffy/keycode",
         "jsr:@std/assert@^1.0.19",
         "jsr:@std/fmt@^1.0.10",
-        "jsr:@std/io",
         "jsr:@std/path@^1.1.5",
         "jsr:@std/text"
       ]
@@ -179,9 +170,6 @@
     "@std/internal@1.0.14": {
       "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
     },
-    "@std/io@0.225.3": {
-      "integrity": "27b07b591384d12d7b568f39e61dff966b8230559122df1e9fd11cc068f7ddd1"
-    },
     "@std/net@1.0.6": {
       "integrity": "110735f93e95bb9feb95790a8b1d1bf69ec0dc74f3f97a00a76ea5efea25500c"
     },
@@ -219,17 +207,12 @@
     "@std/text@1.0.19": {
       "integrity": "003a0e032d360e8c3a4e0410fb792c77a66bd6553fee9d60c6ec1bce30d29223"
     },
-    "@streak-glue/runtime@0.2.38": {
-      "integrity": "15a68f4360f94ebb50cd5b99cf95763e27823419404fa9b0e961cf498ce0a774",
+    "@streak-glue/runtime@0.2.39": {
+      "integrity": "223ebbd484e09a47fdf0234db53adbd5231821d0b07fdce4102d145baf2d5955",
       "dependencies": [
         "jsr:@hono/hono",
         "jsr:@std/async@^1.0.15",
-        "npm:@googleapis/drive",
-        "npm:@octokit/webhooks-types",
-        "npm:@slack/types",
         "npm:@slack/web-api",
-        "npm:intercom-client",
-        "npm:stripe",
         "npm:zod"
       ]
     }
@@ -240,12 +223,6 @@
       "dependencies": [
         "ansi-styles@6.2.3",
         "is-fullwidth-code-point@5.1.0"
-      ]
-    },
-    "@googleapis/drive@20.2.0": {
-      "integrity": "sha512-6xPjqqLl34jBXWYMO34ywLVQsT8FgH948x8YI9o6Tdqs7+n4QRyvkC+BcvVQaAPNc+pyqsvZAXcbdMEcGgDUGw==",
-      "dependencies": [
-        "googleapis-common"
       ]
     },
     "@googleapis/gmail@14.0.1": {
@@ -449,9 +426,6 @@
     },
     "@octokit/webhooks-methods@6.0.0": {
       "integrity": "sha512-MFlzzoDJVw/GcbfzVC1RLR36QqkTLUf79vLVO3D+xn7r0QgxnFoLZgtrzxiQErAjFUOdH6fas2KeQJ1yr/qaXQ=="
-    },
-    "@octokit/webhooks-types@7.6.1": {
-      "integrity": "sha512-S8u2cJzklBC0FgTwWVLaM8tMrDuDMVE4xiTK4EYXM9GntyvrdbSoxqDQa+Fh57CCNApyIpyeqPhhFEmHPfrXgw=="
     },
     "@octokit/webhooks@14.2.0": {
       "integrity": "sha512-da6KbdNCV5sr1/txD896V+6W0iamFWrvVl8cHkBSPT+YlvmT3DwXa4jxZnQc+gnuTEqSWbBeoSZYTayXH9wXcw==",
@@ -770,18 +744,10 @@
         "rimraf"
       ]
     },
-    "gaxios@7.1.5": {
-      "integrity": "sha512-5FZy72Rh8LhtjmvDrKkI+lVhrsQrVKVsItxMoDm5mNQE+xR0WVIIs+jzPSJgBvKVsLi24fZhXJIsNI0bihDzFg==",
-      "dependencies": [
-        "extend",
-        "https-proxy-agent@7.0.6",
-        "node-fetch"
-      ]
-    },
     "gcp-metadata@8.1.2": {
       "integrity": "sha512-zV/5HKTfCeKWnxG0Dmrw51hEWFGfcF2xiXqcA3+J90WDuP0SvoiSO5ORvcBsifmx/FoIjgQN3oNOGaQ5PhLFkg==",
       "dependencies": [
-        "gaxios@7.1.5",
+        "gaxios",
         "google-logging-utils",
         "json-bigint"
       ]
@@ -829,7 +795,7 @@
       "dependencies": [
         "base64-js",
         "ecdsa-sig-formatter",
-        "gaxios@7.1.5",
+        "gaxios",
         "gcp-metadata",
         "google-logging-utils",
         "gtoken",
@@ -854,7 +820,7 @@
       "integrity": "sha512-5MXeQzIZaqCH7B+HJWqhQm946VARpZep6acbWSr/fcgF2cQANq7allgX+i/G0EqF0WyUxB277gtWMzRYHMl9tg==",
       "dependencies": [
         "extend",
-        "gaxios@7.1.3",
+        "gaxios",
         "google-auth-library",
         "google-logging-utils",
         "qs",
@@ -867,7 +833,7 @@
     "gtoken@8.0.0": {
       "integrity": "sha512-+CqsMbHPiSTdtSO14O51eMNlrp9N79gmeqmXeouJOhfucAedHw9noVe/n5uJk3tbKE6a+6ZCQg3RPhVhHByAIw==",
       "dependencies": [
-        "gaxios@7.1.5",
+        "gaxios",
         "jws"
       ]
     },
@@ -958,9 +924,6 @@
       "optionalPeers": [
         "@types/react"
       ]
-    },
-    "intercom-client@7.0.3": {
-      "integrity": "sha512-2rsNxBNqDqA0rZ0E/VsWa+/Ao+/nOxKNj9P7gUiQoOGY88eULTJUNtT9oNnT4Dq2+6dr0vvvo+I8ZNzN30Xj7A=="
     },
     "is-electron@2.2.2": {
       "integrity": "sha512-FO/Rhvz5tuw4MCWkpMzHFKWD2LsfHzIb7i6MdPYZ/KW7AlxawyLkqdy+jPZP1WubqEADE3O4FUENlJHDfQASRg=="
@@ -1277,12 +1240,6 @@
         "ansi-regex@6.2.2"
       ]
     },
-    "stripe@18.5.0": {
-      "integrity": "sha512-Hp+wFiEQtCB0LlNgcFh5uVyKznpDjzyUZ+CNVEf+I3fhlYvh7rZruIg+jOwzJRCpy0ZTPMjlzm7J2/M2N6d+DA==",
-      "dependencies": [
-        "qs"
-      ]
-    },
     "supports-color@10.2.2": {
       "integrity": "sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g=="
     },
@@ -1401,7 +1358,7 @@
       "jsr:@std/semver@^1.0.8",
       "jsr:@std/streams@^1.0.17",
       "jsr:@std/testing@^1.0.17",
-      "jsr:@streak-glue/runtime@~0.2.37",
+      "jsr:@streak-glue/runtime@~0.2.39",
       "npm:@types/react@19",
       "npm:chalk@^5.6.2",
       "npm:hono@^4.12.25",
