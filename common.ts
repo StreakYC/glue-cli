@@ -1,4 +1,8 @@
+import denoJson from "./deno.json" with { type: "json" };
+
 export const GLUE_API_SERVER = Deno.env.get("GLUE_API_SERVER") || `https://api.glue.wtf`;
+export const GLUE_CLI_VERSION = denoJson.version;
+export const GLUE_CLI_USER_AGENT = `glue-cli/${GLUE_CLI_VERSION}`;
 
 export type Awaitable<T> = T | Promise<T>;
 

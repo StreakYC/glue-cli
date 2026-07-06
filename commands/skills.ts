@@ -2,7 +2,7 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { ensureDir, exists } from "@std/fs";
 import { bold, green, red, yellow } from "@std/fmt/colors";
 import { join } from "@std/path";
-import { GLUE_API_SERVER } from "../common.ts";
+import { GLUE_API_SERVER, GLUE_CLI_USER_AGENT } from "../common.ts";
 import { kv } from "../db.ts";
 import { runStep } from "../ui/utils.ts";
 
@@ -178,7 +178,7 @@ export async function anyAgentSkillsInstalled(home: string): Promise<boolean> {
 async function downloadGlueSkillMarkdown(): Promise<string> {
   const response = await fetch(GLUE_SKILL_URL, {
     headers: {
-      "User-Agent": "glue-cli",
+      "User-Agent": GLUE_CLI_USER_AGENT,
     },
   });
   if (!response.ok) {

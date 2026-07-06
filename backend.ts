@@ -2,7 +2,7 @@ import { z } from "zod";
 import { clearAuthToken, exitBecauseNotLoggedIn, getAuthToken } from "./auth.ts";
 import { equal } from "@std/assert/equal";
 import { delay } from "@std/async/delay";
-import { GLUE_API_SERVER } from "./common.ts";
+import { GLUE_API_SERVER, GLUE_CLI_USER_AGENT } from "./common.ts";
 import { retry } from "@std/async/retry";
 import { Registrations } from "@streak-glue/runtime/backendTypes";
 
@@ -81,7 +81,7 @@ async function backendFetch(
   const authToken = await getAuthToken();
   const headers = new Headers(options.headers);
   headers.set("Authorization", `Bearer ${authToken}`);
-  headers.set("User-Agent", "glue-cli");
+  headers.set("User-Agent", GLUE_CLI_USER_AGENT);
   headers.set("X-Glue-Set-Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   if (forceTrace) {
