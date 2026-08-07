@@ -468,12 +468,20 @@ export interface UserDTO {
   updatedAt: number; // milliseconds since epoch
 }
 
+/**
+ * Represents a row from the Accounts table without the sensitive `authToken`
+ * column. Sent to the client in some endpoints.
+ */
 export interface AccountDTO {
   id: string;
   type: string;
-  selector: string;
-  displayName?: string;
   redactedApiKey?: string;
+  /** @deprecated use `labels` instead */
+  selector: string;
+  /** @deprecated use `labels` instead */
+  displayName: string;
+  labels: Record<string, string>;
+
   scopes?: string[];
   userId: string;
   /** milliseconds since epoch */
