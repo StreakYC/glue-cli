@@ -476,10 +476,6 @@ export interface AccountDTO {
   id: string;
   type: string;
   redactedApiKey?: string;
-  /** @deprecated use `labels` instead */
-  selector: string;
-  /** @deprecated use `labels` instead */
-  displayName: string;
   labels: Record<string, string>;
 
   scopes?: string[];

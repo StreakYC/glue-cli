@@ -2,6 +2,7 @@ import { type AccountDTO, getAccounts, getGlues, type GlueDTO } from "../backend
 import { Checkbox } from "@cliffy/prompt/checkbox";
 import { Select } from "@cliffy/prompt/select";
 import { runStep } from "../ui/utils.ts";
+import { prettyLabels } from "../lib/prettyLabels.ts";
 
 export interface CommonCommandOptions {
   verbose: boolean;
@@ -46,10 +47,8 @@ export async function askUserForAccount(): Promise<AccountDTO | undefined> {
 }
 
 export function displayNameForAccount(account: AccountDTO) {
-  let retVal = account.selector;
-  if (account.displayName) {
-    retVal += ` (${account.displayName})`;
-  } else if (account.redactedApiKey) {
+  let retVal = `{${prettyLabels(account.labels)}}`;
+  if (account.redactedApiKey) {
     retVal += ` (${account.redactedApiKey})`;
   }
   return retVal;

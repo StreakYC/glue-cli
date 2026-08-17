@@ -42,7 +42,7 @@ export const accounts = async (options: AccountsOptions) => {
           .sort((a, b) => {
             const typeComp = a.type.localeCompare(b.type);
             if (typeComp !== 0) return typeComp;
-            return a.selector.localeCompare(b.selector);
+            return a.createdAt - b.createdAt;
           })
           .map((account) => [
             account.id,

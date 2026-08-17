@@ -3,6 +3,7 @@ import React from "react";
 import { Box, Newline, Text } from "ink";
 import { BuildStepStatusRow, CompletedRegistrationList } from "./common.tsx";
 import { formatEpochMillis } from "./utils.ts";
+import { prettyLabels } from "../lib/prettyLabels.ts";
 
 export const DescribeUI = (
   { target, isWatching }: { target: React.ReactElement; isWatching: boolean },
@@ -179,9 +180,8 @@ export const DescribeAccountUI = ({ account }: DescribeAccountUIProps) => {
         ID: <Text bold>{account.id}</Text>
       </Text>
       <Text>Type: {account.type}</Text>
-      <Text>Label: {account.selector}</Text>
+      <Text>Labels: {prettyLabels(account.labels)}</Text>
       <Text>Created: {new Date(account.createdAt).toLocaleString()}</Text>
-      {account.displayName && <Text>Name: {account.displayName}</Text>}
       {account.redactedApiKey && <Text>API Key: {account.redactedApiKey}</Text>}
       {account.scopes && account.scopes.length > 0 && (
         <Text>Scopes: {account.scopes.join(", ")}</Text>
