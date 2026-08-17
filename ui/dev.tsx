@@ -183,7 +183,7 @@ export function OutdatedRuntimeWarning({ info }: { info: OutdatedRuntimeInfo }) 
     <Text>
       A newer {GLUE_RUNTIME_PACKAGE} version is available ({info.currentVersion} {"->"}{" "}
       {info.latestVersion}).<Newline />
-      Update it with: <Text color="yellow">deno update --latest {GLUE_RUNTIME_PACKAGE}</Text>
+      Update it with: <Text color="yellow">deno update {GLUE_RUNTIME_PACKAGE}</Text>
     </Text>
   );
 }
