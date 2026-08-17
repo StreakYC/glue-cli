@@ -12,6 +12,7 @@ import { runStep } from "../ui/utils.ts";
 import { askUserForAccount, displayNameForAccount } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { Confirm } from "@cliffy/prompt/confirm";
+import { prettyLabels } from "../lib/prettyLabels.ts";
 
 interface AccountsOptions {
   json?: boolean;
@@ -35,7 +36,7 @@ export const accounts = async (options: AccountsOptions) => {
     }
 
     new Table()
-      .header(["Account ID", "Type", "Label", "Name", "Scopes", "API Key", "Created At"])
+      .header(["Account ID", "Type", "Labels", "Scopes", "API Key", "Created At"])
       .body(
         accounts
           .sort((a, b) => {
@@ -46,8 +47,7 @@ export const accounts = async (options: AccountsOptions) => {
           .map((account) => [
             account.id,
             account.type,
-            account.selector,
-            account.displayName,
+            prettyLabels(account.labels),
             account.scopes?.join(", "),
             account.redactedApiKey,
             formatEpochMillis(account.createdAt),
