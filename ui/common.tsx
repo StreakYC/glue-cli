@@ -40,6 +40,17 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
       </Text>
     );
   } else if (step.status === "in_progress") {
+    if (step.name === "registrationAuth") {
+      // Show a simple static indicator instead of a spinner for this step
+      // because the server will not make progress on this step automatically;
+      // the user must take action to complete it, and a spinner would be
+      // misleading and distracting.
+      return (
+        <Text>
+          ○ {title}
+        </Text>
+      );
+    }
     return (
       <Text>
         <Spinner type="dots" /> {title}
