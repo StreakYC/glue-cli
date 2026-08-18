@@ -3,7 +3,6 @@
   "specifiers": {
     "jsr:@cliffy/ansi@1.2.1": "1.2.1",
     "jsr:@cliffy/command@1": "1.2.1",
-    "jsr:@cliffy/command@^1.0.0-rc.7": "1.2.1",
     "jsr:@cliffy/flags@1.2.1": "1.2.1",
     "jsr:@cliffy/internal@1.2.1": "1.2.1",
     "jsr:@cliffy/keycode@1.2.1": "1.2.1",
@@ -11,19 +10,19 @@
     "jsr:@cliffy/prompt@1": "1.2.1",
     "jsr:@cliffy/table@1": "1.2.1",
     "jsr:@cliffy/table@1.2.1": "1.2.1",
-    "jsr:@hono/hono@^4.7.4": "4.12.27",
-    "jsr:@kellnerd/bump@0.1.1": "0.1.1",
+    "jsr:@hono/hono@^4.7.4": "4.13.2",
     "jsr:@opensrc/deno-open@1": "1.0.0",
     "jsr:@std/assert@^1.0.18": "1.0.19",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/assert@~0.218.2": "0.218.2",
     "jsr:@std/async@^1.0.15": "1.5.0",
     "jsr:@std/async@^1.2.0": "1.5.0",
+    "jsr:@std/async@^1.5.0": "1.5.0",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/cli@^1.0.27": "1.0.32",
     "jsr:@std/collections@^1.1.5": "1.2.0",
-    "jsr:@std/data-structures@^1.1.0": "1.1.1",
-    "jsr:@std/data-structures@^1.1.1": "1.1.1",
+    "jsr:@std/data-structures@^1.1.1": "1.1.2",
+    "jsr:@std/data-structures@^1.1.2": "1.1.2",
     "jsr:@std/dotenv@~0.225.6": "0.225.7",
     "jsr:@std/encoding@^1.0.10": "1.0.11",
     "jsr:@std/fmt@^1.0.10": "1.0.10",
@@ -36,14 +35,13 @@
     "jsr:@std/net@^1.0.6": "1.0.6",
     "jsr:@std/path@^1.1.4": "1.1.6",
     "jsr:@std/path@^1.1.5": "1.1.6",
+    "jsr:@std/path@^1.1.6": "1.1.6",
     "jsr:@std/path@~0.218.2": "0.218.2",
-    "jsr:@std/semver@^1.0.3": "1.0.8",
     "jsr:@std/semver@^1.0.8": "1.0.8",
     "jsr:@std/streams@^1.0.17": "1.1.1",
-    "jsr:@std/testing@^1.0.17": "1.0.19",
+    "jsr:@std/testing@^1.0.17": "1.0.20",
     "jsr:@std/text@^1.0.19": "1.0.19",
-    "jsr:@streak-glue/runtime@*": "0.2.40",
-    "jsr:@streak-glue/runtime@~0.2.40": "0.2.40",
+    "jsr:@streak-glue/runtime@~0.2.42": "0.2.42",
     "npm:@googleapis/drive@20": "20.2.0",
     "npm:@googleapis/gmail@14": "14.0.1",
     "npm:@notionhq/client@^5.22.0": "5.23.3",
@@ -82,7 +80,7 @@
         "jsr:@cliffy/internal",
         "jsr:@cliffy/table@1.2.1",
         "jsr:@std/fmt@^1.0.10",
-        "jsr:@std/semver@^1.0.8",
+        "jsr:@std/semver",
         "jsr:@std/text"
       ]
     },
@@ -125,15 +123,8 @@
         "jsr:@std/fmt@^1.0.10"
       ]
     },
-    "@hono/hono@4.12.27": {
-      "integrity": "3acc640592008e43f7048e8e53275203e0da84fbcd50201121195da7560583dc"
-    },
-    "@kellnerd/bump@0.1.1": {
-      "integrity": "4b66749a399fbae6e9ba03d2597ed3de18a7fe319039f25651d28ab2262e8876",
-      "dependencies": [
-        "jsr:@cliffy/command@^1.0.0-rc.7",
-        "jsr:@std/semver@^1.0.3"
-      ]
+    "@hono/hono@4.13.2": {
+      "integrity": "715d8cc1b6b5d6b9e6a7519059778d775b2d79fffdc026ac0ccdd9971e75809c"
     },
     "@opensrc/deno-open@1.0.0": {
       "integrity": "590decada8cf2d50f4b35c7d3a8d642e18e45d6e47078ea02a4dbf0096bbf9fd",
@@ -169,8 +160,8 @@
     "@std/collections@1.2.0": {
       "integrity": "47627a21d3a13138b77fd0e4d790ba9d2e603c3510b686cde6b132fe9aa98a88"
     },
-    "@std/data-structures@1.1.1": {
-      "integrity": "7e1fcf19771fb9c6dbcd7f65039d6d42ef8dc023cfbc0c4cdc74b24e09229380"
+    "@std/data-structures@1.1.2": {
+      "integrity": "2471377c9e0051f9ec34e57d0ebd0ad133a5a889677446ec6ba9938e4e102918"
     },
     "@std/dotenv@0.225.7": {
       "integrity": "11d8db03ca4ad5aba9eba809f2e8058b2a4f320b7b09fea4b360e162928329e3"
@@ -218,21 +209,22 @@
         "jsr:@std/bytes"
       ]
     },
-    "@std/testing@1.0.19": {
-      "integrity": "f4236172365b216728dc3cc8b5e80a9f4c33083d1e4ede7613d5b25b4014898e",
+    "@std/testing@1.0.20": {
+      "integrity": "21380ed438672762e4ec549cbf4fe41c5b68f5598773a30b64abe7375513e721",
       "dependencies": [
         "jsr:@std/assert@^1.0.19",
-        "jsr:@std/data-structures@^1.1.0",
+        "jsr:@std/async@^1.5.0",
+        "jsr:@std/data-structures@^1.1.2",
         "jsr:@std/fs@^1.0.24",
         "jsr:@std/internal@^1.0.14",
-        "jsr:@std/path@^1.1.5"
+        "jsr:@std/path@^1.1.6"
       ]
     },
     "@std/text@1.0.19": {
       "integrity": "003a0e032d360e8c3a4e0410fb792c77a66bd6553fee9d60c6ec1bce30d29223"
     },
-    "@streak-glue/runtime@0.2.40": {
-      "integrity": "a52d6575be2282d5fd6429d55aa824304dc7567a4d27b7a507d454608026d724",
+    "@streak-glue/runtime@0.2.42": {
+      "integrity": "c2cc9d349e6fc792bd39542e8e1db80d36e819ba65338a03da2eb9651a03ff2a",
       "dependencies": [
         "jsr:@hono/hono",
         "jsr:@std/async@^1.0.15",
@@ -1409,7 +1401,7 @@
       "jsr:@std/semver@^1.0.8",
       "jsr:@std/streams@^1.0.17",
       "jsr:@std/testing@^1.0.17",
-      "jsr:@streak-glue/runtime@~0.2.40",
+      "jsr:@streak-glue/runtime@~0.2.42",
       "npm:@types/react@19",
       "npm:chalk@^5.6.2",
       "npm:hono@^4.12.25",
