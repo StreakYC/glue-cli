@@ -56,7 +56,7 @@ export const DevUI = (
   }
 
   const needsRegistrationSetup = deployment &&
-    (deployment.accountsToSetup.length > 0 ||
+    (deployment.registrationGroupsToSetup.length > 0 ||
       deployment.secretInjections.some((secretInjection) => !secretInjection.secretId));
 
   return (
@@ -123,7 +123,7 @@ export const DevUI = (
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
                 secretInjections={deployment.secretInjections}
-                accountsToSetup={deployment.accountsToSetup}
+                registrationGroupsToSetup={deployment.registrationGroupsToSetup}
               />
             )}
           {step.name === "registrationSetup" && step.status === "success" && (

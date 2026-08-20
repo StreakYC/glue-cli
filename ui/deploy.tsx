@@ -29,7 +29,7 @@ export const DeployUI = (
 ) => {
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
   const needsRegistrationSetup = deployment &&
-    (deployment.accountsToSetup.length > 0 ||
+    (deployment.registrationGroupsToSetup.length > 0 ||
       deployment.secretInjections.some((secretInjection) =>
         !secretInjection.secretId && secretInjection.secretSetupUrl != null
       ));
@@ -55,7 +55,7 @@ export const DeployUI = (
                 triggers={deployment.triggers}
                 accountInjections={deployment.accountInjections}
                 secretInjections={deployment.secretInjections}
-                accountsToSetup={deployment.accountsToSetup}
+                registrationGroupsToSetup={deployment.registrationGroupsToSetup}
               />
             )}
             {step.name === "registrationSetup" && step.status === "success" && (

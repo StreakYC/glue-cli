@@ -3,14 +3,15 @@ import Spinner from "ink-spinner";
 import Link from "ink-link";
 import type {
   AccountInjectionDTO,
-  AccountToSetup,
   BuildStepDTO,
   BuildStepName,
+  RegistrationGroupToSetup,
   SecretInjectionDTO,
   StepStatus,
   TriggerDTO,
 } from "../backend.ts";
 import { toSortedByTypeThenLabel } from "./utils.ts";
+import { prettyLabels } from "../lib/prettyLabels.ts";
 
 export const BuildStepTitles: Record<BuildStepName, string> = {
   deployCode: "Booting code",
@@ -66,11 +67,11 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
 // will use triggers and account injections later when we want to show more detailed info about the accounts needing auth
 export const RegistrationAccountSetupSection = (
   // deno-lint-ignore no-unused-vars
-  { triggers, accountInjections, secretInjections, accountsToSetup }: {
+  { triggers, accountInjections, secretInjections, registrationGroupsToSetup }: {
     triggers: TriggerDTO[];
     accountInjections: AccountInjectionDTO[];
     secretInjections: SecretInjectionDTO[];
-    accountsToSetup: AccountToSetup[];
+    registrationGroupsToSetup: RegistrationGroupToSetup[];
   },
 ) => {
   const secretsToSetup = secretInjections.filter((
@@ -80,16 +81,17 @@ export const RegistrationAccountSetupSection = (
   );
   return (
     <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
-      {accountsToSetup.length > 0 && (
+      {registrationGroupsToSetup.length > 0 && (
         <Text>
-          {accountsToSetup.length} account{accountsToSetup.length > 1 ? "s" : ""}{" "}
-          need{accountsToSetup.length > 1 ? "" : "s"} authentication:
+          {registrationGroupsToSetup.length}{" "}
+          account{registrationGroupsToSetup.length === 1 ? "" : "s"}{" "}
+          need{registrationGroupsToSetup.length === 1 ? "s" : ""} authentication:
         </Text>
       )}
-      {accountsToSetup.map((ats) => (
-        <Box paddingLeft={2} key={ats.type + ":" + ats.selector}>
+      {registrationGroupsToSetup.map((ats) => (
+        <Box paddingLeft={2} key={JSON.stringify([ats.type, ats.accountSelector])}>
           <Text>
-            {ats.type} {ats.selector ? `(${ats.selector})` : ""}:{" "}
+            {ats.type} {ats.accountSelector ? `(${prettyLabels(ats.accountSelector)})` : ""}:{" "}
             <Link url={ats.accountSetupUrl}>
               <Text bold>{ats.accountSetupUrl}</Text>
             </Link>
@@ -98,8 +100,8 @@ export const RegistrationAccountSetupSection = (
       ))}
       {secretsToSetup.length > 0 && (
         <Text>
-          {secretsToSetup.length} secret{secretsToSetup.length > 1 ? "s" : ""}{" "}
-          need{secretsToSetup.length > 1 ? "" : "s"} configuration:
+          {secretsToSetup.length} secret{secretsToSetup.length === 1 ? "" : "s"}{" "}
+          need{secretsToSetup.length === 1 ? "s" : ""} configuration:
         </Text>
       )}
       {secretsToSetup.map((secretInjection) => (

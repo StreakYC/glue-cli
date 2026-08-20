@@ -227,7 +227,7 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   ) {
     return false;
   }
-  if (!equal(a.accountsToSetup, b.accountsToSetup)) {
+  if (!equal(a.registrationGroupsToSetup, b.registrationGroupsToSetup)) {
     return false;
   }
   return true;
@@ -355,18 +355,40 @@ export interface DeploymentDTO {
   accountInjections: AccountInjectionDTO[];
   secretInjections: SecretInjectionDTO[];
   buildSteps: BuildStepDTO[];
-  accountsToSetup: AccountToSetup[];
+  registrationGroupsToSetup: RegistrationGroupToSetup[];
+  /**
+   * The user's existing accounts referenced by the `compatibleAccountIds`
+   * lists in `registrationGroupsToSetup`.
+   */
+  compatibleAccounts: AccountSlimDTO[];
   totalExecutions: number;
   totalFailedExecutions: number;
   mostRecentExecution: number | null;
 }
 
-export interface AccountToSetup {
+/**
+ * Represents multiple trigger and account injection registrations that need to
+ * be configured to use an account and may be set up together.
+ */
+export interface RegistrationGroupToSetup {
   type: string;
-  selector?: string;
+  accountSelector?: Record<string, string | undefined>;
   accountSetupUrl: string;
   triggerIds: string[];
   accountInjectionIds: string[];
+  /** The user's existing accounts that may be used for these registrations. */
+  compatibleAccountIds: CompatibleAccountId[];
+}
+
+export interface CompatibleAccountId {
+  id: string;
+  /** Required scopes that this account is currently missing. */
+  missingScopes?: string[];
+  /**
+   * Present when scopes are missing. Sends the user through OAuth to
+   * re-authenticate this specific account with the missing scopes.
+   */
+  accountSetupUrl?: string;
 }
 
 export type StepStatus = "success" | "failure" | "in_progress" | "not_started" | "skipped";
@@ -468,11 +490,7 @@ export interface UserDTO {
   updatedAt: number; // milliseconds since epoch
 }
 
-/**
- * Represents a row from the Accounts table without the sensitive `authToken`
- * column. Sent to the client in some endpoints.
- */
-export interface AccountDTO {
+export interface AccountSlimDTO {
   id: string;
   type: string;
   redactedApiKey?: string;
@@ -484,6 +502,9 @@ export interface AccountDTO {
   createdAt: number;
   /** milliseconds since epoch */
   updatedAt: number;
+}
+
+export interface AccountDTO extends AccountSlimDTO {
   /** Live glues that use this account */
   liveGlues: GlueDTO[];
 }
