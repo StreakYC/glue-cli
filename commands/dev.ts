@@ -777,19 +777,30 @@ function defaultRestartingUIProps(): DevUIProps {
   };
 }
 
+let exitOnUnmount = false;
+
 function renderUI() {
   if (inkInstance) {
     inkInstance.rerender(React.createElement(DevUI, devProgressProps));
   } else {
+    exitOnUnmount = true;
     inkInstance = render(React.createElement(DevUI, devProgressProps));
+    inkInstance.waitUntilExit().then(() => {
+      // We only want to exit the process if Ink unmounted itself unexpectedly,
+      // and not if we unmounted it through the `unmountUI()` function.
+      if (exitOnUnmount) {
+        process.exit(0);
+      }
+    });
   }
 }
 
 async function unmountUI() {
   if (inkInstance) {
+    exitOnUnmount = false;
     inkInstance.unmount();
+    await inkInstance.waitUntilExit();
     inkInstance = undefined;
-    await delay(1);
   }
 }
 
