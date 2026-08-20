@@ -41,6 +41,7 @@
     "jsr:@std/streams@^1.0.17": "1.1.1",
     "jsr:@std/testing@^1.0.17": "1.0.20",
     "jsr:@std/text@^1.0.19": "1.0.19",
+    "jsr:@streak-glue/runtime@*": "0.2.42",
     "jsr:@streak-glue/runtime@~0.2.42": "0.2.42",
     "npm:@googleapis/drive@20": "20.2.0",
     "npm:@googleapis/gmail@14": "14.0.1",

@@ -31,7 +31,6 @@ import {
 } from "@streak-glue/runtime/backendTypes";
 import { type Awaitable, GLUE_API_SERVER, GLUE_RUNTIME_PACKAGE } from "../common.ts";
 import { equal } from "@std/assert/equal";
-import { delay } from "@std/async/delay";
 import { keypress, type KeyPressEvent } from "@cliffy/keypress";
 import { toLines } from "@std/streams/unstable-to-lines";
 import { pushable, pushableV } from "it-pushable";
