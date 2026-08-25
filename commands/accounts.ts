@@ -5,7 +5,7 @@ import {
   getAccounts,
   stopGlue,
 } from "../backend.ts";
-import { Table } from "@cliffy/table";
+import { Column, Table } from "@cliffy/table";
 import { green } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
@@ -36,7 +36,7 @@ export const accounts = async (options: AccountsOptions) => {
     }
 
     new Table()
-      .header(["Account ID", "Type", "Labels", "Scopes", "API Key", "Created At"])
+      .header(["Account ID", "Type", "Labels", "API Key", "Created At"])
       .body(
         accounts
           .sort((a, b) => {
@@ -48,11 +48,18 @@ export const accounts = async (options: AccountsOptions) => {
             account.id,
             account.type,
             prettyLabels(account.labels),
-            account.scopes?.join(", "),
             account.redactedApiKey,
             formatEpochMillis(account.createdAt),
           ]),
       )
+      .columns([
+        new Column().minWidth(19),
+        new Column().minWidth(12),
+        new Column().flexShrink(1),
+        new Column().minWidth(12),
+        new Column().minWidth(22),
+      ])
+      .maxWidth(Deno.consoleSize().columns)
       .padding(4)
       .render();
   }
