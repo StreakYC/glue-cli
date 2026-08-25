@@ -48,6 +48,7 @@
     "jsr:@streak-glue/runtime@~0.2.42": "0.2.42",
     "npm:@googleapis/drive@20": "20.2.0",
     "npm:@googleapis/gmail@14": "14.0.1",
+    "npm:@inkjs/ui@2": "2.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7",
     "npm:@notionhq/client@^5.22.0": "5.23.3",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
     "npm:@slack/types@^2.17.0": "2.21.1",
@@ -268,6 +269,16 @@
       "integrity": "sha512-o2DExet8JjZd2UMpwrZZunxOVjvBzB2c37wepeszC+Dyi0tYsvqkTSrSrVTD4uzxnjr0pQVbqN6YoA0it6M1Sw==",
       "dependencies": [
         "googleapis-common"
+      ]
+    },
+    "@inkjs/ui@2.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7": {
+      "integrity": "sha512-5+8fJmwtF9UvikzLfph9sA+LS+l37Ij/szQltkuXLOAXwNkBX9innfzh4pLGXIB59vKEQUtc6D4qGvhD7h3pAg==",
+      "dependencies": [
+        "chalk",
+        "cli-spinners@3.4.0",
+        "deepmerge",
+        "figures",
+        "ink"
       ]
     },
     "@isaacs/cliui@8.0.2": {
@@ -625,6 +636,9 @@
     "cli-spinners@2.9.2": {
       "integrity": "sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg=="
     },
+    "cli-spinners@3.4.0": {
+      "integrity": "sha512-bXfOC4QcT1tKXGorxL3wbJm6XJPDqEnij2gQ2m7ESQuE+/z9YFIWnl/5RpTiKWbMq3EVKR4fRLJGn6DVfu0mpw=="
+    },
     "cli-truncate@6.0.1": {
       "integrity": "sha512-2FPVnc3JxdRLONB/9edO1RwuUFFPJ3U2c6XvyccEhjqV5xw6mS22aH27OFdD1u4IYQOEUzXsT6ZU06d1VCSu+Q==",
       "dependencies": [
@@ -678,6 +692,9 @@
       "dependencies": [
         "ms"
       ]
+    },
+    "deepmerge@4.3.1": {
+      "integrity": "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A=="
     },
     "delayed-stream@1.0.0": {
       "integrity": "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ=="
@@ -749,6 +766,12 @@
       "dependencies": [
         "node-domexception",
         "web-streams-polyfill"
+      ]
+    },
+    "figures@6.1.0": {
+      "integrity": "sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==",
+      "dependencies": [
+        "is-unicode-supported"
       ]
     },
     "follow-redirects@1.16.0": {
@@ -930,7 +953,7 @@
     "ink-spinner@5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_react@19.2.7_@types+react@19.2.17": {
       "integrity": "sha512-EYEasbEjkqLGyPOUc8hBJZNuC5GvXGMLu0w5gdTNskPc7Izc5vO3tdQEYnzvshucyGCBXc86ig0ujXPMWaQCdA==",
       "dependencies": [
-        "cli-spinners",
+        "cli-spinners@2.9.2",
         "ink",
         "react"
       ]
@@ -991,6 +1014,9 @@
     },
     "is-stream@2.0.1": {
       "integrity": "sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg=="
+    },
+    "is-unicode-supported@2.1.0": {
+      "integrity": "sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ=="
     },
     "isexe@2.0.0": {
       "integrity": "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="
@@ -1413,6 +1439,7 @@
       "jsr:@std/streams@^1.0.17",
       "jsr:@std/testing@^1.0.17",
       "jsr:@streak-glue/runtime@~0.2.42",
+      "npm:@inkjs/ui@2",
       "npm:@types/react@19",
       "npm:chalk@^5.6.2",
       "npm:hono@^4.12.25",

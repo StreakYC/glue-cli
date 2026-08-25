@@ -1,6 +1,8 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
+import { Box } from "ink";
 import {
+  AccountPickerSection,
   BuildStepStatusRow,
   ClientStepRow,
   CompletedRegistrationList,
@@ -77,6 +79,12 @@ export const DeployUI = (
             {glueName}` to watch for executions
           </Text>
         </Text>
+      )}
+
+      {deployment && (
+        <Box paddingTop={1}>
+          <AccountPickerSection deployment={deployment} />
+        </Box>
       )}
     </>
   );
