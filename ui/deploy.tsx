@@ -1,6 +1,7 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
 import {
+  AccountPickerSection,
   BuildStepStatusRow,
   ClientStepRow,
   CompletedRegistrationList,
@@ -67,6 +68,7 @@ export const DeployUI = (
             )}
           </React.Fragment>
         ))}
+      {deployment && <AccountPickerSection deployment={deployment} />}
       {done && (
         <Text>
           <Newline />
