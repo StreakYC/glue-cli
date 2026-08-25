@@ -108,14 +108,12 @@ export const RegistrationAccountSetupSection = (
         </Text>
       )}
       {secretsToSetup.map((secretInjection) => (
-        <Box paddingLeft={2} key={secretInjection.id}>
-          <Text>
-            {secretInjection.name} ({secretInjection.label}):{" "}
-            <Link url={secretInjection.secretSetupUrl} fallback={false}>
-              <Text bold>{secretInjection.secretSetupUrl}</Text>
-            </Link>
-          </Text>
-        </Box>
+        <Text key={secretInjection.id}>
+          {secretInjection.name} ({secretInjection.label}):<Newline />
+          <Link url={secretInjection.secretSetupUrl} fallback={false}>
+            <Text bold>{secretInjection.secretSetupUrl}</Text>
+          </Link>
+        </Text>
       ))}
     </Box>
   );
@@ -170,7 +168,7 @@ function AccountPicker(
   const lastPickedValueRef = useRef<string>(undefined);
 
   return (
-    <Box display="flex" flexDirection="column">
+    <>
       <Text>Choose {groupDisplayName} account:</Text>
       <Select
         isDisabled={associating || setupUrl !== undefined}
@@ -225,14 +223,14 @@ function AccountPicker(
       {associating && <Text color="gray">Associating account...</Text>}
       {setupUrl && (
         <Text>
-          Complete account setup in your browser:{" "}
+          Complete account setup in your browser:<Newline />
           <Link url={setupUrl} fallback={false}>
             <Text bold>{setupUrl}</Text>
           </Link>
         </Text>
       )}
       {error && <Text color="red">{error}</Text>}
-    </Box>
+    </>
   );
 }
 
