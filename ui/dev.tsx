@@ -143,8 +143,6 @@ export const DevUI = (
         />
       )}
 
-      {deployment && <AccountPickerSection deployment={deployment} />}
-
       {done && (
         <>
           <Newline />
@@ -176,6 +174,12 @@ export const DevUI = (
           <Newline />
           <Text>Waiting for events...</Text>
         </>
+      )}
+
+      {deployment && (
+        <Box paddingTop={1}>
+          <AccountPickerSection deployment={deployment} />
+        </Box>
       )}
     </>
   );

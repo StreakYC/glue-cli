@@ -168,7 +168,7 @@ function AccountPicker(
   const lastPickedValueRef = useRef<string>(undefined);
 
   return (
-    <>
+    <Box flexDirection="column">
       <Text>Choose {groupDisplayName} account:</Text>
       <Select
         isDisabled={associating || setupUrl !== undefined}
@@ -230,7 +230,7 @@ function AccountPicker(
         </Text>
       )}
       {error && <Text color="red">{error}</Text>}
-    </>
+    </Box>
   );
 }
 
