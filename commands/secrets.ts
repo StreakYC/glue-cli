@@ -1,6 +1,6 @@
 import { Confirm } from "@cliffy/prompt/confirm";
 import { Table } from "@cliffy/table";
-import { green } from "@std/fmt/colors";
+import { bold, dim, green } from "@std/fmt/colors";
 import { deleteSecret, getSecrets, setSecret as setBackendSecret, stopGlue } from "../backend.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { formatEpochMillis, runStep } from "../ui/utils.ts";
@@ -33,9 +33,9 @@ export async function listSecrets(options: ListSecretsOptions) {
     .header(["Name", "Created At", "Updated At"])
     .body(
       secrets.map((secret) => [
-        secret.name,
-        formatEpochMillis(secret.createdAt),
-        formatEpochMillis(secret.updatedAt),
+        bold(secret.name),
+        dim(formatEpochMillis(secret.createdAt)),
+        dim(formatEpochMillis(secret.updatedAt)),
       ]),
     )
     .padding(4)

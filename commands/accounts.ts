@@ -6,13 +6,13 @@ import {
   stopGlue,
 } from "../backend.ts";
 import { Column, Table } from "@cliffy/table";
-import { green } from "@std/fmt/colors";
+import { bold, dim, green } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForAccount, displayNameForAccount } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { Confirm } from "@cliffy/prompt/confirm";
-import { prettyLabels } from "../lib/prettyLabels.ts";
+import { prettyLabels, prettyLabelsColoredForTables } from "../lib/prettyLabels.ts";
 
 interface AccountsOptions {
   json?: boolean;
@@ -36,7 +36,7 @@ export const accounts = async (options: AccountsOptions) => {
     }
 
     new Table()
-      .header(["Account ID", "Type", "Labels", "API Key", "Created At"])
+      .header(["Type", "Labels", "API Key", "Account ID", "Created At"])
       .body(
         accounts
           .sort((a, b) => {
@@ -45,18 +45,18 @@ export const accounts = async (options: AccountsOptions) => {
             return a.createdAt - b.createdAt;
           })
           .map((account) => [
-            account.id,
-            account.type,
-            prettyLabels(account.labels),
-            account.redactedApiKey,
-            formatEpochMillis(account.createdAt),
+            bold(account.type),
+            prettyLabelsColoredForTables(account.labels),
+            account.redactedApiKey ? account.redactedApiKey : dim("-"),
+            dim(account.id),
+            dim(formatEpochMillis(account.createdAt)),
           ]),
       )
       .columns([
-        new Column().minWidth(19),
         new Column().minWidth(12),
         new Column().flexShrink(1),
         new Column().minWidth(12),
+        new Column().minWidth(19),
         new Column().minWidth(22),
       ])
       .maxWidth(Deno.consoleSize().columns)

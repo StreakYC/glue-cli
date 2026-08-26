@@ -1,6 +1,6 @@
 import { type DeploymentStatus, getGlues, type GetGluesFilters } from "../backend.ts";
 import { Table } from "@cliffy/table";
-import { dim, green, red, yellow } from "@std/fmt/colors";
+import { bold, dim, green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
@@ -44,7 +44,7 @@ export const list = async (options: ListOptions) => {
         glues.map((
           glue,
         ) => [
-          glue.name,
+          bold(glue.name),
           getRunningStringForDeploymentStatus(glue.currentDeployment?.status),
           glue.executionSummary.totalCount
             ? green(glue.executionSummary.totalCount.toString())
@@ -52,8 +52,8 @@ export const list = async (options: ListOptions) => {
           glue.executionSummary.totalErrorCount
             ? red(glue.executionSummary.totalErrorCount.toString())
             : "-",
-          formatEpochMillis(glue.executionSummary.mostRecent),
-          formatEpochMillis(glue.currentDeployment?.createdAt),
+          dim(formatEpochMillis(glue.executionSummary.mostRecent)),
+          dim(formatEpochMillis(glue.currentDeployment?.createdAt)),
           glue.tags.length ? glue.tags.join(", ") : "-",
         ]),
       )
