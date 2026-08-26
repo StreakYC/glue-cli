@@ -214,6 +214,25 @@ export async function getDeployments(id: string, signal?: AbortSignal): Promise<
   return await backendRequest<DeploymentDTO[]>(`/glues/${id}/deployments`, { signal });
 }
 
+export interface AssociateDeploymentAccountParams {
+  type: string;
+  accountSelector?: Record<string, string | undefined>;
+  accountId: string;
+}
+
+export async function associateDeploymentAccount(
+  deploymentId: string,
+  params: AssociateDeploymentAccountParams,
+  signal?: AbortSignal,
+): Promise<void> {
+  await backendRequest<{ success: true }>(`/deployments/${deploymentId}/associateAccount`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+    signal,
+  });
+}
+
 function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
   if (a.status !== b.status) {
     return false;
@@ -228,6 +247,9 @@ function areDeploymentsEqual(a: DeploymentDTO, b: DeploymentDTO): boolean {
     return false;
   }
   if (!equal(a.registrationGroupsToSetup, b.registrationGroupsToSetup)) {
+    return false;
+  }
+  if (!equal(a.compatibleAccounts, b.compatibleAccounts)) {
     return false;
   }
   return true;

@@ -1,13 +1,13 @@
 import type { BuildStepDTO, DeploymentDTO, StepStatus } from "../backend.ts";
 import React from "react";
 import {
+  AccountPickerSection,
   BuildStepStatusRow,
   ClientStepRow,
   CompletedRegistrationList,
   RegistrationAccountSetupSection,
 } from "./common.tsx";
-import { Box, Text } from "ink";
-import { Newline } from "ink";
+import { Box, Newline, Text } from "ink";
 import type { DebugMode, SetupReplayResult } from "../commands/dev.ts";
 import type { OutdatedRuntimeInfo } from "../lib/runtimeVersionCheck.ts";
 import { GLUE_RUNTIME_PACKAGE } from "../common.ts";
@@ -142,6 +142,7 @@ export const DevUI = (
           stepTitle="Connecting to tunnel"
         />
       )}
+
       {done && (
         <>
           <Newline />
@@ -173,6 +174,12 @@ export const DevUI = (
           <Newline />
           <Text>Waiting for events...</Text>
         </>
+      )}
+
+      {deployment && (
+        <Box paddingTop={1}>
+          <AccountPickerSection deployment={deployment} />
+        </Box>
       )}
     </>
   );

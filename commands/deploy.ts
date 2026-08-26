@@ -41,9 +41,12 @@ export async function deploy(options: DeployOptions, file: string) {
   };
 
   let instance: Instance | undefined;
-  const unmountUI = () => {
+  let exitOnUnmount = false;
+  const unmountUI = async () => {
     if (instance) {
+      exitOnUnmount = false;
       instance.unmount();
+      await instance.waitUntilExit();
       instance = undefined;
     }
   };
@@ -53,7 +56,14 @@ export async function deploy(options: DeployOptions, file: string) {
     if (instance) {
       instance.rerender(element);
     } else {
+      exitOnUnmount = true;
       instance = render(element);
+      instance.waitUntilExit().then(() => {
+        // Exit only when Ink unmounts itself, such as when the user presses Ctrl-C.
+        if (exitOnUnmount) {
+          process.exit(0);
+        }
+      });
     }
   };
 
@@ -65,7 +75,7 @@ export async function deploy(options: DeployOptions, file: string) {
   updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
 
   if (options.debugWriteCreateDeploymentParams) {
-    unmountUI();
+    await unmountUI();
     await Deno.writeTextFile(
       options.debugWriteCreateDeploymentParams,
       JSON.stringify(deploymentParams, null, 2) + "\n",
@@ -99,7 +109,7 @@ export async function deploy(options: DeployOptions, file: string) {
       !lookupResult.value ||
       absPath.localeCompare(lookupResult.value, undefined, { sensitivity: "base" }) !== 0
     ) {
-      unmountUI();
+      await unmountUI();
       console.warn(
         `Warning: You are deploying to an existing glue named %c${
           JSON.stringify(glueName)
@@ -141,6 +151,6 @@ export async function deploy(options: DeployOptions, file: string) {
   }
   // Sometimes client libraries keep connections alive or something, preventing
   // the process from naturally exiting immediately, so we explicitly exit here.
-  unmountUI();
+  await unmountUI();
   Deno.exit();
 }

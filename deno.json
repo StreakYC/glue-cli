@@ -1,6 +1,6 @@
 {
   "name": "@streak-glue/cli",
-  "version": "0.1.119",
+  "version": "0.1.120",
   "license": "MIT",
   "exports": {
     ".": "./glue.ts"
@@ -52,6 +52,7 @@
     "@cliffy/prompt": "jsr:@cliffy/prompt@^1.0.0",
     "@cliffy/table": "jsr:@cliffy/table@^1.0.0",
     "@cliffy/keypress": "jsr:@cliffy/keypress@^1.0.0",
+    "@inkjs/ui": "npm:@inkjs/ui@^2.0.0",
     "@opensrc/deno-open": "jsr:@opensrc/deno-open@^1.0.0",
     "@std/assert": "jsr:@std/assert@^1.0.18",
     "@std/async": "jsr:@std/async@^1.2.0",
