@@ -285,6 +285,7 @@ export async function getExecutions(
   includeInputData: boolean = false,
   filter: string | undefined = undefined,
   search: string | undefined = undefined,
+  triggerId: string | undefined = undefined,
   glueId?: string,
   deploymentId?: string,
   signal?: AbortSignal,
@@ -302,6 +303,9 @@ export async function getExecutions(
   }
   if (search) {
     params.set("search", search);
+  }
+  if (triggerId) {
+    params.set("triggerId", triggerId);
   }
   if (glueId) {
     return await backendRequest<ExecutionDTO[]>(

@@ -161,6 +161,7 @@ const cmd = new Command()
     "-s, --search <search:string>",
     "Search for a string in the execution logs, error or input data",
   )
+  .option("--trigger <triggerId:string>", "Only show executions for this trigger ID")
   .option("--failures", "Only show failures, shorthand for --filter=failure")
   .action(logs)
   // LOGIN ----------------------------

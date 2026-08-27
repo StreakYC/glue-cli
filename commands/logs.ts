@@ -21,6 +21,7 @@ interface LogsOptions {
   fullLogLines?: boolean;
   filter?: string;
   search?: string;
+  trigger?: string;
   failures?: boolean;
 }
 
@@ -91,6 +92,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
         !!options.json,
         options.filter,
         options.search,
+        options.trigger,
         glueId,
         deploymentId,
       ),
@@ -129,6 +131,7 @@ export const logs = async (options: LogsOptions, query?: string) => {
         false,
         options.filter,
         options.search,
+        options.trigger,
         glueId,
         deploymentId,
       );
