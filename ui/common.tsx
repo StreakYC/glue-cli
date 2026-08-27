@@ -295,7 +295,7 @@ export const CompletedRegistrationListOld = (
   );
 };
 
-export const CompletedRegistrationListNew = (
+export const CompletedRegistrationList = (
   { triggers, accountInjections, secretInjections }: {
     triggers: TriggerDTO[];
     accountInjections: AccountInjectionDTO[];

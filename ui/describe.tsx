@@ -3,7 +3,7 @@ import React from "react";
 import { Box, Newline, Text } from "ink";
 import {
   BuildStepStatusRow,
-  CompletedRegistrationListNew,
+  CompletedRegistrationList,
   CompletedRegistrationListOld,
 } from "./common.tsx";
 import { formatEpochMillis } from "./utils.ts";
@@ -68,7 +68,7 @@ export const DescribeDeploymentUI = ({ deployment }: DescribeDeploymentUIProps) 
         <>
           <Newline />
           <Text>Triggers and credential fetchers:</Text>
-          <CompletedRegistrationListNew
+          <CompletedRegistrationList
             triggers={deployment.triggers}
             accountInjections={deployment.accountInjections}
             secretInjections={deployment.secretInjections}
@@ -131,7 +131,7 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
             <>
               <Newline />
               <Text>Triggers and credential fetchers:</Text>
-              <CompletedRegistrationListNew
+              <CompletedRegistrationList
                 triggers={glue.currentDeployment.triggers}
                 accountInjections={glue.currentDeployment.accountInjections}
                 secretInjections={glue.currentDeployment.secretInjections}
