@@ -4,7 +4,7 @@ import {
   AccountPickerSection,
   BuildStepStatusRow,
   ClientStepRow,
-  CompletedRegistrationList,
+  CompletedRegistrationListOld,
   RegistrationAccountSetupSection,
 } from "./common.tsx";
 import { Box, Newline, Text } from "ink";
@@ -127,7 +127,7 @@ export const DevUI = (
               />
             )}
           {step.name === "registrationSetup" && step.status === "success" && (
-            <CompletedRegistrationList
+            <CompletedRegistrationListOld
               triggers={deployment.triggers}
               accountInjections={deployment.accountInjections}
               secretInjections={deployment.secretInjections}

@@ -71,6 +71,7 @@
     "ink": "npm:ink@^7.1.0",
     "ink-link": "npm:ink-link@^5.0.0",
     "ink-spinner": "npm:ink-spinner@^5.0.0",
+    "ink-table": "npm:ink-table@^3.1.0",
     "it-pushable": "npm:it-pushable@^3.2.3",
     "react": "npm:react@^19.2.4",
     "typescript": "npm:typescript@^6.0.3",

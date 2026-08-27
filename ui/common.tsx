@@ -1,6 +1,7 @@
 import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
 import Link from "ink-link";
+import Table from "ink-table";
 import { Select } from "@inkjs/ui";
 import { useRef, useState } from "react";
 import { open } from "@opensrc/deno-open";
@@ -250,7 +251,7 @@ function accountDisplayName(account: AccountSlimDTO): string {
   return displayName;
 }
 
-export const CompletedRegistrationList = (
+export const CompletedRegistrationListOld = (
   { triggers, accountInjections, secretInjections }: {
     triggers: TriggerDTO[];
     accountInjections: AccountInjectionDTO[];
@@ -271,6 +272,51 @@ export const CompletedRegistrationList = (
         <Box paddingLeft={2} key={t.id}>
           <Text>
             {t.type}({t.label}): <Text bold>{t.description}</Text>
+          </Text>
+        </Box>
+      ))}
+      {sortedAccountInjections.length > 0 && <Text>Credential fetchers:</Text>}
+      {sortedAccountInjections.map((a) => (
+        <Box paddingLeft={2} key={a.id}>
+          <Text>
+            {a.type}({a.description ?? a.label})
+          </Text>
+        </Box>
+      ))}
+      {sortedSecretInjections.length > 0 && <Text>Secrets:</Text>}
+      {sortedSecretInjections.map((secretInjection) => (
+        <Box paddingLeft={2} key={secretInjection.id}>
+          <Text>
+            {secretInjection.name}({secretInjection.description ?? secretInjection.label})
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+export const CompletedRegistrationListNew = (
+  { triggers, accountInjections, secretInjections }: {
+    triggers: TriggerDTO[];
+    accountInjections: AccountInjectionDTO[];
+    secretInjections: SecretInjectionDTO[];
+  },
+) => {
+  const sortedTriggers = toSortedByTypeThenLabel(triggers);
+  const sortedAccountInjections = toSortedByTypeThenLabel(accountInjections);
+  const sortedSecretInjections = secretInjections.toSorted((a, b) => {
+    const nameCmp = a.name.localeCompare(b.name);
+    if (nameCmp !== 0) return nameCmp;
+    return a.label.localeCompare(b.label, undefined, { numeric: true });
+  });
+  return (
+    <Box paddingLeft={4} display="flex" flexDirection="column" gap={0}>
+      {sortedTriggers.length > 0 && <Text>Triggers:</Text>}
+      {sortedTriggers.map((t) => (
+        <Box paddingLeft={2} key={t.id}>
+          <Text>
+            {t.type}({t.label}): <Text bold>{t.description}</Text>{" "}
+            <Text color="gray">({t.id})</Text>
           </Text>
         </Box>
       ))}

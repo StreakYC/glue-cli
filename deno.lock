@@ -45,7 +45,7 @@
     "jsr:@streak-glue/runtime@~0.2.45": "0.2.45",
     "npm:@googleapis/drive@20": "20.2.0",
     "npm:@googleapis/gmail@14": "14.0.1",
-    "npm:@inkjs/ui@2": "2.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7",
+    "npm:@inkjs/ui@2": "2.0.0_ink@7.1.0",
     "npm:@notionhq/client@^5.22.0": "5.23.3",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
     "npm:@slack/types@^2.17.0": "2.21.1",
@@ -55,8 +55,9 @@
     "npm:google-auth-library@10": "10.5.0",
     "npm:google-spreadsheet@5": "5.3.0_google-auth-library@10.5.0",
     "npm:hono@^4.12.25": "4.12.27",
-    "npm:ink-link@5": "5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_@types+react@19.2.17_react@19.2.7",
-    "npm:ink-spinner@5": "5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_react@19.2.7_@types+react@19.2.17",
+    "npm:ink-link@5": "5.0.0_ink@7.1.0_@types+react@19.2.17_react@19.2.7",
+    "npm:ink-spinner@5": "5.0.0_ink@7.1.0_react@19.2.7_@types+react@19.2.17",
+    "npm:ink-table@^3.1.0": "3.1.0_ink@7.1.0_react@19.2.7",
     "npm:ink@^7.1.0": "7.1.0_@types+react@19.2.17_react@19.2.7",
     "npm:intercom-client@^7.0.3": "7.0.3",
     "npm:it-pushable@^3.2.3": "3.2.4",
@@ -261,7 +262,7 @@
         "googleapis-common"
       ]
     },
-    "@inkjs/ui@2.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7": {
+    "@inkjs/ui@2.0.0_ink@7.1.0": {
       "integrity": "sha512-5+8fJmwtF9UvikzLfph9sA+LS+l37Ij/szQltkuXLOAXwNkBX9innfzh4pLGXIB59vKEQUtc6D4qGvhD7h3pAg==",
       "dependencies": [
         "chalk",
@@ -933,18 +934,26 @@
     "indent-string@5.0.0": {
       "integrity": "sha512-m6FAo/spmsW2Ab2fU35JTYwtOKa2yAwXSwgjSv1TJzh4Mh7mC3lzAOVLBprb72XsTrgkEIsl7YrFNAiDiRhIGg=="
     },
-    "ink-link@5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_@types+react@19.2.17_react@19.2.7": {
+    "ink-link@5.0.0_ink@7.1.0_@types+react@19.2.17_react@19.2.7": {
       "integrity": "sha512-TFDXc/0mwUW7LMjsr0/LeLxPVV5BnHDuDQff9RCgP4rb3R+V/4dIwGBZbCevcJZtQnVcW+Iz1LUrUbpq+UDwYA==",
       "dependencies": [
         "ink",
         "terminal-link"
       ]
     },
-    "ink-spinner@5.0.0_ink@7.1.0__@types+react@19.2.17__react@19.2.7_react@19.2.7_@types+react@19.2.17": {
+    "ink-spinner@5.0.0_ink@7.1.0_react@19.2.7_@types+react@19.2.17": {
       "integrity": "sha512-EYEasbEjkqLGyPOUc8hBJZNuC5GvXGMLu0w5gdTNskPc7Izc5vO3tdQEYnzvshucyGCBXc86ig0ujXPMWaQCdA==",
       "dependencies": [
         "cli-spinners@2.9.2",
         "ink",
+        "react"
+      ]
+    },
+    "ink-table@3.1.0_ink@7.1.0_react@19.2.7": {
+      "integrity": "sha512-qxVb4DIaEaJryvF9uZGydnmP9Hkmas3DCKVpEcBYC0E4eJd3qNgNe+PZKuzgCERFe9LfAS1TNWxCr9+AU4v3YA==",
+      "dependencies": [
+        "ink",
+        "object-hash",
         "react"
       ]
     },
@@ -1094,6 +1103,9 @@
         "fetch-blob",
         "formdata-polyfill"
       ]
+    },
+    "object-hash@2.2.0": {
+      "integrity": "sha512-gScRMn0bS5fH+IuwyIFgnh9zBdo4DV+6GhygmWM9HyNJSgS0hScp1f5vjtm7oIIOiT9trXrShAkLFSc2IqKNgw=="
     },
     "object-inspect@1.13.4": {
       "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew=="
@@ -1435,6 +1447,7 @@
       "npm:hono@^4.12.25",
       "npm:ink-link@5",
       "npm:ink-spinner@5",
+      "npm:ink-table@^3.1.0",
       "npm:ink@^7.1.0",
       "npm:it-pushable@^3.2.3",
       "npm:react@^19.2.4",
