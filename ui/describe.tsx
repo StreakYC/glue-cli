@@ -1,11 +1,7 @@
 import type { AccountDTO, DeploymentDTO, ExecutionDTO, GlueDTO } from "../backend.ts";
 import React from "react";
 import { Box, Newline, Text } from "ink";
-import {
-  BuildStepStatusRow,
-  CompletedRegistrationList,
-  CompletedRegistrationListOld,
-} from "./common.tsx";
+import { BuildStepStatusRow, CompletedRegistrationList } from "./common.tsx";
 import { formatEpochMillis } from "./utils.ts";
 import { prettyLabels } from "../lib/prettyLabels.ts";
 

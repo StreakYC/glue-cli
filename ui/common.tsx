@@ -1,7 +1,6 @@
 import { Box, Newline, Text } from "ink";
 import Spinner from "ink-spinner";
 import Link from "ink-link";
-import Table from "ink-table";
 import { Select } from "@inkjs/ui";
 import { useRef, useState } from "react";
 import { open } from "@opensrc/deno-open";
