@@ -12,7 +12,7 @@ import { runStep } from "../ui/utils.ts";
 import { askUserForAccount, displayNameForAccount } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { Confirm } from "@cliffy/prompt/confirm";
-import { prettyLabels, prettyLabelsColoredForTables } from "../lib/prettyLabels.ts";
+import { prettyLabelsColoredForTables } from "../lib/prettyLabels.ts";
 
 interface AccountsOptions {
   json?: boolean;
