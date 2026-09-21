@@ -38,14 +38,13 @@ export const DescribeDeploymentUI = ({ deployment }: DescribeDeploymentUIProps) 
         Updated: {new Date(deployment.updatedAt).toLocaleString()}
       </Text>
       <Newline />
-      <Text>
-        Runs: <Text color="green">{deployment.totalExecutions}</Text> total
-        {deployment.totalFailedExecutions > 0 && (
-          <>
-            , <Text color="red">{deployment.totalFailedExecutions}</Text> failed
-          </>
-        )}
-      </Text>
+      <RunSummary
+        label="Runs"
+        counts={{
+          totalCount: deployment.totalExecutions,
+          totalErrorCount: deployment.totalFailedExecutions,
+        }}
+      />
       <Text>Last run: {formatEpochMillis(deployment.mostRecentExecution)}</Text>
 
       {deployment.buildSteps.length > 0 && (
