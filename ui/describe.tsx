@@ -4,6 +4,7 @@ import { Box, Newline, Text } from "ink";
 import { BuildStepStatusRow, CompletedRegistrationList } from "./common.tsx";
 import { formatEpochMillis } from "./utils.ts";
 import { prettyLabels } from "../lib/prettyLabels.ts";
+import { RunSummary } from "./runSummary.tsx";
 
 export const DescribeUI = (
   { target, isWatching }: { target: React.ReactElement; isWatching: boolean },
@@ -83,11 +84,6 @@ export type DescribeGlueUIProps = { glueAndDeployments: GlueAndDeployments };
 
 export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
   const { glue, deployments } = glueAndDeployments;
-  const totalSuccess = glue.executionSummary.totalCount - glue.executionSummary.totalErrorCount;
-  const totalFail = glue.executionSummary.totalErrorCount;
-  const currentSuccess = glue.executionSummary.currentDeploymentCount -
-    glue.executionSummary.currentDeploymentErrorCount;
-  const currentFail = glue.executionSummary.currentDeploymentErrorCount;
   const sortedDeployments = deployments.toSorted((a, b) => b.createdAt - a.createdAt);
 
   return (
@@ -100,23 +96,14 @@ export const DescribeGlueUI = ({ glueAndDeployments }: DescribeGlueUIProps) => {
       </Text>
       <Text>Created: {formatEpochMillis(glue.createdAt)}</Text>
       <Newline />
-      <Text>
-        Runs: <Text color="green">{totalSuccess}</Text> successful
-        {totalFail > 0 && (
-          <>
-            , <Text color="red">{totalFail}</Text> failed
-          </>
-        )}
-      </Text>
-      <Text>
-        Runs since last deployment: <Text color="green">{currentSuccess}</Text> successful
-        {currentFail > 0 && (
-          <>
-            , <Text color="red">{currentFail}</Text> failed
-          </>
-        )}
-      </Text>
-      <Newline />
+      <RunSummary label="Runs" counts={glue.executionSummary} />
+      <RunSummary
+        label="Runs since last deployment"
+        counts={{
+          totalCount: glue.executionSummary.currentDeploymentCount,
+          totalErrorCount: glue.executionSummary.currentDeploymentErrorCount,
+        }}
+      />
       <Text>Last run: {formatEpochMillis(glue.executionSummary.mostRecent)}</Text>
       {glue.currentDeployment && (
         <>

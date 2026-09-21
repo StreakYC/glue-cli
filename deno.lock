@@ -51,6 +51,7 @@
     "npm:@inkjs/ui@2": "2.0.0_ink@7.1.0",
     "npm:@notionhq/client@^5.22.0": "5.23.3",
     "npm:@octokit/webhooks-types@^7.6.1": "7.6.1",
+    "npm:@pppp606/ink-chart@~0.2.8": "0.2.8_ink@7.1.0_react@19.2.7",
     "npm:@slack/types@^2.17.0": "2.21.1",
     "npm:@slack/web-api@^7.11.0": "7.17.0",
     "npm:@types/react@19": "19.2.17",
@@ -494,6 +495,14 @@
     },
     "@pkgjs/parseargs@0.11.0": {
       "integrity": "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="
+    },
+    "@pppp606/ink-chart@0.2.8_ink@7.1.0_react@19.2.7": {
+      "integrity": "sha512-RWyHa2Du3EdsbDWRBLx3iTqpRIUadM7tvc+XdHNMQFmItAqGRNfzWmKSKpOvOWIMl73tYx8OqabaiUj6LYwzvQ==",
+      "dependencies": [
+        "ink",
+        "react"
+      ],
+      "bin": true
     },
     "@slack/logger@4.0.1": {
       "integrity": "sha512-6cmdPrV/RYfd2U0mDGiMK8S7OJqpCTm7enMLRR3edccsPX8j7zXTLnaEF4fhxxJJTAIOil6+qZrnUPTuaLvwrQ==",
@@ -1452,6 +1461,7 @@
       "jsr:@std/testing@^1.0.17",
       "jsr:@streak-glue/runtime@~0.2.45",
       "npm:@inkjs/ui@2",
+      "npm:@pppp606/ink-chart@~0.2.8",
       "npm:@types/react@19",
       "npm:chalk@^5.6.2",
       "npm:hono@^4.12.25",
