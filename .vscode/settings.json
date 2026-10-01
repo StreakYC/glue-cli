@@ -7,6 +7,9 @@
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
   "files.eol": "\n",
+  "search.exclude": {
+    "/tests/resources/getCreateDeploymentParams/**": true
+  },
   "[json]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
