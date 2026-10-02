@@ -1,7 +1,11 @@
 import { Select } from "@cliffy/prompt/select";
 import { decodeBase64 } from "@std/encoding/base64";
 import { exists } from "@std/fs/exists";
+import { SEPARATOR } from "@std/path/constants";
+import { isAbsolute } from "@std/path/is-absolute";
 import { join } from "@std/path/join";
+import { relative } from "@std/path/relative";
+import { resolve } from "@std/path/resolve";
 import { dirname as posixDirname } from "@std/path/posix/dirname";
 import * as mod from "@std/fmt/colors";
 import {
@@ -115,10 +119,9 @@ async function findCollidingPaths(
 ): Promise<string[]> {
   const collisions: string[] = [];
   for (const path of Object.keys(assets)) {
-    // check this up front too so we don't partially write files before failing
-    if (path.startsWith("/") || path.split("/").some((part) => part === "..")) {
-      throw new Error(`Invalid path in deployment asset: ${path}`);
-    }
+    // check this up front too so we don't write some files before failing
+    assertSafeAssetPath(baseDir, path);
+
     if (await exists(join(baseDir, path))) {
       collisions.push(path);
     }
@@ -132,9 +135,7 @@ async function extractDeploymentContentAssets(
   allowOverwrite = false,
 ) {
   for (const [path, asset] of Object.entries(assets)) {
-    if (path.startsWith("/") || path.split("/").some((part) => part === "..")) {
-      throw new Error(`Invalid path in deployment asset: ${path}`);
-    }
+    assertSafeAssetPath(baseDir, path);
 
     const dir = posixDirname(path);
     await Deno.mkdir(join(baseDir, dir), { recursive: true });
@@ -146,4 +147,31 @@ async function extractDeploymentContentAssets(
       await Deno.writeTextFile(fullPath, asset.content, { createNew: !allowOverwrite });
     }
   }
+}
+
+const WINDOWS_RESERVED_NAME =
+  /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)\s*(\..*)?$/i;
+
+function assertSafeAssetPath(baseDir: string, path: string) {
+  const fail = () => {
+    throw new Error(`Invalid path in deployment asset: ${JSON.stringify(path)}`);
+  };
+  // a backslash, colon (drive letters, NTFS alternate data streams), or control char is never legit
+  // deno-lint-ignore no-control-regex
+  if (path === "" || path.startsWith("/") || /[\\:*?"<>|\x00-\x1f]/.test(path)) fail();
+  for (const part of path.split("/")) {
+    if (
+      part === "" || part === "." || part === ".." ||
+      /[. ]$/.test(part) || // Windows strips trailing dots/spaces; don't allow un-normalized paths
+      WINDOWS_RESERVED_NAME.test(part) ||
+      // don't allow writing git hooks/config. GIT~1 is the 8.3 short name of .git on Windows.
+      /^\.git$/i.test(part) || /^git~\d+$/i.test(part)
+    ) {
+      fail();
+    }
+  }
+  // defense in depth: test that the resolved path is still within the base directory
+  const root = resolve(baseDir);
+  const rel = relative(root, resolve(root, path));
+  if (rel === ".." || rel.startsWith(`..${SEPARATOR}`) || isAbsolute(rel)) fail();
 }
