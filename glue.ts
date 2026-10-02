@@ -13,6 +13,7 @@ import { share } from "./commands/share.ts";
 import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
 import { create } from "./commands/create.ts";
 import { replay } from "./commands/replay.ts";
+import { pull } from "./commands/pull.ts";
 import { tag } from "./commands/tag.ts";
 import { Runner } from "./backend.ts";
 import type z from "zod";
@@ -128,6 +129,13 @@ const cmd = new Command()
   .option("-j, --json", "Output in JSON format")
   .option("-w, --watch", "Refresh the description every 3 seconds")
   .action(describe)
+  // PULL ----------------------------
+  .command(
+    "pull",
+    "Download the code of a deployed glue into the current directory. Query can be a glue name, glue id, or deployment id. Leave blank to pick a glue from a list.",
+  )
+  .arguments("[query:string]")
+  .action(pull)
   // REPLAY ----------------------------
   .command("replay", "Replay an execution of a glue")
   .arguments("<executionId:string>")
