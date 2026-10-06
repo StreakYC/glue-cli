@@ -210,6 +210,12 @@ export async function getDeploymentById(
   return await backendRequest<DeploymentDTO>(`/deployments/${id}?${params.toString()}`, { signal });
 }
 
+export async function pullDeployment(id: string, signal?: AbortSignal): Promise<DeploymentContent> {
+  return DeploymentContent.parse(
+    await backendRequest<unknown>(`/deployments/${id}/pull`, { signal }),
+  );
+}
+
 export async function getDeployments(id: string, signal?: AbortSignal): Promise<DeploymentDTO[]> {
   return await backendRequest<DeploymentDTO[]>(`/glues/${id}/deployments`, { signal });
 }
