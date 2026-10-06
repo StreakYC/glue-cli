@@ -68,7 +68,15 @@ const cmd = new Command()
   .option(
     "-r, --runner <runner:runner>",
     "Use a specific runner to host the glue. Valid values are: deno, deno-v2, fly, cloudflare, sandbox.",
-    { default: "sprite", hidden: true },
+    {
+      default: "sprite",
+      hidden: true,
+      action: () => {
+        throw new ValidationError(
+          "--runner is not supported. Remove it from your command. Glue chooses the runner automatically.",
+        );
+      },
+    },
   )
   .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
   .option(
