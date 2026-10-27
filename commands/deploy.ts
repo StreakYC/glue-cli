@@ -1,7 +1,7 @@
 import {
   createDeployment,
   createGlue,
-  getGlueByName,
+  getGluesByName,
   type Runner,
   streamChangesTillDeploymentReady,
   updateGlue,
@@ -14,11 +14,18 @@ import { getCreateDeploymentParams } from "../lib/getCreateDeploymentParams.ts";
 import { getGlueName } from "../lib/glueNaming.ts";
 import { addTags, normalizeTags } from "../lib/tagUtils.ts";
 import { kv } from "../db.ts";
-import { GLUE_API_SERVER } from "../common.ts";
 import { Confirm } from "@cliffy/prompt/confirm";
 import { resolve } from "@std/path/resolve";
+import {
+  describeWorkspace,
+  isSamePath,
+  lastDeployedPathKey,
+  pickWorkspaceForFile,
+  rememberFileWorkspace,
+  type WorkspaceOptions,
+} from "../lib/workspaces.ts";
 
-interface DeployOptions {
+interface DeployOptions extends WorkspaceOptions {
   name?: string;
   runner: Runner;
   tags?: string[];
@@ -30,6 +37,9 @@ export async function deploy(options: DeployOptions, file: string) {
 
   const glueName = await getGlueName(file, options.name);
   const tags = normalizeTags(options.tags);
+  const absPath = resolve(file);
+  // Picked before the deploy UI starts, since it may prompt.
+  const workspace = await pickWorkspaceForFile(options, absPath, glueName, "deploy");
 
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
@@ -38,6 +48,7 @@ export async function deploy(options: DeployOptions, file: string) {
     codeAnalysisDuration: 0,
     deployment: undefined,
     glueName,
+    workspaceName: describeWorkspace(workspace),
   };
 
   let instance: Instance | undefined;
@@ -86,34 +97,31 @@ export async function deploy(options: DeployOptions, file: string) {
 
   duration = performance.now();
   updateUI({ uploadingCodeState: "in_progress", uploadingCodeDuration: 0 });
-  const absPath = resolve(file);
-  let existingGlue = await getGlueByName(glueName, "deploy");
+  let existingGlue = (await getGluesByName(glueName, "deploy", [workspace.id]))[0];
   let newDeploymentId: string;
   if (!existingGlue) {
-    const newGlue = await createGlue(glueName, deploymentParams, "deploy", { tags });
+    const newGlue = await createGlue(glueName, deploymentParams, "deploy", {
+      workspaceId: workspace.id,
+      tags,
+    });
     if (!newGlue.pendingDeployment) {
       throw new Error("Failed to create glue");
     }
     newDeploymentId = newGlue.pendingDeployment.id;
-    await kv.set(["glue-last-deployed-path", GLUE_API_SERVER, newGlue.id], absPath);
+    await kv.set(lastDeployedPathKey(newGlue.id), absPath);
   } else {
     // If there's an existing glue, we want to warn the user that it will be
     // overwritten *unless* they have already deployed this file (identified by
     // absolute path) on their current machine to this glue before.
-    const lookupResult = await kv.get<string>([
-      "glue-last-deployed-path",
-      GLUE_API_SERVER,
-      existingGlue.id,
-    ]);
-    if (
-      !lookupResult.value ||
-      absPath.localeCompare(lookupResult.value, undefined, { sensitivity: "base" }) !== 0
-    ) {
+    const lookupResult = await kv.get<string>(lastDeployedPathKey(existingGlue.id));
+    if (!lookupResult.value || !isSamePath(absPath, lookupResult.value)) {
       await unmountUI();
       console.warn(
         `Warning: You are deploying to an existing glue named %c${
           JSON.stringify(glueName)
-        }%c which was created previously.\nThis deployment will overwrite the existing glue.`,
+        }%c in the ${
+          describeWorkspace(workspace)
+        } workspace, which was created previously.\nThis deployment will overwrite the existing glue.`,
         "color: orange",
         "",
       );
@@ -131,7 +139,7 @@ export async function deploy(options: DeployOptions, file: string) {
         return;
       }
       updateUI({}); // Rerender the UI after unmounting
-      await kv.set(["glue-last-deployed-path", GLUE_API_SERVER, existingGlue.id], absPath);
+      await kv.set(lastDeployedPathKey(existingGlue.id), absPath);
     }
 
     const newDeployment = await createDeployment(existingGlue.id, deploymentParams);
@@ -142,6 +150,7 @@ export async function deploy(options: DeployOptions, file: string) {
     newDeploymentId = newDeployment.id;
   }
 
+  await rememberFileWorkspace(absPath, workspace.id);
   const uploadingCodeDuration = performance.now() - duration;
 
   for await (const deployment of streamChangesTillDeploymentReady(newDeploymentId)) {

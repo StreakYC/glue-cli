@@ -1,5 +1,5 @@
 #!/usr/bin/env -S deno run --allow-all
-import { type ArgumentValue, Command, ValidationError } from "@cliffy/command";
+import { type ArgumentValue, Command, EnumType, ValidationError } from "@cliffy/command";
 import { deploy } from "./commands/deploy.ts";
 import { dev } from "./commands/dev.ts";
 import { login } from "./commands/login.ts";
@@ -10,7 +10,12 @@ import { describe } from "./commands/describe.ts";
 import { logs } from "./commands/logs.ts";
 import { stop } from "./commands/stop.ts";
 import { share } from "./commands/share.ts";
-import { accounts, deleteAccountCmd } from "./commands/accounts.ts";
+import {
+  accounts,
+  deleteAccountCmd,
+  leaseAccountCmd,
+  unleaseAccountCmd,
+} from "./commands/accounts.ts";
 import { create } from "./commands/create.ts";
 import { replay } from "./commands/replay.ts";
 import { pull } from "./commands/pull.ts";
@@ -25,6 +30,18 @@ import { maybeShowUpdateNotice } from "./lib/updateCheck.ts";
 import { upgradeCommand } from "./commands/upgrade.ts";
 import { setColorEnabled } from "@std/fmt/colors";
 import { GLUE_CLI_VERSION } from "./common.ts";
+import { migrate, SECRET_CONFLICT_OPTIONS } from "./commands/migrate.ts";
+import {
+  createWorkspaceCmd,
+  inviteCmd,
+  leaveCmd,
+  listWorkspacesCmd,
+  membersCmd,
+  removeMemberCmd,
+  renameCmd,
+  setRoleCmd,
+} from "./commands/workspace.ts";
+import { WORKSPACE_ID_REGEX } from "./lib/workspaces.ts";
 
 const useColors = !Deno.noColor && Deno.stdout.isTerminal();
 setColorEnabled(useColors);
@@ -44,6 +61,12 @@ const cmd = new Command()
     cmd.showHelp();
   })
   .globalOption("--verbose", "Enable verbose logging for debugging purposes", { default: false })
+  .globalType("workspace-id", validateWorkspaceId)
+  .globalOption(
+    "--workspace <workspaceIds:workspace-id[]>",
+    "Workspace ids to operate on, comma separated. Defaults to all of your workspaces, or asks when a command needs exactly one. See `glue workspace list`.",
+    { separator: "," },
+  )
   .command("upgrade", upgradeCommand)
   // DEV ----------------------------
   .command(
@@ -194,22 +217,80 @@ const cmd = new Command()
   .arguments("<file:string>")
   .option("-j, --json", "Output in JSON format")
   .action(share)
+  // MIGRATE ----------------------------
+  .command(
+    "migrate",
+    "Move a deployed glue to another workspace, along with the accounts and secrets it uses. Use --workspace to say which workspace the glue is in if the name is ambiguous.",
+  )
+  .arguments("[glue:string]")
+  .type("target-workspace-id", validateWorkspaceId)
+  .option("--to <workspaceId:target-workspace-id>", "The workspace to move the glue to")
+  .option("--new-name <name:string>", "Rename the glue as it moves")
+  .type("secret-conflict", new EnumType(SECRET_CONFLICT_OPTIONS))
+  .option(
+    "--on-secret-conflict <mode:secret-conflict>",
+    "What to do when the target workspace has a secret with the same name but a different value: use-target keeps the target's value, overwrite replaces it",
+  )
+  .option("-y, --yes", "Don't ask for confirmation")
+  .action(migrate)
+  // WORKSPACES ----------------------------
+  .command(
+    "workspace",
+    new Command<GlobalOptions>()
+      .description("Manage workspaces, which glues, secrets, and shared accounts belong to")
+      .command("list", "List your workspaces")
+      .option("-j, --json", "Output in JSON format")
+      .action(listWorkspacesCmd)
+      .command("create", "Create a shared workspace")
+      .arguments("[name:string]")
+      .action(createWorkspaceCmd)
+      .command("invite", "Invite someone to a workspace by email")
+      .arguments("<email:string>")
+      .action(inviteCmd)
+      .command("members", "List the members and pending invites of a workspace")
+      .option("-j, --json", "Output in JSON format")
+      .action(membersCmd)
+      .command("rename", "Rename a workspace")
+      .arguments("<name:string>")
+      .action(renameCmd)
+      .command("remove", "Remove a member from a workspace")
+      .arguments("<email:string>")
+      .action(removeMemberCmd)
+      .command("leave", "Leave a workspace")
+      .action(leaveCmd)
+      .command("set-role", "Make a member an owner, or an owner a member")
+      .type("role", new EnumType(["owner", "member"] as const))
+      .arguments("<email:string> <role:role>")
+      .action(setRoleCmd),
+  )
   // ACCOUNTS ----------------------------
   .command(
     "accounts",
-    new Command()
+    new Command<GlobalOptions>()
       .description("Manage accounts")
-      .command("list", "List all accounts")
+      .command(
+        "list",
+        "List your accounts, or with --workspace, the accounts available in those workspaces",
+      )
       .option("-j, --json", "Output in JSON format")
       .action(accounts)
       .command("delete", "Delete an account")
       .arguments("[id:string]")
-      .action(deleteAccountCmd),
+      .action(deleteAccountCmd)
+      .command(
+        "lease",
+        "Let glues in a workspace use one of your accounts. Members of the workspace can use the account in their glues.",
+      )
+      .arguments("[id:string]")
+      .action(leaseAccountCmd)
+      .command("unlease", "Stop glues in a workspace from using one of your accounts")
+      .arguments("[id:string]")
+      .action(unleaseAccountCmd),
   )
   // SECRETS ----------------------------
   .command(
     "secrets",
-    new Command()
+    new Command<GlobalOptions>()
       .description(
         "Manage secrets that can be accessed by Glue scripts. Secrets can be used like environment variables.",
       )
@@ -236,6 +317,12 @@ await cmd.parse(Deno.args);
 Deno.exit(0);
 
 // HELPERS --------------------------------
+
+/**
+ * The root command's global options, which Cliffy passes to nested command
+ * groups too.
+ */
+type GlobalOptions = { verbose: boolean; workspace?: string[] };
 // deno-lint-ignore no-explicit-any
 function validateWithZodEnum(zodEnum: z.ZodEnum<any>) {
   return ({ value }: ArgumentValue): z.infer<typeof zodEnum> => {
@@ -247,6 +334,15 @@ function validateWithZodEnum(zodEnum: z.ZodEnum<any>) {
     }
     return parsed.data;
   };
+}
+
+function validateWorkspaceId({ value }: ArgumentValue): string {
+  if (!WORKSPACE_ID_REGEX.test(value)) {
+    throw new ValidationError(
+      `"${value}" is not a workspace id. Workspace ids look like w_1a2b3c, see \`glue workspace list\`.`,
+    );
+  }
+  return value;
 }
 
 function isJsonOutput(options: unknown): boolean {

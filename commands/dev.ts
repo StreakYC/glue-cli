@@ -7,12 +7,12 @@ import {
   createDeployment,
   createGlue,
   getExecutionByIdNoThrow,
-  getGlueByName,
+  getGluesByName,
   sampleTrigger,
   stopGlue,
   streamChangesTillDeploymentReady,
 } from "../backend.ts";
-import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
+import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO, WorkspaceDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import { Hono } from "hono";
@@ -42,6 +42,7 @@ import { once } from "node:events";
 import type { CommonCommandOptions } from "./common.ts";
 import { findDenoConfigPaths } from "../lib/denoConfig.ts";
 import { UserFacingError } from "../lib/UserFacingError.ts";
+import { pickWorkspaceForFile, rememberFileWorkspace } from "../lib/workspaces.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -76,6 +77,13 @@ export async function dev(options: DevOptions, filename: string) {
     const lifelineReconnectionEvents = pushableV<void>({ objectMode: true });
 
     const glueName = await getGlueName(filename, options.name);
+    // Picked before the dev UI starts, since it may prompt.
+    const workspace = await pickWorkspaceForFile(
+      options,
+      path.resolve(filename),
+      glueName,
+      "dev",
+    );
     const reloadStreakRuntime = await streakRuntimeUpdateChecks(filename, options.verbose);
 
     const glueCliWebsocketAddr = await wsListen(() => {
@@ -166,8 +174,14 @@ export async function dev(options: DevOptions, filename: string) {
     let { glue, deployment } = await runUIStep(
       "registeringGlue",
       async () =>
-        await createDeploymentAndMaybeGlue(glueName, registrations, abortController.signal),
+        await createDeploymentAndMaybeGlue(
+          glueName,
+          workspace,
+          registrations,
+          abortController.signal,
+        ),
     );
+    await rememberFileWorkspace(path.resolve(filename), workspace.id);
     cleanupFns.push(async () =>
       // not passing abort signal because this needs to run after we abort
       await shutdownGlue(glue.id)
@@ -492,12 +506,14 @@ async function shutdownGlue(glueId: string, signal?: AbortSignal) {
 
 async function createDeploymentAndMaybeGlue(
   glueName: string,
+  workspace: WorkspaceDTO,
   registrations: Registrations,
   signal?: AbortSignal,
 ): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {
-  const existingGlue = await getGlueByName(glueName, "dev", signal);
+  const existingGlue = (await getGluesByName(glueName, "dev", [workspace.id], signal))[0];
   if (!existingGlue) {
     const newGlue = await createGlue(glueName, { optimisticRegistrations: registrations }, "dev", {
+      workspaceId: workspace.id,
       signal,
     });
     if (!newGlue.pendingDeployment) {

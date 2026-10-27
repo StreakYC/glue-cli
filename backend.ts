@@ -34,6 +34,8 @@ const CreateDeploymentParams = z.object({
 export type CreateDeploymentParams = z.infer<typeof CreateDeploymentParams>;
 
 export const CreateGlueParams = z.object({
+  /** defaults to the user's personal workspace */
+  workspaceId: z.string().optional(),
   name: z.string(),
   environment: GlueEnvironment,
   description: z.string().optional().nullable(),
@@ -103,18 +105,23 @@ export async function getLoggedInUser(signal?: AbortSignal): Promise<UserDTO> {
   return await backendRequest<UserDTO>("/users/me", { signal });
 }
 
-export async function getGlueByName(
+/**
+ * Returns every glue with the name in the given workspaces (or all of the
+ * user's workspaces). A name can be used by one glue per workspace.
+ */
+export async function getGluesByName(
   name: string,
   environment: GlueEnvironment,
+  workspaceIds?: string[],
   signal?: AbortSignal,
-): Promise<GlueDTO | undefined> {
-  const params = new URLSearchParams({ name, environment });
-  const glues = await backendRequest<GlueDTO[]>(`/glues?${params.toString()}`, { signal });
-  return glues[0];
+): Promise<GlueDTO[]> {
+  return await getGlues({ environment, name, workspaceIds }, signal);
 }
 
 export interface GetGluesFilters {
   environment: GlueEnvironment;
+  /** defaults to all of the user's workspaces */
+  workspaceIds?: string[];
   name?: string;
   includeTags?: string[];
   excludeTags?: string[];
@@ -124,6 +131,9 @@ export async function getGlues(
   signal?: AbortSignal,
 ): Promise<GlueDTO[]> {
   const params = new URLSearchParams({ environment: filters.environment });
+  if (filters?.workspaceIds) {
+    params.set("workspaceIds", filters.workspaceIds.join(","));
+  }
   if (filters?.name) {
     params.set("name", filters.name);
   }
@@ -151,12 +161,18 @@ export async function createGlue(
   name: string,
   deployment: CreateDeploymentParams,
   environment: GlueEnvironment,
-  options?: { description?: string | null; tags?: string[]; signal?: AbortSignal },
+  options?: {
+    workspaceId?: string;
+    description?: string | null;
+    tags?: string[];
+    signal?: AbortSignal;
+  },
 ): Promise<GlueDTO> {
   const res = await backendRequest<GlueDTO>(`/glues`, {
     method: "POST",
     body: JSON.stringify(
       {
+        workspaceId: options?.workspaceId,
         name,
         deployment,
         environment,
@@ -491,7 +507,9 @@ export interface GlueDTO {
   id: string;
   name: string;
   environment: GlueEnvironment;
+  /** the user who created the glue */
   userId: string;
+  workspaceId: string;
   description: string | null;
   tags: string[];
   createdAt: number;
@@ -529,7 +547,10 @@ export interface AccountSlimDTO {
   labels: Record<string, string>;
 
   scopes?: string[];
+  /** the user who owns the account */
   userId: string;
+  /** the workspaces the account is leased to that the requesting user is a member of */
+  leasedWorkspaceIds?: string[];
   /** milliseconds since epoch */
   createdAt: number;
   /** milliseconds since epoch */
@@ -543,6 +564,7 @@ export interface AccountDTO extends AccountSlimDTO {
 
 export interface SecretDTO {
   name: string;
+  workspaceId: string;
   /** milliseconds since epoch */
   createdAt: number;
   /** milliseconds since epoch */
@@ -555,8 +577,13 @@ export interface DeleteSecretResult {
   gluesNeedingStopping: GlueDTO[];
 }
 
-export async function getAccounts(): Promise<AccountDTO[]> {
-  return await backendRequest<AccountDTO[]>(`/accounts`);
+/**
+ * Returns the user's own accounts, or with `workspaceIds`, the accounts leased
+ * to those workspaces (including other members' accounts).
+ */
+export async function getAccounts(workspaceIds?: string[]): Promise<AccountDTO[]> {
+  const query = workspaceIds ? `?workspaceIds=${workspaceIds.join(",")}` : "";
+  return await backendRequest<AccountDTO[]>(`/accounts${query}`);
 }
 
 export async function getAccountById(id: string): Promise<AccountDTO | undefined> {
@@ -569,12 +596,14 @@ export async function deleteAccount(id: string): Promise<void> {
   });
 }
 
-export async function getSecrets(): Promise<SecretDTO[]> {
-  return await backendRequest<SecretDTO[]>(`/secrets`);
+/** Returns the secrets in the given workspaces, or all of the user's workspaces. */
+export async function getSecrets(workspaceIds?: string[]): Promise<SecretDTO[]> {
+  const query = workspaceIds ? `?workspaceIds=${workspaceIds.join(",")}` : "";
+  return await backendRequest<SecretDTO[]>(`/secrets${query}`);
 }
 
-export async function setSecret(name: string, value: string): Promise<void> {
-  await backendRequest<unknown>(`/secrets/${encodeURIComponent(name)}`, {
+export async function setSecret(name: string, value: string, workspaceId: string): Promise<void> {
+  await backendRequest<unknown>(`/secrets/${encodeURIComponent(name)}?workspaceId=${workspaceId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -583,8 +612,8 @@ export async function setSecret(name: string, value: string): Promise<void> {
   });
 }
 
-export async function deleteSecret(name: string): Promise<DeleteSecretResult> {
-  const path = `/secrets/${encodeURIComponent(name)}`;
+export async function deleteSecret(name: string, workspaceId: string): Promise<DeleteSecretResult> {
+  const path = `/secrets/${encodeURIComponent(name)}?workspaceId=${workspaceId}`;
   const res = await backendFetch(path, { method: "DELETE" });
   if (res.status === 409 && res.headers.get("Content-Type")?.includes("application/json")) {
     return await res.json() as DeleteSecretResult;
@@ -594,4 +623,199 @@ export async function deleteSecret(name: string): Promise<DeleteSecretResult> {
     throw new Error(`Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`);
   }
   return await res.json() as DeleteSecretResult;
+}
+
+export interface UnleaseAccountResult {
+  success: boolean;
+  error?: string;
+  gluesNeedingStopping: GlueDTO[];
+}
+
+export async function leaseAccount(accountId: string, workspaceId: string): Promise<void> {
+  await backendRequest<unknown>(`/accounts/${accountId}/leases`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspaceId }),
+  });
+}
+
+export async function unleaseAccount(
+  accountId: string,
+  workspaceId: string,
+): Promise<UnleaseAccountResult> {
+  const path = `/accounts/${accountId}/leases/${workspaceId}`;
+  const res = await backendFetch(path, { method: "DELETE" });
+  if (res.status === 409 && res.headers.get("Content-Type")?.includes("application/json")) {
+    return await res.json() as UnleaseAccountResult;
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`);
+  }
+  return await res.json() as UnleaseAccountResult;
+}
+
+// WORKSPACES ------------------------------------------------------------
+
+export type WorkspaceRole = "owner" | "member";
+
+export interface WorkspaceDTO {
+  id: string;
+  name: string;
+  personal: boolean;
+  /** The requesting user's role in the workspace */
+  role: WorkspaceRole;
+  /** milliseconds since epoch */
+  createdAt: number;
+  /** milliseconds since epoch */
+  updatedAt: number;
+}
+
+export interface WorkspaceMemberDTO {
+  user: UserDTO;
+  role: WorkspaceRole;
+  /** milliseconds since epoch */
+  joinedAt: number;
+}
+
+export interface WorkspaceInviteDTO {
+  id: string;
+  workspaceId: string;
+  email: string;
+  status: "pending" | "accepted" | "declined" | "revoked";
+  role: WorkspaceRole;
+  invitedByUserId: string;
+  /** milliseconds since epoch */
+  expiresAt: number;
+  /** milliseconds since epoch */
+  createdAt: number;
+}
+
+export interface WorkspaceDetailDTO extends WorkspaceDTO {
+  members: WorkspaceMemberDTO[];
+  /** pending invites */
+  invites: WorkspaceInviteDTO[];
+}
+
+/** The workspaces the user is a member of, personal workspace first. */
+export async function getWorkspaces(): Promise<WorkspaceDTO[]> {
+  return await backendRequest<WorkspaceDTO[]>(`/workspaces`);
+}
+
+export async function getWorkspace(id: string): Promise<WorkspaceDetailDTO> {
+  return await backendRequest<WorkspaceDetailDTO>(`/workspaces/${id}`);
+}
+
+export async function createWorkspace(name: string): Promise<WorkspaceDTO> {
+  return await backendRequest<WorkspaceDTO>(`/workspaces`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function renameWorkspace(id: string, name: string): Promise<WorkspaceDTO> {
+  return await backendRequest<WorkspaceDTO>(`/workspaces/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function inviteToWorkspace(
+  workspaceId: string,
+  email: string,
+): Promise<{ invite: WorkspaceInviteDTO; emailSent: boolean }> {
+  return await backendRequest(`/workspaces/${workspaceId}/invites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
+  await backendRequest<unknown>(`/workspaces/${workspaceId}/members/${userId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function setWorkspaceMemberRole(
+  workspaceId: string,
+  userId: string,
+  role: WorkspaceRole,
+): Promise<WorkspaceMemberDTO> {
+  return await backendRequest<WorkspaceMemberDTO>(
+    `/workspaces/${workspaceId}/members/${userId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    },
+  );
+}
+
+// MIGRATE ------------------------------------------------------------
+
+export type SecretConflictResolution = "fail" | "useTarget" | "overwrite";
+
+export interface MigrateGlueParams {
+  toWorkspaceId: string;
+  newName?: string;
+  onSecretConflict?: SecretConflictResolution;
+  dryRun?: boolean;
+}
+
+export interface MigrateGlueSuccess {
+  glue: GlueDTO;
+  leasedAccountIds: string[];
+  secrets: { name: string; action: "copied" | "reused" | "usedTarget" | "overwritten" }[];
+  dryRun: boolean;
+}
+
+export type MigrateGlueResult =
+  | { ok: true; result: MigrateGlueSuccess }
+  | {
+    ok: false;
+    error: "missing_account_leases";
+    message: string;
+    accounts: {
+      id: string;
+      type: string;
+      labels: Record<string, string>;
+      ownerUserId: string;
+      ownerEmail?: string;
+    }[];
+  }
+  | { ok: false; error: "secret_conflicts"; message: string; names: string[] }
+  | { ok: false; error: "name_conflict"; message: string };
+
+/**
+ * Moves a deploy glue to another workspace. The backend's expected failures
+ * (missing account leases, secret conflicts, name conflicts) are returned
+ * rather than thrown so they can be handled interactively.
+ */
+export async function migrateGlue(
+  glueId: string,
+  params: MigrateGlueParams,
+): Promise<MigrateGlueResult> {
+  const path = `/glues/${glueId}/migrate`;
+  const res = await backendFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (res.ok) {
+    return { ok: true, result: await res.json() as MigrateGlueSuccess };
+  }
+  const body = await res.text();
+  if (res.status === 409) {
+    const parsed = JSON.parse(body);
+    if (
+      parsed.error === "missing_account_leases" || parsed.error === "secret_conflicts" ||
+      parsed.error === "name_conflict"
+    ) {
+      return { ok: false, ...parsed };
+    }
+  }
+  throw new Error(`Failed request: ${path} (POST): ${res.status} ${res.statusText} ${body}`);
 }

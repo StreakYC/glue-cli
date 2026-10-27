@@ -1,10 +1,5 @@
-import {
-  type ExecutionDTO,
-  getDeploymentById,
-  getExecutions,
-  getGlueById,
-  getGlueByName,
-} from "../backend.ts";
+import { type ExecutionDTO, getDeploymentById, getExecutions, getGlueById } from "../backend.ts";
+import { findGlueByName, type WorkspaceOptions } from "../lib/workspaces.ts";
 import { cyan, dim, green, red } from "@std/fmt/colors";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
@@ -12,7 +7,7 @@ import { delay } from "@std/async/delay";
 import { Spinner } from "@std/cli/unstable-spinner";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { isPrefixId } from "../common.ts";
-interface LogsOptions {
+interface LogsOptions extends WorkspaceOptions {
   all?: boolean;
   json?: boolean;
   number: number;
@@ -54,19 +49,14 @@ export const logs = async (options: LogsOptions, query?: string) => {
       }
       deploymentId = query;
     } else {
-      const glue = await runStep(
-        "Loading glue...",
-        () => getGlueByName(query, "deploy"),
-        true,
-        !!options.json,
-      );
+      const glue = await findGlueByName(query, "deploy", options, { quiet: !!options.json });
       if (!glue) {
         throw new Error("Couldn't find a glue with that name");
       }
       glueId = glue.id;
     }
   } else if (Deno.stdout.isTerminal() && !options.json) {
-    const glue = await askUserForGlue();
+    const glue = await askUserForGlue(options);
     if (!glue) {
       throw new Error("No glues yet!?");
     }
