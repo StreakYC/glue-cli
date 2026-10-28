@@ -1,8 +1,10 @@
+import { UserFacingError } from "../lib/UserFacingError.ts";
 import {
   type AccountDTO,
   deleteAccount,
   getAccountById,
   getAccounts,
+  getLoggedInUser,
   type GlueDTO,
   leaseAccount,
   stopGlue,
@@ -90,11 +92,23 @@ export const accounts = async (options: AccountsOptions) => {
         new Column().minWidth(19),
         new Column().minWidth(22),
       ])
-      .maxWidth(Deno.consoleSize().columns)
+      .maxWidth(Deno.stdout.isTerminal() ? Deno.consoleSize().columns : Infinity)
       .padding(4)
       .render();
   }
 };
+
+/** Like {@link getOrAskForAccount}, but only for accounts the user owns. */
+async function getOrAskForOwnAccount(id: string | undefined, verb: string): Promise<AccountDTO> {
+  const [account, me] = await Promise.all([
+    getOrAskForAccount(id, verb),
+    getLoggedInUser(),
+  ]);
+  if (account.userId !== me.id) {
+    throw new UserFacingError("Only the account's owner can lease or unlease it.");
+  }
+  return account;
+}
 
 /** Loads an account by id, or lets the user pick one of their own accounts. */
 async function getOrAskForAccount(id: string | undefined, verb: string): Promise<AccountDTO> {
@@ -105,15 +119,21 @@ async function getOrAskForAccount(id: string | undefined, verb: string): Promise
     account = await askUserForAccount(`Choose an account to ${verb}`);
   }
   if (!account) {
-    throw new Error("You must provide an account ID or select one in an interactive terminal");
+    throw new UserFacingError(
+      "You must provide an account ID or select one in an interactive terminal",
+    );
   }
   return account;
 }
 
 /** Offers to stop the glues blocking an action. Returns whether they were stopped. */
 async function offerToStopGlues(glues: GlueDTO[], reason: string): Promise<boolean> {
+  const glueList = glues.map((glue) => `${green(glue.name)} (${glue.id})`).join(",");
+  if (!Deno.stdin.isTerminal() || !Deno.stdout.isTerminal()) {
+    throw new UserFacingError(`${reason}: ${glueList}`);
+  }
   console.log(`${reason}:`);
-  console.log(glues.map((glue) => `${green(glue.name)} (${glue.id})`).join(","));
+  console.log(glueList);
   const confirm = await Confirm.prompt({
     message: `Stop these glues?`,
     default: false,
@@ -162,7 +182,7 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
 export const leaseAccountCmd = async (options: WorkspaceOptions, id?: string) => {
   await checkForAuthCredsOtherwiseExit();
 
-  const account = await getOrAskForAccount(id, "lease to a workspace");
+  const account = await getOrAskForOwnAccount(id, "lease to a workspace");
   const leased = new Set(account.leasedWorkspaceIds ?? []);
   const workspace = await pickWorkspace(options, {
     purpose: "lease the account to",
@@ -181,13 +201,13 @@ export const leaseAccountCmd = async (options: WorkspaceOptions, id?: string) =>
 export const unleaseAccountCmd = async (options: WorkspaceOptions, id?: string) => {
   await checkForAuthCredsOtherwiseExit();
 
-  const account = await getOrAskForAccount(id, "unlease from a workspace");
+  const account = await getOrAskForOwnAccount(id, "unlease from a workspace");
   const leased = new Set(account.leasedWorkspaceIds ?? []);
   const workspace = await pickWorkspace(options, {
     purpose: "unlease the account from",
     filter: (w) => leased.has(w.id) && !w.personal,
     ineligibleReason:
-      "doesn't have this account leased (accounts can't be unleased from your personal workspace)",
+      "isn't a shared workspace this account is leased to (accounts always stay leased to your personal workspace)",
     noneEligibleMessage: "The account isn't leased to any of your shared workspaces.",
   });
 
@@ -204,7 +224,9 @@ export const unleaseAccountCmd = async (options: WorkspaceOptions, id?: string) 
   if (result.gluesNeedingStopping.length === 0) {
     // The glues using the account aren't visible to this user, e.g. other
     // members' glues in a workspace they've since left.
-    throw new Error(result.error ?? "The account is used by live glues in that workspace");
+    throw new UserFacingError(
+      result.error ?? "The account is used by live glues in that workspace",
+    );
   }
   const stopped = await offerToStopGlues(
     result.gluesNeedingStopping,
@@ -215,6 +237,6 @@ export const unleaseAccountCmd = async (options: WorkspaceOptions, id?: string) 
   }
   result = await unlease();
   if (!result.success) {
-    throw new Error(result.error ?? "Failed to unlease the account");
+    throw new UserFacingError(result.error ?? "Failed to unlease the account");
   }
 };

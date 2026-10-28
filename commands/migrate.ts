@@ -1,4 +1,4 @@
-import { Confirm } from "@cliffy/prompt/confirm";
+import { UserFacingError } from "../lib/UserFacingError.ts";
 import { Input } from "@cliffy/prompt/input";
 import { Select } from "@cliffy/prompt/select";
 import { bold, dim } from "@std/fmt/colors";
@@ -22,6 +22,7 @@ import {
   type WorkspaceOptions,
 } from "../lib/workspaces.ts";
 import { runStep } from "../ui/utils.ts";
+import { confirmUnlessYes } from "../lib/confirm.ts";
 import { askUserForGlue } from "./common.ts";
 
 export const SECRET_CONFLICT_OPTIONS = ["use-target", "overwrite"] as const;
@@ -70,14 +71,8 @@ export async function migrate(options: MigrateOptions, query?: string) {
   );
   printPlan(plan);
 
-  if (!options.yes) {
-    if (!isInteractive()) {
-      throw new Error("Pass --yes to migrate when not running in a terminal");
-    }
-    const confirm = await Confirm.prompt({ message: "Move the glue?", default: false });
-    if (!confirm) {
-      return;
-    }
+  if (!await confirmUnlessYes("Move the glue?", options.yes)) {
+    return;
   }
 
   const result = await runStep(
@@ -86,9 +81,16 @@ export async function migrate(options: MigrateOptions, query?: string) {
   );
   if (!result.ok) {
     // Only possible if something changed since the dry run.
-    throw new Error(result.message);
+    throw new UserFacingError(result.message);
   }
   await updateFileWorkspaceAfterMove(glue.id, to.id);
+  if (params.newName) {
+    console.log(
+      dim(
+        `If you deploy this glue from a script file, update its name there (e.g. a \`// glue-name ${params.newName}\` comment) so future deploys go to the renamed glue.`,
+      ),
+    );
+  }
 }
 
 async function findGlueToMigrate(options: MigrateOptions, query?: string): Promise<GlueDTO> {
@@ -100,13 +102,13 @@ async function findGlueToMigrate(options: MigrateOptions, query?: string): Promi
   } else if (isInteractive()) {
     glue = await askUserForGlue(options);
   } else {
-    throw new Error("You must provide a glue name when not running in a terminal");
+    throw new UserFacingError("You must provide a glue name when not running in a terminal");
   }
   if (!glue) {
-    throw new Error(query ? `Glue ${query} not found` : "No glue found");
+    throw new UserFacingError(query ? `Glue ${query} not found` : "No glue found");
   }
   if (glue.environment === "dev") {
-    throw new Error("Dev glues can't be migrated");
+    throw new UserFacingError("Dev glues can't be migrated");
   }
   return glue;
 }
@@ -145,7 +147,7 @@ async function resolveMigrationPlan(
     switch (result.error) {
       case "secret_conflicts": {
         if (!isInteractive()) {
-          throw new Error(
+          throw new UserFacingError(
             `The target workspace already has different values for these secrets: ${
               result.names.join(", ")
             }. Pass --on-secret-conflict use-target or overwrite.`,
@@ -167,7 +169,7 @@ async function resolveMigrationPlan(
       }
       case "name_conflict": {
         if (!isInteractive()) {
-          throw new Error(
+          throw new UserFacingError(
             "The target workspace already has a glue with that name. Pass --new-name to rename it.",
           );
         }
@@ -180,7 +182,7 @@ async function resolveMigrationPlan(
           ` - ${a.type} {${prettyLabels(a.labels)}} owned by ${a.ownerEmail ?? a.ownerUserId}: ` +
           `they can run \`glue accounts lease ${a.id} --workspace ${params.toWorkspaceId}\``
         );
-        throw new Error(
+        throw new UserFacingError(
           `The glue uses accounts that aren't available in the target workspace, and you don't own them:\n${
             lines.join("\n")
           }`,

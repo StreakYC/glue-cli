@@ -42,6 +42,7 @@ import {
   setRoleCmd,
 } from "./commands/workspace.ts";
 import { WORKSPACE_ID_REGEX } from "./lib/workspaces.ts";
+import { UserFacingError } from "./lib/UserFacingError.ts";
 
 const useColors = !Deno.noColor && Deno.stdout.isTerminal();
 setColorEnabled(useColors);
@@ -255,8 +256,10 @@ const cmd = new Command()
       .action(renameCmd)
       .command("remove", "Remove a member from a workspace")
       .arguments("<email:string>")
+      .option("-y, --yes", "Don't ask for confirmation")
       .action(removeMemberCmd)
       .command("leave", "Leave a workspace")
+      .option("-y, --yes", "Don't ask for confirmation")
       .action(leaveCmd)
       .command("set-role", "Make a member an owner, or an owner a member")
       .type("role", new EnumType(["owner", "member"] as const))
@@ -313,7 +316,15 @@ const cmd = new Command()
       .arguments("<key:string>")
       .action(deleteSecretCmd),
   );
-await cmd.parse(Deno.args);
+try {
+  await cmd.parse(Deno.args);
+} catch (e) {
+  if (e instanceof UserFacingError) {
+    console.error(`error: ${e.message}`);
+    Deno.exit(1);
+  }
+  throw e;
+}
 Deno.exit(0);
 
 // HELPERS --------------------------------

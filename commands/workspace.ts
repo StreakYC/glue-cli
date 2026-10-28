@@ -1,4 +1,4 @@
-import { Confirm } from "@cliffy/prompt/confirm";
+import { UserFacingError } from "../lib/UserFacingError.ts";
 import { Input } from "@cliffy/prompt/input";
 import { Table } from "@cliffy/table";
 import { bold, dim } from "@std/fmt/colors";
@@ -19,6 +19,7 @@ import {
 import { describeWorkspace, getMyWorkspaces, pickWorkspace } from "../lib/workspaces.ts";
 import type { WorkspaceOptions } from "../lib/workspaces.ts";
 import { formatEpochMillis, runStep } from "../ui/utils.ts";
+import { confirmUnlessYes } from "../lib/confirm.ts";
 
 interface JsonOptions extends WorkspaceOptions {
   json?: boolean;
@@ -37,7 +38,7 @@ function displayName(user: UserDTO): string {
 function findMember(workspace: WorkspaceDetailDTO, email: string) {
   const member = workspace.members.find((m) => m.user.email.toLowerCase() === email.toLowerCase());
   if (!member) {
-    throw new Error(`${email} isn't a member of ${describeWorkspace(workspace)}`);
+    throw new UserFacingError(`${email} isn't a member of ${describeWorkspace(workspace)}`);
   }
   return member;
 }
@@ -72,7 +73,7 @@ export async function createWorkspaceCmd(_options: unknown, name?: string) {
 
   if (!name) {
     if (!Deno.stdin.isTerminal()) {
-      throw new Error("You must provide a workspace name when not running in a terminal");
+      throw new UserFacingError("You must provide a workspace name when not running in a terminal");
     }
     name = await Input.prompt({ message: "Workspace name" });
   }
@@ -102,7 +103,7 @@ export async function inviteCmd(options: WorkspaceOptions, email: string) {
     () => inviteToWorkspace(workspace.id, email),
   );
   if (!emailSent) {
-    console.log(dim("The invite was created, but the invite email couldn't be sent."));
+    console.log(dim("The invite was created, but no invite email was sent."));
   }
 }
 
@@ -167,8 +168,12 @@ export async function renameCmd(options: WorkspaceOptions, name: string) {
   );
 }
 
+interface YesOptions extends WorkspaceOptions {
+  yes?: boolean;
+}
+
 /** glue workspace remove <email> */
-export async function removeMemberCmd(options: WorkspaceOptions, email: string) {
+export async function removeMemberCmd(options: YesOptions, email: string) {
   await checkForAuthCredsOtherwiseExit();
 
   const workspace = await pickWorkspace(options, {
@@ -180,10 +185,10 @@ export async function removeMemberCmd(options: WorkspaceOptions, email: string) 
   const detail = await runStep("Loading members...", () => getWorkspace(workspace.id));
   const member = findMember(detail, email);
 
-  const confirm = await Confirm.prompt({
-    message: `Remove ${email} from ${describeWorkspace(workspace)}?`,
-    default: false,
-  });
+  const confirm = await confirmUnlessYes(
+    `Remove ${email} from ${describeWorkspace(workspace)}?`,
+    options.yes,
+  );
   if (!confirm) {
     return;
   }
@@ -194,7 +199,7 @@ export async function removeMemberCmd(options: WorkspaceOptions, email: string) 
 }
 
 /** glue workspace leave */
-export async function leaveCmd(options: WorkspaceOptions) {
+export async function leaveCmd(options: YesOptions) {
   await checkForAuthCredsOtherwiseExit();
 
   const workspace = await pickWorkspace(options, {
@@ -204,10 +209,7 @@ export async function leaveCmd(options: WorkspaceOptions) {
     noneEligibleMessage: "You're only in your personal workspace, which can't be left.",
   });
 
-  const confirm = await Confirm.prompt({
-    message: `Leave ${describeWorkspace(workspace)}?`,
-    default: false,
-  });
+  const confirm = await confirmUnlessYes(`Leave ${describeWorkspace(workspace)}?`, options.yes);
   if (!confirm) {
     return;
   }

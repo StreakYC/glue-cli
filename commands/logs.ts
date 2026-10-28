@@ -148,7 +148,10 @@ function renderExecutions(executions: ExecutionDTO[], logLines: number, fullLogL
     );
     e.logs.slice(0, logLines).forEach((l) => {
       let toConsole = dim(`[${new Date(l.timestamp).toLocaleString()}] ${l.text.trim()}`);
-      if (!fullLogLines && toConsole.length > Deno.consoleSize().columns) {
+      // Only clip to the terminal's width when there is a terminal.
+      if (
+        !fullLogLines && Deno.stdout.isTerminal() && toConsole.length > Deno.consoleSize().columns
+      ) {
         toConsole = toConsole.slice(0, Deno.consoleSize().columns - 3) + "...";
       }
       console.log(toConsole);

@@ -5,6 +5,7 @@ import { delay } from "@std/async/delay";
 import { GLUE_API_SERVER, GLUE_CLI_USER_AGENT } from "./common.ts";
 import { retry } from "@std/async/retry";
 import { Registrations } from "@streak-glue/runtime/backendTypes";
+import { UserFacingError } from "./lib/UserFacingError.ts";
 
 export const GlueEnvironment = z.enum(["dev", "deploy"]);
 export type GlueEnvironment = z.infer<typeof GlueEnvironment>;
@@ -64,7 +65,7 @@ export async function backendRequest<T>(
   const res = await backendFetch(path, options, forceTrace);
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(
+    throw new UserFacingError(
       `Failed request: ${path} (${
         options.method ?? "GET"
       }): ${res.status} ${res.statusText} ${body}`,
@@ -620,7 +621,9 @@ export async function deleteSecret(name: string, workspaceId: string): Promise<D
   }
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`);
+    throw new UserFacingError(
+      `Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`,
+    );
   }
   return await res.json() as DeleteSecretResult;
 }
@@ -650,7 +653,9 @@ export async function unleaseAccount(
   }
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`);
+    throw new UserFacingError(
+      `Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`,
+    );
   }
   return await res.json() as UnleaseAccountResult;
 }
@@ -817,5 +822,7 @@ export async function migrateGlue(
       return { ok: false, ...parsed };
     }
   }
-  throw new Error(`Failed request: ${path} (POST): ${res.status} ${res.statusText} ${body}`);
+  throw new UserFacingError(
+    `Failed request: ${path} (POST): ${res.status} ${res.statusText} ${body}`,
+  );
 }

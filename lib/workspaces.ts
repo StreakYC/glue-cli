@@ -1,3 +1,4 @@
+import { UserFacingError } from "./UserFacingError.ts";
 import { Select } from "@cliffy/prompt/select";
 import {
   getGluesByName,
@@ -64,7 +65,7 @@ export async function pickWorkspace(
     case "chosen":
       return choice.workspace;
     case "error":
-      throw new Error(choice.message);
+      throw new UserFacingError(choice.message);
     case "ask":
       return await askForWorkspace(
         choice.options,
@@ -75,8 +76,8 @@ export async function pickWorkspace(
 
 async function askForWorkspace(options: WorkspaceDTO[], message: string): Promise<WorkspaceDTO> {
   if (!Deno.stdin.isTerminal() || !Deno.stdout.isTerminal()) {
-    throw new Error(
-      `You're in more than one workspace, so pass one with --workspace. Your workspaces:\n${
+    throw new UserFacingError(
+      `${message} Pass one with --workspace:\n${
         options.map((w) => ` - ${describeWorkspace(w)}`).join("\n")
       }`,
     );
@@ -117,7 +118,7 @@ export async function findGlueByName(
     return workspace ? describeWorkspace(workspace) : glue.workspaceId;
   };
   if (!Deno.stdin.isTerminal() || !Deno.stdout.isTerminal()) {
-    throw new Error(
+    throw new UserFacingError(
       `More than one workspace has a glue named ${
         JSON.stringify(name)
       }, so pass one with --workspace:\n${matches.map((g) => ` - ${describe(g)}`).join("\n")}`,
