@@ -4,7 +4,14 @@ import { bold, dim, green, red, yellow } from "@std/fmt/colors";
 import { formatEpochMillis } from "../ui/utils.ts";
 import { runStep } from "../ui/utils.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
-interface ListOptions {
+import {
+  getMyWorkspaces,
+  referencedWorkspaces,
+  workspaceNameForGlue,
+  type WorkspaceOptions,
+} from "../lib/workspaces.ts";
+
+interface ListOptions extends WorkspaceOptions {
   name?: string;
   tag?: string[];
   excludeTags?: string[];
@@ -15,7 +22,11 @@ interface ListOptions {
 export const list = async (options: ListOptions) => {
   await checkForAuthCredsOtherwiseExit();
 
-  const filters: GetGluesFilters = { environment: "deploy", excludeTags: ["archived"] };
+  const filters: GetGluesFilters = {
+    environment: "deploy",
+    excludeTags: ["archived"],
+    workspaceIds: options.workspace,
+  };
 
   if (options.name) {
     filters.name = options.name;
@@ -33,18 +44,40 @@ export const list = async (options: ListOptions) => {
   }
 
   if (options.json) {
-    const glues = await getGlues(filters);
-    console.log(JSON.stringify(glues, null, 2));
+    const [glues, workspaces] = await Promise.all([getGlues(filters), getMyWorkspaces()]);
+    console.log(JSON.stringify(
+      {
+        glues,
+        workspaces: referencedWorkspaces(glues.map((g) => g.workspaceId), workspaces),
+      },
+      null,
+      2,
+    ));
     return;
   } else {
-    const glues = await runStep("Loading glues...", () => getGlues(filters));
+    const [glues, workspaces] = await runStep(
+      "Loading glues...",
+      () => Promise.all([getGlues(filters), getMyWorkspaces()]),
+    );
+    // Only show workspaces when the glues span more than one.
+    const showWorkspace = new Set(glues.map((g) => g.workspaceId)).size > 1;
     new Table()
-      .header(["Name", "Running", "Runs", "Errors", "Last run", "Last deployed", "Tags"])
+      .header([
+        "Name",
+        ...(showWorkspace ? ["Workspace"] : []),
+        "Running",
+        "Runs",
+        "Errors",
+        "Last run",
+        "Last deployed",
+        "Tags",
+      ])
       .body(
         glues.map((
           glue,
         ) => [
           bold(glue.name),
+          ...(showWorkspace ? [workspaceNameForGlue(glue, workspaces)] : []),
           getRunningStringForDeploymentStatus(glue.currentDeployment?.status),
           glue.executionSummary.totalCount
             ? green(glue.executionSummary.totalCount.toString())
