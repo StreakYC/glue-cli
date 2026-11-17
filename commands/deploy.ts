@@ -18,7 +18,6 @@ import { Confirm } from "@cliffy/prompt/confirm";
 import { resolve } from "@std/path/resolve";
 import {
   describeWorkspace,
-  isSamePath,
   lastDeployedPathKey,
   pickWorkspaceForFile,
   rememberFileWorkspace,
@@ -39,7 +38,7 @@ export async function deploy(options: DeployOptions, file: string) {
   const tags = normalizeTags(options.tags);
   const absPath = resolve(file);
   // Picked before the deploy UI starts, since it may prompt.
-  const workspace = await pickWorkspaceForFile(options, absPath, glueName, "deploy");
+  const workspace = await pickWorkspaceForFile(options, absPath, "deploy");
 
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
@@ -114,7 +113,10 @@ export async function deploy(options: DeployOptions, file: string) {
     // overwritten *unless* they have already deployed this file (identified by
     // absolute path) on their current machine to this glue before.
     const lookupResult = await kv.get<string>(lastDeployedPathKey(existingGlue.id));
-    if (!lookupResult.value || !isSamePath(absPath, lookupResult.value)) {
+    if (
+      !lookupResult.value ||
+      absPath.localeCompare(lookupResult.value, undefined, { sensitivity: "base" }) !== 0
+    ) {
       await unmountUI();
       console.warn(
         `Warning: You are deploying to an existing glue named %c${

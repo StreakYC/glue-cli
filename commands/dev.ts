@@ -78,12 +78,7 @@ export async function dev(options: DevOptions, filename: string) {
 
     const glueName = await getGlueName(filename, options.name);
     // Picked before the dev UI starts, since it may prompt.
-    const workspace = await pickWorkspaceForFile(
-      options,
-      path.resolve(filename),
-      glueName,
-      "dev",
-    );
+    const workspace = await pickWorkspaceForFile(options, path.resolve(filename), "dev");
     const reloadStreakRuntime = await streakRuntimeUpdateChecks(filename, options.verbose);
 
     const glueCliWebsocketAddr = await wsListen(() => {

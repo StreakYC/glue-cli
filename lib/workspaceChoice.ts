@@ -67,7 +67,3 @@ export function referencedWorkspaces(
   const ids = new Set(workspaceIds);
   return workspaces.filter((w) => ids.has(w.id));
 }
-
-export function isSamePath(a: string, b: string): boolean {
-  return a.localeCompare(b, undefined, { sensitivity: "base" }) === 0;
-}

@@ -10,12 +10,11 @@ import {
 import { GLUE_API_SERVER } from "../common.ts";
 import { kv } from "../db.ts";
 import { runStep } from "../ui/utils.ts";
-import { chooseWorkspace, describeWorkspace, isSamePath } from "./workspaceChoice.ts";
+import { chooseWorkspace, describeWorkspace } from "./workspaceChoice.ts";
 
 export {
   chooseWorkspace,
   describeWorkspace,
-  isSamePath,
   referencedWorkspaces,
   workspaceNameForGlue,
 } from "./workspaceChoice.ts";
@@ -149,16 +148,12 @@ export async function rememberFileWorkspace(absPath: string, workspaceId: string
  *
  * 1. the one passed with `--workspace`;
  * 2. the one this file was last deployed to from this machine;
- * 3. the workspace of an existing glue with this name that was last deployed
- *    from this file (dev glues are private, so any existing dev glue counts),
- *    which covers files deployed before workspaces existed;
- * 4. the user's only workspace;
- * 5. otherwise the user is asked.
+ * 3. the user's only workspace;
+ * 4. otherwise the user is asked.
  */
 export async function pickWorkspaceForFile(
   options: WorkspaceOptions,
   absPath: string,
-  glueName: string,
   environment: GlueEnvironment,
 ): Promise<WorkspaceDTO> {
   const purpose = environment === "dev" ? "run this glue in" : "deploy to";
@@ -171,25 +166,6 @@ export async function pickWorkspaceForFile(
   const rememberedWorkspace = workspaces.find((w) => w.id === remembered.value);
   if (rememberedWorkspace) {
     return rememberedWorkspace;
-  }
-
-  const existing = await getGluesByName(glueName, environment);
-  const fromThisFile: GlueDTO[] = [];
-  for (const glue of existing) {
-    if (environment === "dev") {
-      fromThisFile.push(glue);
-      continue;
-    }
-    const lastPath = await kv.get<string>(lastDeployedPathKey(glue.id));
-    if (lastPath.value && isSamePath(lastPath.value, absPath)) {
-      fromThisFile.push(glue);
-    }
-  }
-  if (fromThisFile.length === 1) {
-    const workspace = workspaces.find((w) => w.id === fromThisFile[0].workspaceId);
-    if (workspace) {
-      return workspace;
-    }
   }
 
   return await pickWorkspace(options, { purpose });

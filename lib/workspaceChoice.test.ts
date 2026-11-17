@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import type { WorkspaceDTO } from "../backend.ts";
-import { chooseWorkspace, isSamePath, referencedWorkspaces } from "./workspaceChoice.ts";
+import { chooseWorkspace, referencedWorkspaces } from "./workspaceChoice.ts";
 
 function workspace(id: string, overrides: Partial<WorkspaceDTO> = {}): WorkspaceDTO {
   return {
@@ -64,9 +64,4 @@ Deno.test("chooseWorkspace - errors when nothing is eligible", () => {
 
 Deno.test("referencedWorkspaces - keeps only referenced workspaces, in order", () => {
   assertEquals(referencedWorkspaces(["w_3", "w_1", "w_3"], all), [personal, other]);
-});
-
-Deno.test("isSamePath - ignores case", () => {
-  assertEquals(isSamePath("/Users/me/Glue.ts", "/users/me/glue.ts"), true);
-  assertEquals(isSamePath("/Users/me/a.ts", "/Users/me/b.ts"), false);
 });
