@@ -12,7 +12,7 @@ import {
   stopGlue,
   streamChangesTillDeploymentReady,
 } from "../backend.ts";
-import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO, WorkspaceDTO } from "../backend.ts";
+import type { DeploymentDTO, ExecutionDTO, GlueDTO, TriggerDTO } from "../backend.ts";
 import type { DevUIProps } from "../ui/dev.tsx";
 import { DevUI } from "../ui/dev.tsx";
 import { Hono } from "hono";
@@ -42,7 +42,11 @@ import { once } from "node:events";
 import type { CommonCommandOptions } from "./common.ts";
 import { findDenoConfigPaths } from "../lib/denoConfig.ts";
 import { UserFacingError } from "../lib/UserFacingError.ts";
-import { pickWorkspaceForFile, rememberFileWorkspace } from "../lib/workspaces.ts";
+import {
+  pickWorkspaceForFile,
+  rememberFileWorkspace,
+  type WorkspaceRef,
+} from "../lib/workspaces.ts";
 
 const GLUE_DEV_PORT = getAvailablePort({ preferredPort: 8001 });
 const DEFAULT_DEBUG_PORT = 9229;
@@ -501,7 +505,7 @@ async function shutdownGlue(glueId: string, signal?: AbortSignal) {
 
 async function createDeploymentAndMaybeGlue(
   glueName: string,
-  workspace: WorkspaceDTO,
+  workspace: WorkspaceRef,
   registrations: Registrations,
   signal?: AbortSignal,
 ): Promise<{ glue: GlueDTO; deployment: DeploymentDTO }> {

@@ -10,18 +10,28 @@ import {
 import { GLUE_API_SERVER } from "../common.ts";
 import { kv } from "../db.ts";
 import { runStep } from "../ui/utils.ts";
-import { chooseWorkspace, describeWorkspace } from "./workspaceChoice.ts";
+import { describeWorkspace, type WorkspaceRef } from "./workspaceChoice.ts";
 
 export {
-  chooseWorkspace,
   describeWorkspace,
   referencedWorkspaces,
   workspaceNameForGlue,
+  type WorkspaceRef,
 } from "./workspaceChoice.ts";
 
-/** The global `--workspace` option, as parsed by Cliffy. */
+/** The global `--workspace` option, which takes a single id. */
 export interface WorkspaceOptions {
-  workspace?: string[];
+  workspace?: string;
+}
+
+/** Adds the `--workspaces` option of list commands, which takes several workspace ids. */
+export interface WorkspacesOptions extends WorkspaceOptions {
+  workspaces?: string[];
+}
+
+/** Returns the workspace ids a list command should filter by, if any were passed. */
+export function workspaceIdsToList(options: WorkspacesOptions): string[] | undefined {
+  return options.workspaces ?? (options.workspace ? [options.workspace] : undefined);
 }
 
 export const WORKSPACE_ID_REGEX = /^w_[0-9a-f]+$/;
@@ -35,45 +45,41 @@ export function getMyWorkspaces(): Promise<WorkspaceDTO[]> {
 }
 
 /**
- * Picks the single workspace a command acts on (see {@link chooseWorkspace}),
- * prompting in a terminal when it's ambiguous.
+ * Picks the single workspace a command acts on: the one passed with
+ * `--workspace`, otherwise the only candidate, otherwise the user is asked in
+ * a terminal.
+ *
+ * A `--workspace` id is returned as given, without loading the user's
+ * workspaces, so it's the server that accepts or rejects it.
  */
 export async function pickWorkspace(
   options: WorkspaceOptions,
   config: {
     /** e.g. "deploy to" or "invite to" */
     purpose: string;
-    /** limits which workspaces can be picked */
-    filter?: (workspace: WorkspaceDTO) => boolean;
-    /** explains why a workspace passed with `--workspace` can't be picked */
-    ineligibleReason?: string;
-    /** the error when no workspace can be picked */
-    noneEligibleMessage?: string;
+    /** picks the workspaces to offer; defaults to all of the user's workspaces */
+    candidates?: (mine: WorkspaceDTO[]) => WorkspaceRef[] | Promise<WorkspaceRef[]>;
+    /** the error when there are no workspaces to offer */
+    noCandidatesMessage?: string;
   },
-): Promise<WorkspaceDTO> {
-  const all = await getMyWorkspaces();
-  const eligible = config.filter ? all.filter(config.filter) : all;
-  const choice = chooseWorkspace(
-    options.workspace,
-    eligible,
-    all,
-    config.ineligibleReason,
-    config.noneEligibleMessage,
-  );
-  switch (choice.kind) {
-    case "chosen":
-      return choice.workspace;
-    case "error":
-      throw new UserFacingError(choice.message);
-    case "ask":
-      return await askForWorkspace(
-        choice.options,
-        `Which workspace do you want to ${config.purpose}?`,
-      );
+): Promise<WorkspaceRef> {
+  if (options.workspace) {
+    return { id: options.workspace };
   }
+  const mine = await getMyWorkspaces();
+  const candidates = config.candidates ? await config.candidates(mine) : mine;
+  if (candidates.length === 0) {
+    throw new UserFacingError(
+      config.noCandidatesMessage ?? "None of your workspaces can be used for this.",
+    );
+  }
+  if (candidates.length === 1) {
+    return candidates[0];
+  }
+  return await askForWorkspace(candidates, `Which workspace do you want to ${config.purpose}?`);
 }
 
-async function askForWorkspace(options: WorkspaceDTO[], message: string): Promise<WorkspaceDTO> {
+async function askForWorkspace(options: WorkspaceRef[], message: string): Promise<WorkspaceRef> {
   if (!Deno.stdin.isTerminal() || !Deno.stdout.isTerminal()) {
     throw new UserFacingError(
       `${message} Pass one with --workspace:\n${
@@ -89,7 +95,7 @@ async function askForWorkspace(options: WorkspaceDTO[], message: string): Promis
 }
 
 /**
- * Finds the glue with a name, in the `--workspace` workspaces or all of the
+ * Finds the glue with a name, in the `--workspace` workspace or all of the
  * user's workspaces. If several workspaces have a glue with that name, the
  * user picks one (or must pass `--workspace` outside a terminal).
  *
@@ -102,15 +108,16 @@ export async function findGlueByName(
   options: WorkspaceOptions,
   config: { quiet?: boolean } = {},
 ): Promise<GlueDTO | undefined> {
-  const [matches, workspaces] = await runStep(
+  const matches = await runStep(
     `Loading glue ${name}...`,
-    () => Promise.all([getGluesByName(name, environment, options.workspace), getMyWorkspaces()]),
+    () => getGluesByName(name, environment, options.workspace ? [options.workspace] : undefined),
     true,
     config.quiet,
   );
   if (matches.length <= 1) {
     return matches[0];
   }
+  const workspaces = await getMyWorkspaces();
   const workspaceFor = (glue: GlueDTO) => workspaces.find((w) => w.id === glue.workspaceId);
   const describe = (glue: GlueDTO) => {
     const workspace = workspaceFor(glue);
@@ -155,7 +162,7 @@ export async function pickWorkspaceForFile(
   options: WorkspaceOptions,
   absPath: string,
   environment: GlueEnvironment,
-): Promise<WorkspaceDTO> {
+): Promise<WorkspaceRef> {
   const purpose = environment === "dev" ? "run this glue in" : "deploy to";
   if (options.workspace) {
     return await pickWorkspace(options, { purpose });

@@ -17,7 +17,7 @@ async function loadGlueOptions(options: WorkspaceOptions) {
         getGlues({
           environment: "deploy",
           excludeTags: ["archived"],
-          workspaceIds: options.workspace,
+          workspaceIds: options.workspace ? [options.workspace] : undefined,
         }),
         getMyWorkspaces(),
       ]),

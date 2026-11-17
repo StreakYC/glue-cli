@@ -20,6 +20,7 @@ import {
   pickWorkspace,
   updateFileWorkspaceAfterMove,
   type WorkspaceOptions,
+  type WorkspaceRef,
 } from "../lib/workspaces.ts";
 import { runStep } from "../ui/utils.ts";
 import { confirmUnlessYes } from "../lib/confirm.ts";
@@ -46,15 +47,17 @@ export async function migrate(options: MigrateOptions, query?: string) {
   await checkForAuthCredsOtherwiseExit();
 
   const glue = await findGlueToMigrate(options, query);
-  const workspaces = await getMyWorkspaces();
-  const from = workspaces.find((w) => w.id === glue.workspaceId);
-  const to = await pickWorkspace({ workspace: options.to ? [options.to] : undefined }, {
+  const to = await pickWorkspace({ workspace: options.to }, {
     purpose: `move ${glue.name} to`,
-    filter: (w) => w.id !== glue.workspaceId,
-    ineligibleReason: "is the workspace the glue is already in",
-    noneEligibleMessage:
+    candidates: (mine) => mine.filter((w) => w.id !== glue.workspaceId),
+    noCandidatesMessage:
       "You're only in one workspace. Create another with `glue workspace create`.",
   });
+  // Don't load the user's workspaces just to show the source's name: they're
+  // already loaded only if `--to` wasn't passed.
+  const from: WorkspaceRef =
+    (options.to ? undefined : (await getMyWorkspaces()).find((w) => w.id === glue.workspaceId)) ??
+      { id: glue.workspaceId };
 
   const params: MigrateGlueParams = {
     toWorkspaceId: to.id,
@@ -65,9 +68,9 @@ export async function migrate(options: MigrateOptions, query?: string) {
   // Do a dry run first, resolving the expected failures, then show the plan.
   const plan = await resolveMigrationPlan(glue, params);
   console.log(
-    `\nMoving ${bold(glue.name)} from ${from ? describeWorkspace(from) : glue.workspaceId} to ${
-      describeWorkspace(to)
-    }${params.newName ? ` as ${bold(params.newName)}` : ""}.`,
+    `\nMoving ${bold(glue.name)} from ${describeWorkspace(from)} to ${describeWorkspace(to)}${
+      params.newName ? ` as ${bold(params.newName)}` : ""
+    }.`,
   );
   printPlan(plan);
 

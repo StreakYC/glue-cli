@@ -9,10 +9,12 @@ import {
   getMyWorkspaces,
   pickWorkspace,
   referencedWorkspaces,
+  workspaceIdsToList,
   type WorkspaceOptions,
+  type WorkspacesOptions,
 } from "../lib/workspaces.ts";
 
-interface ListSecretsOptions extends WorkspaceOptions {
+interface ListSecretsOptions extends WorkspacesOptions {
   json?: boolean;
 }
 
@@ -28,7 +30,7 @@ export async function setSecret(options: WorkspaceOptions, key: string, value: s
 export async function listSecrets(options: ListSecretsOptions) {
   await checkForAuthCredsOtherwiseExit();
 
-  const load = () => Promise.all([getSecrets(options.workspace), getMyWorkspaces()]);
+  const load = () => Promise.all([getSecrets(workspaceIdsToList(options)), getMyWorkspaces()]);
 
   if (options.json) {
     const [secrets, workspaces] = await load();
@@ -70,16 +72,17 @@ export async function listSecrets(options: ListSecretsOptions) {
 export async function deleteSecretCmd(options: WorkspaceOptions, key: string) {
   await checkForAuthCredsOtherwiseExit();
 
-  // Only workspaces that have a secret with this name are candidates.
-  const secrets = await runStep("Loading secrets...", () => getSecrets(options.workspace));
-  const workspaceIdsWithSecret = new Set(
-    secrets.filter((s) => s.name === key).map((s) => s.workspaceId),
-  );
   const workspace = await pickWorkspace(options, {
     purpose: "delete the secret from",
-    filter: (w) => workspaceIdsWithSecret.has(w.id),
-    ineligibleReason: `doesn't have a secret named ${key}`,
-    noneEligibleMessage: `No secret named ${key} found.`,
+    // Only workspaces that have a secret with this name are offered.
+    candidates: async (mine) => {
+      const secrets = await runStep("Loading secrets...", () => getSecrets());
+      const workspaceIdsWithSecret = new Set(
+        secrets.filter((s) => s.name === key).map((s) => s.workspaceId),
+      );
+      return mine.filter((w) => workspaceIdsWithSecret.has(w.id));
+    },
+    noCandidatesMessage: `No secret named ${key} found.`,
   });
 
   const confirm = await Confirm.prompt({

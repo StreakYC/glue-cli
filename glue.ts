@@ -64,9 +64,8 @@ const cmd = new Command()
   .globalOption("--verbose", "Enable verbose logging for debugging purposes", { default: false })
   .globalType("workspace-id", validateWorkspaceId)
   .globalOption(
-    "--workspace <workspaceIds:workspace-id[]>",
-    "Workspace ids to operate on, comma separated. Defaults to all of your workspaces, or asks when a command needs exactly one. See `glue workspace list`.",
-    { separator: "," },
+    "--workspace <workspaceId:workspace-id>",
+    "The id of the workspace to operate on. See `glue workspace list`.",
   )
   .command("upgrade", upgradeCommand)
   // DEV ----------------------------
@@ -130,6 +129,12 @@ const cmd = new Command()
   .option("-e, --exclude-tags <excludeTags:string[]>", "Exclude glues by tag", { separator: " " })
   .option("-a, --all", "Show all glues, including archived ones")
   .option("-j, --json", "Output in JSON format")
+  .type("listed-workspace-id", validateWorkspaceId)
+  .option(
+    "--workspaces <workspaceIds:listed-workspace-id[]>",
+    "Only list glues in the workspaces with these comma-separated ids. Defaults to all of your workspaces.",
+    { separator: ",", conflicts: ["workspace"] },
+  )
   .action(list)
   // TAG ----------------------------
   .command("tag", "Add, remove, or replace tags on one or more glues")
@@ -273,9 +278,15 @@ const cmd = new Command()
       .description("Manage accounts")
       .command(
         "list",
-        "List your accounts, or with --workspace, the accounts available in those workspaces",
+        "List your accounts",
       )
       .option("-j, --json", "Output in JSON format")
+      .type("listed-workspace-id", validateWorkspaceId)
+      .option(
+        "--workspaces <workspaceIds:listed-workspace-id[]>",
+        "List the accounts leased to the workspaces with these comma-separated ids, including other members' accounts, instead of the accounts you own.",
+        { separator: ",", conflicts: ["workspace"] },
+      )
       .action(accounts)
       .command("delete", "Delete an account")
       .arguments("[id:string]")
@@ -308,6 +319,12 @@ const cmd = new Command()
         "List all secrets",
       )
       .option("-j, --json", "Output in JSON format")
+      .type("listed-workspace-id", validateWorkspaceId)
+      .option(
+        "--workspaces <workspaceIds:listed-workspace-id[]>",
+        "Only list secrets in the workspaces with these comma-separated ids. Defaults to all of your workspaces.",
+        { separator: ",", conflicts: ["workspace"] },
+      )
       .action(listSecrets)
       .command(
         "delete",
@@ -333,7 +350,7 @@ Deno.exit(0);
  * The root command's global options, which Cliffy passes to nested command
  * groups too.
  */
-type GlobalOptions = { verbose: boolean; workspace?: string[] };
+type GlobalOptions = { verbose: boolean; workspace?: string };
 // deno-lint-ignore no-explicit-any
 function validateWithZodEnum(zodEnum: z.ZodEnum<any>) {
   return ({ value }: ArgumentValue): z.infer<typeof zodEnum> => {

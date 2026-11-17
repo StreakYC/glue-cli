@@ -4,7 +4,6 @@ import {
   deleteAccount,
   getAccountById,
   getAccounts,
-  getLoggedInUser,
   type GlueDTO,
   leaseAccount,
   stopGlue,
@@ -23,21 +22,25 @@ import {
   getMyWorkspaces,
   pickWorkspace,
   referencedWorkspaces,
+  workspaceIdsToList,
   type WorkspaceOptions,
+  type WorkspaceRef,
+  type WorkspacesOptions,
 } from "../lib/workspaces.ts";
 
-interface AccountsOptions extends WorkspaceOptions {
+interface AccountsOptions extends WorkspacesOptions {
   json?: boolean;
 }
 
 /**
- * Lists the user's own accounts, or with `--workspace`, the accounts leased to
- * those workspaces (including other members' accounts).
+ * Lists the accounts the user owns, or when `--workspace` or `--workspaces` is
+ * passed, the accounts leased to those workspaces (including other members'
+ * accounts).
  */
 export const accounts = async (options: AccountsOptions) => {
   await checkForAuthCredsOtherwiseExit();
 
-  const load = () => Promise.all([getAccounts(options.workspace), getMyWorkspaces()]);
+  const load = () => Promise.all([getAccounts(workspaceIdsToList(options)), getMyWorkspaces()]);
 
   if (options.json) {
     const [accounts, workspaces] = await load();
@@ -97,18 +100,6 @@ export const accounts = async (options: AccountsOptions) => {
       .render();
   }
 };
-
-/** Like {@link getOrAskForAccount}, but only for accounts the user owns. */
-async function getOrAskForOwnAccount(id: string | undefined, verb: string): Promise<AccountDTO> {
-  const [account, me] = await Promise.all([
-    getOrAskForAccount(id, verb),
-    getLoggedInUser(),
-  ]);
-  if (account.userId !== me.id) {
-    throw new UserFacingError("Only the account's owner can lease or unlease it.");
-  }
-  return account;
-}
 
 /** Loads an account by id, or lets the user pick one of their own accounts. */
 async function getOrAskForAccount(id: string | undefined, verb: string): Promise<AccountDTO> {
@@ -182,13 +173,12 @@ export const deleteAccountCmd = async (_options: unknown, id?: string) => {
 export const leaseAccountCmd = async (options: WorkspaceOptions, id?: string) => {
   await checkForAuthCredsOtherwiseExit();
 
-  const account = await getOrAskForOwnAccount(id, "lease to a workspace");
+  const account = await getOrAskForAccount(id, "lease to a workspace");
   const leased = new Set(account.leasedWorkspaceIds ?? []);
   const workspace = await pickWorkspace(options, {
     purpose: "lease the account to",
-    filter: (w) => !leased.has(w.id),
-    ineligibleReason: "already has this account",
-    noneEligibleMessage: "The account is already leased to all of your workspaces.",
+    candidates: (mine) => mine.filter((w) => !leased.has(w.id)),
+    noCandidatesMessage: "The account is already leased to all of your workspaces.",
   });
 
   await runStep(
@@ -201,14 +191,17 @@ export const leaseAccountCmd = async (options: WorkspaceOptions, id?: string) =>
 export const unleaseAccountCmd = async (options: WorkspaceOptions, id?: string) => {
   await checkForAuthCredsOtherwiseExit();
 
-  const account = await getOrAskForOwnAccount(id, "unlease from a workspace");
-  const leased = new Set(account.leasedWorkspaceIds ?? []);
+  const account = await getOrAskForAccount(id, "unlease from a workspace");
   const workspace = await pickWorkspace(options, {
     purpose: "unlease the account from",
-    filter: (w) => leased.has(w.id) && !w.personal,
-    ineligibleReason:
-      "isn't a shared workspace this account is leased to (accounts always stay leased to your personal workspace)",
-    noneEligibleMessage: "The account isn't leased to any of your shared workspaces.",
+    // A leased workspace that isn't one of the user's is offered by its id.
+    // Accounts always stay leased to their owner's personal workspace.
+    candidates: (mine) =>
+      (account.leasedWorkspaceIds ?? [])
+        .map((id): WorkspaceRef => mine.find((w) => w.id === id) ?? { id })
+        .filter((w) => !w.personal),
+    noCandidatesMessage:
+      "The account isn't leased to any of your shared workspaces. To unlease it from a workspace you've left, pass that workspace's id with --workspace.",
   });
 
   const unlease = () =>

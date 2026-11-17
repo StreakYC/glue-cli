@@ -25,8 +25,8 @@ interface JsonOptions extends WorkspaceOptions {
   json?: boolean;
 }
 
-const isSharedWorkspaceIOwn = (w: WorkspaceDTO) => w.role === "owner" && !w.personal;
-const NOT_SHARED_OWNED = "isn't a shared workspace you own";
+const sharedWorkspacesIOwn = (mine: WorkspaceDTO[]) =>
+  mine.filter((w) => w.role === "owner" && !w.personal);
 const NO_SHARED_OWNED =
   "You don't own any shared workspaces. Create one with `glue workspace create`.";
 
@@ -94,9 +94,8 @@ export async function inviteCmd(options: WorkspaceOptions, email: string) {
 
   const workspace = await pickWorkspace(options, {
     purpose: `invite ${email} to`,
-    filter: isSharedWorkspaceIOwn,
-    ineligibleReason: NOT_SHARED_OWNED,
-    noneEligibleMessage: NO_SHARED_OWNED,
+    candidates: sharedWorkspacesIOwn,
+    noCandidatesMessage: NO_SHARED_OWNED,
   });
   const { emailSent } = await runStep(
     `Inviting ${email} to ${describeWorkspace(workspace)}...`,
@@ -159,8 +158,7 @@ export async function renameCmd(options: WorkspaceOptions, name: string) {
 
   const workspace = await pickWorkspace(options, {
     purpose: "rename",
-    filter: (w) => w.role === "owner",
-    ineligibleReason: "isn't one you own",
+    candidates: (mine) => mine.filter((w) => w.role === "owner"),
   });
   await runStep(
     `Renaming ${describeWorkspace(workspace)} to ${name}...`,
@@ -178,9 +176,8 @@ export async function removeMemberCmd(options: YesOptions, email: string) {
 
   const workspace = await pickWorkspace(options, {
     purpose: `remove ${email} from`,
-    filter: isSharedWorkspaceIOwn,
-    ineligibleReason: NOT_SHARED_OWNED,
-    noneEligibleMessage: NO_SHARED_OWNED,
+    candidates: sharedWorkspacesIOwn,
+    noCandidatesMessage: NO_SHARED_OWNED,
   });
   const detail = await runStep("Loading members...", () => getWorkspace(workspace.id));
   const member = findMember(detail, email);
@@ -204,9 +201,8 @@ export async function leaveCmd(options: YesOptions) {
 
   const workspace = await pickWorkspace(options, {
     purpose: "leave",
-    filter: (w) => !w.personal,
-    ineligibleReason: "can't be left because it's your personal workspace",
-    noneEligibleMessage: "You're only in your personal workspace, which can't be left.",
+    candidates: (mine) => mine.filter((w) => !w.personal),
+    noCandidatesMessage: "You're only in your personal workspace, which can't be left.",
   });
 
   const confirm = await confirmUnlessYes(`Leave ${describeWorkspace(workspace)}?`, options.yes);
@@ -226,9 +222,8 @@ export async function setRoleCmd(options: WorkspaceOptions, email: string, role:
 
   const workspace = await pickWorkspace(options, {
     purpose: `change the role of ${email} in`,
-    filter: isSharedWorkspaceIOwn,
-    ineligibleReason: NOT_SHARED_OWNED,
-    noneEligibleMessage: NO_SHARED_OWNED,
+    candidates: sharedWorkspacesIOwn,
+    noCandidatesMessage: NO_SHARED_OWNED,
   });
   const detail = await runStep("Loading members...", () => getWorkspace(workspace.id));
   const member = findMember(detail, email);

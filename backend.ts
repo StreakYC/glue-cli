@@ -64,14 +64,34 @@ export async function backendRequest<T>(
 
   const res = await backendFetch(path, options, forceTrace);
   if (!res.ok) {
-    const body = await res.text();
-    throw new UserFacingError(
-      `Failed request: ${path} (${
-        options.method ?? "GET"
-      }): ${res.status} ${res.statusText} ${body}`,
-    );
+    throw failedRequestError(path, options.method ?? "GET", res, await res.text());
   }
   return res.json() as Promise<T>;
+}
+
+/** Builds the error for a failed request, using the server's error message when it sent one. */
+function failedRequestError(
+  path: string,
+  method: string,
+  res: Response,
+  body: string,
+): UserFacingError {
+  let serverMessage: string | undefined;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (
+      parsed && typeof parsed === "object" && "error" in parsed && typeof parsed.error === "string"
+    ) {
+      serverMessage = parsed.error;
+    }
+  } catch {
+    // not a JSON body
+  }
+  return new UserFacingError(
+    serverMessage
+      ? `${serverMessage} (${res.status} from ${method} ${path})`
+      : `Failed request: ${path} (${method}): ${res.status} ${res.statusText} ${body}`,
+  );
 }
 
 async function backendFetch(
@@ -620,10 +640,7 @@ export async function deleteSecret(name: string, workspaceId: string): Promise<D
     return await res.json() as DeleteSecretResult;
   }
   if (!res.ok) {
-    const body = await res.text();
-    throw new UserFacingError(
-      `Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`,
-    );
+    throw failedRequestError(path, "DELETE", res, await res.text());
   }
   return await res.json() as DeleteSecretResult;
 }
@@ -652,10 +669,7 @@ export async function unleaseAccount(
     return await res.json() as UnleaseAccountResult;
   }
   if (!res.ok) {
-    const body = await res.text();
-    throw new UserFacingError(
-      `Failed request: ${path} (DELETE): ${res.status} ${res.statusText} ${body}`,
-    );
+    throw failedRequestError(path, "DELETE", res, await res.text());
   }
   return await res.json() as UnleaseAccountResult;
 }
@@ -822,7 +836,5 @@ export async function migrateGlue(
       return { ok: false, ...parsed };
     }
   }
-  throw new UserFacingError(
-    `Failed request: ${path} (POST): ${res.status} ${res.statusText} ${body}`,
-  );
+  throw failedRequestError(path, "POST", res, body);
 }

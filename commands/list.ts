@@ -7,11 +7,12 @@ import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import {
   getMyWorkspaces,
   referencedWorkspaces,
+  workspaceIdsToList,
   workspaceNameForGlue,
-  type WorkspaceOptions,
+  type WorkspacesOptions,
 } from "../lib/workspaces.ts";
 
-interface ListOptions extends WorkspaceOptions {
+interface ListOptions extends WorkspacesOptions {
   name?: string;
   tag?: string[];
   excludeTags?: string[];
@@ -25,7 +26,7 @@ export const list = async (options: ListOptions) => {
   const filters: GetGluesFilters = {
     environment: "deploy",
     excludeTags: ["archived"],
-    workspaceIds: options.workspace,
+    workspaceIds: workspaceIdsToList(options),
   };
 
   if (options.name) {
