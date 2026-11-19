@@ -1,10 +1,11 @@
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
-import { getGlueByName, type GlueDTO, updateGlue } from "../backend.ts";
+import { type GlueDTO, updateGlue } from "../backend.ts";
+import { findGlueByName, type WorkspaceOptions } from "../lib/workspaces.ts";
 import { askUserForGlues } from "./common.ts";
 import { addTags, normalizeTags, removeTags } from "../lib/tagUtils.ts";
 import { runStep } from "../ui/utils.ts";
 
-interface TagOptions {
+interface TagOptions extends WorkspaceOptions {
   add?: string[];
   remove?: string[];
   replace?: string[];
@@ -15,18 +16,18 @@ export async function tag(options: TagOptions, ...glueNames: string[]) {
 
   let glues: GlueDTO[] = [];
   if (glueNames.length) {
-    const gluePromises = glueNames.map((n) => getGlueByName(n, "deploy"));
-    const resolvedGlues = await runStep(
-      `Loading glue${glueNames.length === 1 ? "" : "s"}...`,
-      () => Promise.all(gluePromises),
-    );
+    // One at a time, since resolving an ambiguous name may prompt.
+    const resolvedGlues = [];
+    for (const name of glueNames) {
+      resolvedGlues.push(await findGlueByName(name, "deploy", options));
+    }
     glues = resolvedGlues.filter((g) => g !== undefined);
     if (glues.length !== glueNames.length) {
       console.error("One or more glues not found.");
       Deno.exit(1);
     }
   } else {
-    glues = await askUserForGlues();
+    glues = await askUserForGlues(options);
   }
 
   const additions = normalizeTags(options.add);

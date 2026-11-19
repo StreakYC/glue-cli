@@ -4,36 +4,63 @@ import { bold, dim, green } from "@std/fmt/colors";
 import { deleteSecret, getSecrets, setSecret as setBackendSecret, stopGlue } from "../backend.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
 import { formatEpochMillis, runStep } from "../ui/utils.ts";
+import {
+  describeWorkspace,
+  getMyWorkspaces,
+  pickWorkspace,
+  referencedWorkspaces,
+  workspaceIdsToList,
+  type WorkspaceOptions,
+  type WorkspacesOptions,
+} from "../lib/workspaces.ts";
 
-interface ListSecretsOptions {
+interface ListSecretsOptions extends WorkspacesOptions {
   json?: boolean;
 }
 
-export async function setSecret(_options: unknown, key: string, value: string) {
+export async function setSecret(options: WorkspaceOptions, key: string, value: string) {
   await checkForAuthCredsOtherwiseExit();
-  await runStep(`Setting ${key} secret...`, () => setBackendSecret(key, value));
+  const workspace = await pickWorkspace(options, { purpose: "set the secret in" });
+  await runStep(
+    `Setting ${key} secret in ${describeWorkspace(workspace)}...`,
+    () => setBackendSecret(key, value, workspace.id),
+  );
 }
 
 export async function listSecrets(options: ListSecretsOptions) {
   await checkForAuthCredsOtherwiseExit();
 
+  const load = () => Promise.all([getSecrets(workspaceIdsToList(options)), getMyWorkspaces()]);
+
   if (options.json) {
-    const secrets = await getSecrets();
-    console.log(JSON.stringify(secrets, null, 2));
+    const [secrets, workspaces] = await load();
+    console.log(JSON.stringify(
+      {
+        secrets,
+        workspaces: referencedWorkspaces(secrets.map((s) => s.workspaceId), workspaces),
+      },
+      null,
+      2,
+    ));
     return;
   }
 
-  const secrets = await runStep("Loading secrets...", () => getSecrets());
+  const [secrets, workspaces] = await runStep("Loading secrets...", load);
   if (secrets.length === 0) {
     console.log("No secrets found");
     return;
   }
 
+  // Only show workspaces when the secrets span more than one.
+  const showWorkspace = new Set(secrets.map((s) => s.workspaceId)).size > 1;
   new Table()
-    .header(["Name", "Created At", "Updated At"])
+    .header(["Name", ...(showWorkspace ? ["Workspace"] : []), "Created At", "Updated At"])
     .body(
       secrets.map((secret) => [
         bold(secret.name),
+        ...(showWorkspace
+          ? [workspaces.find((w) => w.id === secret.workspaceId)?.name ?? secret.workspaceId]
+          : []),
         dim(formatEpochMillis(secret.createdAt)),
         dim(formatEpochMillis(secret.updatedAt)),
       ]),
@@ -42,18 +69,36 @@ export async function listSecrets(options: ListSecretsOptions) {
     .render();
 }
 
-export async function deleteSecretCmd(_options: unknown, key: string) {
+export async function deleteSecretCmd(options: WorkspaceOptions, key: string) {
   await checkForAuthCredsOtherwiseExit();
 
+  const workspace = await pickWorkspace(options, {
+    purpose: "delete the secret from",
+    // Only workspaces that have a secret with this name are offered.
+    candidates: async (mine) => {
+      const secrets = await runStep("Loading secrets...", () => getSecrets());
+      const workspaceIdsWithSecret = new Set(
+        secrets.filter((s) => s.name === key).map((s) => s.workspaceId),
+      );
+      return mine.filter((w) => workspaceIdsWithSecret.has(w.id));
+    },
+    noCandidatesMessage: `No secret named ${key} found.`,
+  });
+
   const confirm = await Confirm.prompt({
-    message: `Are you sure you want to delete the ${key} secret?`,
+    message: `Are you sure you want to delete the ${key} secret from ${
+      describeWorkspace(workspace)
+    }?`,
     default: false,
   });
   if (!confirm) {
     return;
   }
 
-  let result = await runStep(`Deleting ${key} secret...`, () => deleteSecret(key));
+  let result = await runStep(
+    `Deleting ${key} secret...`,
+    () => deleteSecret(key, workspace.id),
+  );
   if (result.success) {
     return;
   }
@@ -78,7 +123,7 @@ export async function deleteSecretCmd(_options: unknown, key: string) {
   }
   console.log(`\n`);
 
-  result = await runStep(`Deleting ${key} secret...`, () => deleteSecret(key));
+  result = await runStep(`Deleting ${key} secret...`, () => deleteSecret(key, workspace.id));
   if (!result.success) {
     throw new Error(result.error ?? `Failed to delete ${key} secret`);
   }

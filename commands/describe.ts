@@ -4,9 +4,10 @@ import {
   getDeployments,
   getExecutionById,
   getGlueById,
-  getGlueByName,
+  getGluesByName,
   type GlueDTO,
 } from "../backend.ts";
+import { findGlueByName, type WorkspaceOptions } from "../lib/workspaces.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
@@ -22,7 +23,7 @@ import {
 } from "../ui/describe.tsx";
 import { isPrefixId } from "../common.ts";
 
-interface DescribeOptions {
+interface DescribeOptions extends WorkspaceOptions {
   json?: boolean;
   watch?: boolean;
 }
@@ -53,14 +54,14 @@ export const describe = async (options: DescribeOptions, query?: string) => {
     if (!Deno.stdout.isTerminal()) {
       throw new Error("You must provide a glue name or query when not running in a terminal");
     }
-    const glue = await askUserForGlue();
+    const glue = await askUserForGlue(options);
     if (!glue) {
       throw new Error("No glues yet!?");
     }
     query = glue.id;
   }
 
-  const target = createDescribeTarget(query);
+  const target = await createDescribeTarget(query, options);
   const initialLoadResult = await runStep(
     `Loading ${target.kind}...`,
     () => target.load(),
@@ -92,7 +93,10 @@ export const describe = async (options: DescribeOptions, query?: string) => {
   Deno.exit();
 };
 
-function createDescribeTarget(query: string): DescribeTarget {
+async function createDescribeTarget(
+  query: string,
+  options: DescribeOptions,
+): Promise<DescribeTarget> {
   if (isPrefixId(query, "d")) {
     return createDeploymentTarget(query);
   }
@@ -105,7 +109,12 @@ function createDescribeTarget(query: string): DescribeTarget {
   if (isPrefixId(query, "e")) {
     return createExecutionTarget(query);
   }
-  return createGlueTargetByName(query);
+  // Resolve the name up front, since it may prompt to pick between workspaces.
+  const glue = await findGlueByName(query, "deploy", options, { quiet: !!options.json });
+  if (!glue) {
+    throw new Error("Couldn't find a glue with that name");
+  }
+  return createGlueTargetByName(glue);
 }
 
 function createDeploymentTarget(deploymentId: string): DescribeTarget {
@@ -142,19 +151,18 @@ function createGlueTargetById(glueId: string): DescribeTarget {
   };
 }
 
-function createGlueTargetByName(glueName: string): DescribeTarget {
-  let glueId: string | undefined;
+/**
+ * Describes a glue found by name. If it's deleted and recreated while
+ * watching, the new glue with that name in the same workspace is shown.
+ */
+function createGlueTargetByName(initialGlue: GlueDTO): DescribeTarget {
+  let glueId = initialGlue.id;
   return {
     kind: "glue",
     load: async () => {
-      let glue: GlueDTO | undefined;
-      if (glueId) {
-        glue = await getGlueById(glueId);
-        if (!glue) {
-          glue = await getGlueByName(glueName, "deploy");
-        }
-      } else {
-        glue = await getGlueByName(glueName, "deploy");
+      let glue: GlueDTO | undefined = await getGlueById(glueId);
+      if (!glue) {
+        glue = (await getGluesByName(initialGlue.name, "deploy", [initialGlue.workspaceId]))[0];
       }
 
       if (!glue) {
