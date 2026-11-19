@@ -179,12 +179,25 @@ export async function pickWorkspaceForFile(
 }
 
 /**
- * After a glue moves to another workspace, points the script file it was last
- * deployed from at the new workspace so later deploys go there too.
+ * After a glue moves to another workspace, sets the remembered workspace of
+ * the script file it was last deployed from to the new workspace, so later
+ * deploys of the file go there too.
+ *
+ * Leaves the remembered workspace unchanged if it's a workspace other than the
+ * one the glue moved from, because deploying the file then updates a different
+ * glue.
  */
-export async function updateFileWorkspaceAfterMove(glueId: string, workspaceId: string) {
+export async function updateFileWorkspaceAfterMove(
+  glueId: string,
+  fromWorkspaceId: string,
+  toWorkspaceId: string,
+) {
   const lastPath = await kv.get<string>(lastDeployedPathKey(glueId));
-  if (lastPath.value) {
-    await rememberFileWorkspace(lastPath.value, workspaceId);
+  if (!lastPath.value) {
+    return;
+  }
+  const remembered = await kv.get<string>(fileWorkspaceKey(lastPath.value));
+  if (remembered.value === null || remembered.value === fromWorkspaceId) {
+    await rememberFileWorkspace(lastPath.value, toWorkspaceId);
   }
 }
