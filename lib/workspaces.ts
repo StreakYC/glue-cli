@@ -138,29 +138,45 @@ export async function findGlueByName(
 
 // Remembering which workspace a glue script file was deployed to
 
-function fileWorkspaceKey(absPath: string) {
-  return ["glue-file-workspace", GLUE_API_SERVER, absPath];
+/**
+ * Returns the key of a file's remembered workspace. Includes the glue's name,
+ * because one file can be deployed as several glues with `--name`, each in its
+ * own workspace.
+ */
+function fileWorkspaceKey(absPath: string, glueName: string) {
+  return ["glue-file-workspace", GLUE_API_SERVER, absPath, glueName];
 }
 
+/**
+ * Returns the KV key that's used to store the last deployed path for a glue, so
+ * we can warn the user if they deploy a different file over the same glue,
+ * which might be a mistake.
+ */
 export function lastDeployedPathKey(glueId: string) {
   return ["glue-last-deployed-path", GLUE_API_SERVER, glueId];
 }
 
-export async function rememberFileWorkspace(absPath: string, workspaceId: string) {
-  await kv.set(fileWorkspaceKey(absPath), workspaceId);
+export async function rememberFileWorkspace(
+  absPath: string,
+  glueName: string,
+  workspaceId: string,
+) {
+  await kv.set(fileWorkspaceKey(absPath, glueName), workspaceId);
 }
 
 /**
  * Picks the workspace to deploy (or dev) a glue script file into:
  *
  * 1. the one passed with `--workspace`;
- * 2. the one this file was last deployed to from this machine;
+ * 2. the one remembered on this machine for this file and glue name, from an
+ *    earlier deploy, dev or migrate;
  * 3. the user's only workspace;
  * 4. otherwise the user is asked.
  */
 export async function pickWorkspaceForFile(
   options: WorkspaceOptions,
   absPath: string,
+  glueName: string,
   environment: GlueEnvironment,
 ): Promise<WorkspaceRef> {
   const purpose = environment === "dev" ? "run this glue in" : "deploy to";
@@ -169,7 +185,7 @@ export async function pickWorkspaceForFile(
   }
   const workspaces = await getMyWorkspaces();
 
-  const remembered = await kv.get<string>(fileWorkspaceKey(absPath));
+  const remembered = await kv.get<string>(fileWorkspaceKey(absPath, glueName));
   const rememberedWorkspace = workspaces.find((w) => w.id === remembered.value);
   if (rememberedWorkspace) {
     return rememberedWorkspace;
@@ -179,25 +195,28 @@ export async function pickWorkspaceForFile(
 }
 
 /**
- * After a glue moves to another workspace, sets the remembered workspace of
- * the script file it was last deployed from to the new workspace, so later
- * deploys of the file go there too.
+ * After a glue moves to another workspace, sets the remembered workspace for
+ * the script file it was last deployed from and its name after the move, so
+ * later deploys of that file under that name go to the new workspace.
  *
- * Leaves the remembered workspace unchanged if it's a workspace other than the
- * one the glue moved from, because deploying the file then updates a different
- * glue.
+ * Does nothing if the workspace remembered for the file and the glue's old
+ * name isn't the one the glue moved from, because the file has since been
+ * deployed elsewhere as a different glue.
+ *
+ * @param glue the glue as it was before the move
+ * @param newName the glue's new name, if the move renamed it
  */
 export async function updateFileWorkspaceAfterMove(
-  glueId: string,
-  fromWorkspaceId: string,
+  glue: GlueDTO,
   toWorkspaceId: string,
+  newName?: string,
 ) {
-  const lastPath = await kv.get<string>(lastDeployedPathKey(glueId));
+  const lastPath = await kv.get<string>(lastDeployedPathKey(glue.id));
   if (!lastPath.value) {
     return;
   }
-  const remembered = await kv.get<string>(fileWorkspaceKey(lastPath.value));
-  if (remembered.value === null || remembered.value === fromWorkspaceId) {
-    await rememberFileWorkspace(lastPath.value, toWorkspaceId);
+  const remembered = await kv.get<string>(fileWorkspaceKey(lastPath.value, glue.name));
+  if (remembered.value === null || remembered.value === glue.workspaceId) {
+    await rememberFileWorkspace(lastPath.value, newName ?? glue.name, toWorkspaceId);
   }
 }

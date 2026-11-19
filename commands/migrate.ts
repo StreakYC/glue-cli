@@ -86,7 +86,7 @@ export async function migrate(options: MigrateOptions, query?: string) {
     // Only possible if something changed since the dry run.
     throw new UserFacingError(result.message);
   }
-  await updateFileWorkspaceAfterMove(glue.id, glue.workspaceId, to.id);
+  await updateFileWorkspaceAfterMove(glue, to.id, params.newName);
   if (params.newName) {
     console.log(
       dim(

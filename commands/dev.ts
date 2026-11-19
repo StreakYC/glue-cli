@@ -82,7 +82,7 @@ export async function dev(options: DevOptions, filename: string) {
 
     const glueName = await getGlueName(filename, options.name);
     // Picked before the dev UI starts, since it may prompt.
-    const workspace = await pickWorkspaceForFile(options, path.resolve(filename), "dev");
+    const workspace = await pickWorkspaceForFile(options, path.resolve(filename), glueName, "dev");
     const reloadStreakRuntime = await streakRuntimeUpdateChecks(filename, options.verbose);
 
     const glueCliWebsocketAddr = await wsListen(() => {
@@ -180,7 +180,7 @@ export async function dev(options: DevOptions, filename: string) {
           abortController.signal,
         ),
     );
-    await rememberFileWorkspace(path.resolve(filename), workspace.id);
+    await rememberFileWorkspace(path.resolve(filename), glueName, workspace.id);
     cleanupFns.push(async () =>
       // not passing abort signal because this needs to run after we abort
       await shutdownGlue(glue.id)

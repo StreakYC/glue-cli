@@ -38,7 +38,7 @@ export async function deploy(options: DeployOptions, file: string) {
   const tags = normalizeTags(options.tags);
   const absPath = resolve(file);
   // Picked before the deploy UI starts, since it may prompt.
-  const workspace = await pickWorkspaceForFile(options, absPath, "deploy");
+  const workspace = await pickWorkspaceForFile(options, absPath, glueName, "deploy");
 
   let deploymentProgressProps: DeployUIProps = {
     uploadingCodeState: "not_started",
@@ -152,7 +152,7 @@ export async function deploy(options: DeployOptions, file: string) {
     newDeploymentId = newDeployment.id;
   }
 
-  await rememberFileWorkspace(absPath, workspace.id);
+  await rememberFileWorkspace(absPath, glueName, workspace.id);
   const uploadingCodeDuration = performance.now() - duration;
 
   for await (const deployment of streamChangesTillDeploymentReady(newDeploymentId)) {
