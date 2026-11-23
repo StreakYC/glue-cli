@@ -186,11 +186,13 @@ export const DevUI = (
 };
 
 export function OutdatedRuntimeWarning({ info }: { info: OutdatedRuntimeInfo }) {
+  const updateCommand = `deno update ${GLUE_RUNTIME_PACKAGE}` +
+    (info.latestBlockedByMinimumDependencyAge ? " --minimum-dependency-age=0" : "");
   return (
     <Text>
       A newer {GLUE_RUNTIME_PACKAGE} version is available ({info.currentVersion} {"->"}{" "}
       {info.latestVersion}).<Newline />
-      Update it with: <Text color="yellow">deno update {GLUE_RUNTIME_PACKAGE}</Text>
+      Update it with: <Text color="yellow">{updateCommand}</Text>
     </Text>
   );
 }
