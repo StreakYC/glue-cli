@@ -65,19 +65,11 @@ const cmd = new Command()
   // DEPLOY ----------------------------
   .command("deploy", "Deploy a glue")
   .option("-n, --name <name:string>", "Glue name")
-  .type("runner", validateWithZodEnum(Runner))
+  .type("runner", validateWithZodEnum(Runner.extract(["sprite", "cloudrun"])))
   .option(
     "-r, --runner <runner:runner>",
-    "Use a specific runner to host the glue. Valid values are: deno, deno-v2, fly, cloudflare, sandbox.",
-    {
-      default: "sprite",
-      hidden: true,
-      action: () => {
-        throw new ValidationError(
-          "--runner is not supported. Remove it from your command. Glue chooses the runner automatically.",
-        );
-      },
-    },
+    "Choose the runner for this deployment (sprite or cloudrun).",
+    { default: "sprite" },
   )
   .option("--tag <tag:string>", "Add tags to the glue (repeatable)", { collect: true })
   .option(
