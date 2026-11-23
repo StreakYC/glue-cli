@@ -16,7 +16,7 @@ import type {
   TriggerDTO,
 } from "../backend.ts";
 import { associateDeploymentAccount } from "../backend.ts";
-import { toSortedByTypeThenLabel } from "./utils.ts";
+import { formatDuration, toSortedByTypeThenLabel } from "./utils.ts";
 import { prettyLabels } from "../lib/prettyLabels.ts";
 
 export const BuildStepTitles: Record<BuildStepName, string> = {
@@ -34,7 +34,7 @@ export const BuildStepStatusRow = ({ step }: { step: BuildStepDTO }) => {
       <Text>
         <Text color="green">✔︎</Text> {title}
         {step.endTime && step.startTime && (
-          <Text color="gray">{` (${Math.round(step.endTime - step.startTime)}ms)`}</Text>
+          <Text color="gray">{` (${formatDuration(step.endTime - step.startTime)})`}</Text>
         )}
       </Text>
     );
@@ -352,7 +352,7 @@ export const ClientStepRow = (
     return (
       <Text>
         <Text color="green">✔︎</Text> {stepTitle}{" "}
-        <Text color="gray">{`(${Math.round(stepDuration)}ms)`}</Text>
+        <Text color="gray">{`(${formatDuration(stepDuration)})`}</Text>
       </Text>
     );
   } else if (stepState === "failure") {

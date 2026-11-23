@@ -3,6 +3,11 @@ import * as mod from "@std/fmt/colors";
 import type { BuildStepDTO, DeploymentStatus } from "../backend.ts";
 import { BuildStepTitles } from "./common.tsx";
 
+export function formatDuration(durationMs: number): string {
+  const ms = Math.round(durationMs);
+  return ms < 1000 ? `${ms}ms` : `${Number((durationMs / 1000).toFixed(1))}s`;
+}
+
 export async function runStep<T>(
   message: string,
   fn: () => T,
@@ -22,14 +27,14 @@ export async function runStep<T>(
     result = await fn();
     const end = performance.now();
     spinner.stop();
-    console.log(mod.green("✔︎") + " " + message + mod.gray(` (${Math.round(end - start)}ms)`));
+    console.log(mod.green("✔︎") + " " + message + mod.gray(` (${formatDuration(end - start)})`));
   } catch (e) {
     const end = performance.now();
     spinner.stop();
     const errorMessage = e instanceof Error ? e.message : String(e);
     console.log(
       mod.red("✘") + " " + message + (logError ? ": " + errorMessage : "") +
-        mod.gray(` (${Math.round(end - start)}ms)`),
+        mod.gray(` (${formatDuration(end - start)})`),
     );
     throw e;
   }
