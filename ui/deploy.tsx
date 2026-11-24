@@ -17,6 +17,8 @@ export type DeployUIProps = {
   uploadingCodeDuration: number;
   deployment?: DeploymentDTO;
   glueName: string;
+  /** the workspace being deployed to */
+  workspaceName: string;
 };
 
 export const DeployUI = (
@@ -27,6 +29,7 @@ export const DeployUI = (
     uploadingCodeState,
     uploadingCodeDuration,
     glueName,
+    workspaceName,
   }: DeployUIProps,
 ) => {
   const done = deployment && deployment.buildSteps.every((step) => step.status === "success");
@@ -37,6 +40,7 @@ export const DeployUI = (
       ));
   return (
     <>
+      <Text color="dim">Workspace: {workspaceName}</Text>
       <ClientStepRow
         stepState={codeAnalysisState}
         stepDuration={codeAnalysisDuration}

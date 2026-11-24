@@ -13,16 +13,16 @@ import {
   type DeploymentDTO,
   getDeploymentById,
   getGlueById,
-  getGlueByName,
   type GlueDTO,
   pullDeployment,
 } from "../backend.ts";
 import { checkForAuthCredsOtherwiseExit } from "../auth.ts";
+import { findGlueByName, type WorkspaceOptions } from "../lib/workspaces.ts";
 import { isPrefixId } from "../common.ts";
 import { runStep } from "../ui/utils.ts";
 import { askUserForGlue } from "./common.ts";
 
-export const pull = async (_options: unknown, query?: string) => {
+export const pull = async (options: WorkspaceOptions, query?: string) => {
   await checkForAuthCredsOtherwiseExit();
 
   let glue: GlueDTO | undefined;
@@ -43,12 +43,11 @@ export const pull = async (_options: unknown, query?: string) => {
     deploymentId = deployment.id;
   } else {
     if (query) {
-      glue = await runStep(
-        "Loading glue...",
-        () => isPrefixId(query, "g") ? getGlueById(query) : getGlueByName(query, "deploy"),
-      );
+      glue = isPrefixId(query, "g")
+        ? await runStep("Loading glue...", () => getGlueById(query))
+        : await findGlueByName(query, "deploy", options);
     } else if (Deno.stdout.isTerminal()) {
-      glue = await askUserForGlue();
+      glue = await askUserForGlue(options);
     } else {
       throw new Error("You must provide a glue name when not running in a terminal");
     }
