@@ -760,10 +760,18 @@ export async function inviteToWorkspace(
   });
 }
 
-export async function removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
-  await backendRequest<unknown>(`/workspaces/${workspaceId}/members/${userId}`, {
-    method: "DELETE",
-  });
+/**
+ * Removes a workspace member by user id or email. Given an email, removes any
+ * matching member and revokes any open invite (404 if neither exists).
+ */
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  userIdOrEmail: string,
+): Promise<void> {
+  await backendRequest<unknown>(
+    `/workspaces/${workspaceId}/members/${encodeURIComponent(userIdOrEmail)}`,
+    { method: "DELETE" },
+  );
 }
 
 export async function setWorkspaceMemberRole(
