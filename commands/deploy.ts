@@ -79,10 +79,13 @@ export async function deploy(options: DeployOptions, file: string) {
 
   updateUI({ codeAnalysisState: "in_progress", codeAnalysisDuration: 0 });
 
-  let duration = performance.now();
+  const codeAnalysisStart = performance.now();
 
   const deploymentParams = await getCreateDeploymentParams(file, options.runner);
-  updateUI({ codeAnalysisDuration: performance.now() - duration, codeAnalysisState: "success" });
+  updateUI({
+    codeAnalysisDuration: performance.now() - codeAnalysisStart,
+    codeAnalysisState: "success",
+  });
 
   if (options.debugWriteCreateDeploymentParams) {
     await unmountUI();
@@ -94,21 +97,8 @@ export async function deploy(options: DeployOptions, file: string) {
     return;
   }
 
-  duration = performance.now();
-  updateUI({ uploadingCodeState: "in_progress", uploadingCodeDuration: 0 });
   let existingGlue = (await getGluesByName(glueName, "deploy", [workspace.id]))[0];
-  let newDeploymentId: string;
-  if (!existingGlue) {
-    const newGlue = await createGlue(glueName, deploymentParams, "deploy", {
-      workspaceId: workspace.id,
-      tags,
-    });
-    if (!newGlue.pendingDeployment) {
-      throw new Error("Failed to create glue");
-    }
-    newDeploymentId = newGlue.pendingDeployment.id;
-    await kv.set(lastDeployedPathKey(newGlue.id), absPath);
-  } else {
+  if (existingGlue) {
     // If there's an existing glue, we want to warn the user that it will be
     // overwritten *unless* they have already deployed this file (identified by
     // absolute path) on their current machine to this glue before.
@@ -140,10 +130,25 @@ export async function deploy(options: DeployOptions, file: string) {
       if (!confirm) {
         return;
       }
-      updateUI({}); // Rerender the UI after unmounting
       await kv.set(lastDeployedPathKey(existingGlue.id), absPath);
     }
+  }
 
+  // Start timing only after any confirmation prompts have been answered.
+  updateUI({ uploadingCodeState: "in_progress", uploadingCodeDuration: 0 });
+  const uploadingCodeStart = performance.now();
+  let newDeploymentId: string;
+  if (!existingGlue) {
+    const newGlue = await createGlue(glueName, deploymentParams, "deploy", {
+      workspaceId: workspace.id,
+      tags,
+    });
+    if (!newGlue.pendingDeployment) {
+      throw new Error("Failed to create glue");
+    }
+    newDeploymentId = newGlue.pendingDeployment.id;
+    await kv.set(lastDeployedPathKey(newGlue.id), absPath);
+  } else {
     const newDeployment = await createDeployment(existingGlue.id, deploymentParams);
     if (tags.length) {
       const desiredTags = addTags(existingGlue.tags, tags);
@@ -153,7 +158,7 @@ export async function deploy(options: DeployOptions, file: string) {
   }
 
   await rememberFileWorkspace(absPath, glueName, workspace.id);
-  const uploadingCodeDuration = performance.now() - duration;
+  const uploadingCodeDuration = performance.now() - uploadingCodeStart;
 
   for await (const deployment of streamChangesTillDeploymentReady(newDeploymentId)) {
     // modify the uploadingCodeStep at the same time as we get the first deployment so it never
