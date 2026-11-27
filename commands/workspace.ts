@@ -179,9 +179,6 @@ export async function removeMemberCmd(options: YesOptions, email: string) {
     candidates: sharedWorkspacesIOwn,
     noCandidatesMessage: NO_SHARED_OWNED,
   });
-  const detail = await runStep("Loading members...", () => getWorkspace(workspace.id));
-  const member = findMember(detail, email);
-
   const confirm = await confirmUnlessYes(
     `Remove ${email} from ${describeWorkspace(workspace)}?`,
     options.yes,
@@ -189,10 +186,8 @@ export async function removeMemberCmd(options: YesOptions, email: string) {
   if (!confirm) {
     return;
   }
-  await runStep(
-    `Removing ${email}...`,
-    () => removeWorkspaceMember(workspace.id, member.user.id),
-  );
+  // Passing an email removes any matching member and revokes any open invite.
+  await runStep(`Removing ${email}...`, () => removeWorkspaceMember(workspace.id, email));
 }
 
 /** glue workspace leave */
